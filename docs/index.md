@@ -27,11 +27,16 @@
 - [reliability.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/reliability.md)
 - [save-gate.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/save-gate.md)
 - [hook-verification.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/hook-verification.md)
+- [codex-orchestrator.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/codex-orchestrator.md)
 - [garbage-collection.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/garbage-collection.md)
 - [failure-to-rule.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/failure-to-rule.md)
 
 ### Design
 
 - [design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/design/design.md)
+
+### Incidents
+
+- [README.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/README.md)
 
 구조 기준과 이동 히스토리는 [docs/STRUCTURE_PLAN.md](/Users/gojaewoong/Desktop/ko/nerd/docs/STRUCTURE_PLAN.md)를 따른다.

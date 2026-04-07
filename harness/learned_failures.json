@@ -1,0 +1,12 @@
+{
+  "448463445ed5371e": {
+    "signature_hash": "448463445ed5371e",
+    "first_seen_at": "latest",
+    "last_seen_at": "latest",
+    "occurrence_count": 2,
+    "linked_doc": null,
+    "linked_rule": null,
+    "linked_tool": "content-rules",
+    "promoted_to_invariant": false
+  }
+}

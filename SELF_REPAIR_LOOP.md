@@ -15,7 +15,7 @@ self-repair loop가 완성됐다고 보려면 아래가 모두 필요하다.
 4. 수정 후 같은 gate를 자동으로 재실행한다
 5. 반복 실패는 규칙 승격 후보로 남긴다
 
-현재 저장소는 이 중 1, 2, 3의 최소 형태를 구현한다.
+현재 저장소는 이 중 1, 2, 3, 4의 최소 형태와 제한된 자동 재호출까지 구현한다.
 
 ## Current Loop
 
@@ -23,8 +23,11 @@ self-repair loop가 완성됐다고 보려면 아래가 모두 필요하다.
 
 1. `scripts/run-save-gate.sh` 실행
 2. 각 검사 결과를 `harness/reports/latest-report.json`에 기록
-3. 실패 시 `scripts/run-self-repair-loop.sh`가 해당 리포트를 보존
-4. 후속 에이전트 또는 사람은 그 JSON을 보고 수정 작업을 시작
+3. 실패 시 `scripts/parse_failures.py`가 실패를 정규화한다
+4. `scripts/retry-agent.py`가 다음 수정 입력용 `repair-context.json`을 만든다
+5. `scripts/codex_repair_runner.py`가 Codex CLI를 비대화식으로 재호출한다
+6. 수정 후 같은 gate를 다시 실행한다
+7. 재시도 예산 소진 시 incident를 기록한다
 
 ## Failure Report Schema
 
@@ -56,8 +59,8 @@ self-repair loop가 완성됐다고 보려면 아래가 모두 필요하다.
 
 현재 저장소에는 아직 아래가 없다.
 
-1. 실패 JSON을 읽고 모델을 자동 재호출하는 실행기
-2. 재시도 횟수 제한과 자동 중단 규칙
-3. 반복 실패를 자동으로 분류하는 승격기
+1. 반복 실패를 자동으로 승격하는 fully automated promotion engine
+2. 재시도 전략을 failure type별로 다르게 나누는 planner
+3. CI와 연결된 원격 self-repair executor
 
-즉 현재는 self-repair loop의 완성형이 아니라, 오케스트레이션 직전 단계다.
+즉 현재는 self-repair loop의 완성형이 아니라, 로컬 Codex 기반 오케스트레이터 단계다.
