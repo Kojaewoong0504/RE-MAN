@@ -1,0 +1,51 @@
+{
+  "required_files": [
+    "CONSTITUTION.md",
+    "AGENTS.md",
+    "docs/engineering/architecture.md",
+    "docs/engineering/security.md",
+    "docs/engineering/reliability.md"
+  ],
+  "checks": [
+    {
+      "id": "agents-defined",
+      "description": "AGENTS.md must define the two active agents.",
+      "file": "AGENTS.md",
+      "patterns": [
+        "`onboarding-agent`",
+        "`daily-agent`",
+        "이 앱에는 2개의 에이전트가 존재한다."
+      ]
+    },
+    {
+      "id": "primary-model-documented",
+      "description": "Agent and architecture docs must both document Gemini as the primary model.",
+      "files": [
+        "AGENTS.md",
+        "docs/engineering/architecture.md"
+      ],
+      "patterns": [
+        "Gemini"
+      ]
+    },
+    {
+      "id": "photo-protection-documented",
+      "description": "Security doc must document deletion or protection of user photos.",
+      "file": "docs/engineering/security.md",
+      "patterns": [
+        "삭제",
+        "사진"
+      ]
+    },
+    {
+      "id": "fallback-and-retry-documented",
+      "description": "Reliability doc must document fallback handling and retry behavior.",
+      "file": "docs/engineering/reliability.md",
+      "patterns": [
+        "Fallback",
+        "재시도",
+        "최대 2회"
+      ]
+    }
+  ]
+}

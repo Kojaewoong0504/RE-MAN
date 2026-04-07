@@ -1,0 +1,28 @@
+{
+  "agents": {
+    "onboarding-agent": {
+      "required_fields": [
+        "diagnosis",
+        "improvements",
+        "today_action",
+        "day1_mission"
+      ],
+      "forbidden_fields": [
+        "tomorrow_preview"
+      ],
+      "improvements_count": 3
+    },
+    "daily-agent": {
+      "required_fields": [
+        "diagnosis",
+        "improvements",
+        "today_action",
+        "tomorrow_preview"
+      ],
+      "forbidden_fields": [
+        "day1_mission"
+      ],
+      "improvements_count": 3
+    }
+  }
+}
