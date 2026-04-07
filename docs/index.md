@@ -26,6 +26,7 @@
 - [security.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/security.md)
 - [reliability.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/reliability.md)
 - [save-gate.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/save-gate.md)
+- [hook-verification.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/hook-verification.md)
 - [garbage-collection.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/garbage-collection.md)
 - [failure-to-rule.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/failure-to-rule.md)
 

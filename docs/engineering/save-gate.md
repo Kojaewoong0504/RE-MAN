@@ -28,6 +28,9 @@
 
 1. repository harness
 2. application harness
+3. content rules
+4. 타입 체크
+5. 린트
 
 이 단계는 저장소 구조와 에이전트 계약이 깨졌는지 빠르게 확인하는 최소 게이트다.
 
@@ -37,7 +40,8 @@
 
 - 타입 체크
 - 린트
-- 테스트
+- build
+- garbage collection 검사
 
 현재 앱 코드가 없으므로 이 단계는 예약만 해 둔다.
 
@@ -56,15 +60,22 @@
 
 1. `python3 harness/repository/run.py`
 2. `python3 harness/application/run.py`
+3. `python3 harness/application/content_rules.py`
+4. `npm run typecheck`
+5. `npm run lint`
 
-둘 중 하나라도 실패하면 gate는 실패다.
+pre-push에서는 여기에 아래가 추가된다.
+
+6. `python3 harness/gc/run.py`
+7. `npm run build`
+
+하나라도 실패하면 gate는 실패다.
 
 ## Future v1
 
 앱 코드가 생기면 아래를 pre-push 또는 CI gate로 확장한다.
 
-1. 타입 체크
-2. 린트
-3. 테스트
-4. dead code 탐지
-5. garbage collection 검사
+1. 테스트
+2. dead code 탐지 고도화
+3. garbage collection 검사 고도화
+4. self-repair orchestration 연결

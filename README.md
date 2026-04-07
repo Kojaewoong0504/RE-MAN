@@ -8,6 +8,7 @@
 - 저장소 규범: [CONSTITUTION.md](/Users/gojaewoong/Desktop/ko/nerd/CONSTITUTION.md)
 - 모델 진입점: [AGENTS.md](/Users/gojaewoong/Desktop/ko/nerd/AGENTS.md)
 - 하네스 프레임워크: [HARNESS_ENGINEERING.md](/Users/gojaewoong/Desktop/ko/nerd/HARNESS_ENGINEERING.md)
+- self-repair loop: [SELF_REPAIR_LOOP.md](/Users/gojaewoong/Desktop/ko/nerd/SELF_REPAIR_LOOP.md)
 - 문서 인덱스: [docs/index.md](/Users/gojaewoong/Desktop/ko/nerd/docs/index.md)
 - repository harness 기준: [REPOSITORY_HARNESS.md](/Users/gojaewoong/Desktop/ko/nerd/REPOSITORY_HARNESS.md)
 - save gate 기준: [save-gate.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/save-gate.md)

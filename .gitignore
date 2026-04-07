@@ -6,10 +6,13 @@
 
 __pycache__/
 *.pyc
+harness/reports/
 
 .pytest_cache/
 .mypy_cache/
 
 node_modules/
+.next/
 dist/
 build/
+tsconfig.tsbuildinfo
