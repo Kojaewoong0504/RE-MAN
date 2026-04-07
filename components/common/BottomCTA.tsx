@@ -19,7 +19,7 @@ export function BottomCTA({
     tone === "accent"
       ? "bg-accent text-black"
       : "bg-white/10 text-white ring-1 ring-white/10";
-  const className = `${disabled ? "pointer-events-none" : "pointer-events-auto"} app-shell flex h-14 items-center justify-center rounded-lg text-base font-semibold transition ${palette} ${
+  const className = `${disabled ? "pointer-events-none" : "pointer-events-auto"} flex h-14 w-full max-w-[480px] items-center justify-center rounded-lg text-base font-semibold transition ${palette} ${
     disabled ? "cursor-not-allowed opacity-40" : ""
   }`;
 

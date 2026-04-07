@@ -12,11 +12,25 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(
     page.getByRole("heading", { name: "지금 스타일이 어때요?" })
   ).toBeVisible();
+  const viewport = page.viewportSize();
+  const surveyCta = page.getByRole("button", { name: "사진 업로드로 이동" });
+
+  await expect(surveyCta).toBeVisible();
+
+  const initialBox = await surveyCta.boundingBox();
+
+  expect(initialBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+
+  if (initialBox && viewport) {
+    expect(initialBox.y).toBeGreaterThan(viewport.height - 180);
+    expect(initialBox.y + initialBox.height).toBeLessThanOrEqual(viewport.height - 12);
+  }
 
   await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
   await page.getByRole("button", { name: "소개팅 / 이성 만남" }).click();
   await page.getByRole("button", { name: "15~30만원" }).click();
-  await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
+  await surveyCta.click();
   await expect(page).toHaveURL(/\/onboarding\/upload$/);
   await expect(
     page.getByRole("heading", { name: "지금 입고 있는 옷 그대로 찍어주세요" })
