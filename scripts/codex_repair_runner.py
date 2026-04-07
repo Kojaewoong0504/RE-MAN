@@ -102,6 +102,12 @@ def main():
         print("Repair runner: no failures to repair.")
         return 0
 
+    max_attempts = payload.get("retry_budget", max_attempts)
+    if max_attempts <= 0:
+        subprocess.run(["python3", "scripts/log_incident.py"], cwd=ROOT, env=build_env())
+        print("Repair runner: retry budget is 0, incident logged.", file=sys.stderr)
+        return 1
+
     for attempt in range(1, max_attempts + 1):
         prompt = build_prompt(payload, mode, attempt)
         codex_result = run_codex(prompt)

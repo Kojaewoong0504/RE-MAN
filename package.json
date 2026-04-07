@@ -3,16 +3,18 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 127.0.0.1 --port 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --hostname 127.0.0.1 --port 3001",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "check:architecture": "python3 harness/architecture/run.py",
     "check:repo": "python3 harness/repository/run.py",
     "check:app": "python3 harness/application/run.py",
     "check:content": "python3 harness/application/content_rules.py",
     "check:gc": "python3 harness/gc/run.py",
-    "check": "python3 harness/repository/run.py && python3 harness/application/run.py && python3 harness/application/content_rules.py && python3 harness/gc/run.py && tsc --noEmit && next lint && next build"
+    "check": "python3 harness/repository/run.py && python3 harness/application/run.py && python3 harness/application/content_rules.py && python3 harness/architecture/run.py && python3 harness/gc/run.py && tsc --noEmit && next lint && next build"
   },
   "dependencies": {
     "next": "14.2.30",
@@ -23,6 +25,7 @@
     "@types/node": "22.15.3",
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.7",
+    "@playwright/test": "1.54.2",
     "autoprefixer": "10.4.21",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.30",

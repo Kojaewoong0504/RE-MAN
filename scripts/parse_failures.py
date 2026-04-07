@@ -11,6 +11,16 @@ REPORT_PATH = ROOT / "harness" / "reports" / "latest-report.json"
 NORMALIZED_PATH = ROOT / "harness" / "reports" / "normalized-failures.json"
 LEARNED_PATH = ROOT / "harness" / "learned_failures.json"
 FILE_RE = re.compile(r"([A-Za-z0-9_./\-\[\]]+\.(?:py|ts|tsx|js|jsx|json|md))")
+RETRY_BUDGETS = {
+    "content_rule": 1,
+    "lint": 1,
+    "typecheck": 1,
+    "build": 1,
+    "gc": 1,
+    "architecture": 1,
+    "missing_tool": 0,
+    "check_failure": 0,
+}
 
 
 def load_json(path: Path, default):
@@ -33,6 +43,8 @@ def classify_failure(name: str, output: str):
         return "build"
     if name == "gc":
         return "gc"
+    if name == "architecture":
+        return "architecture"
     if name == "content-rules":
         return "content_rule"
     if "dependencies are missing" in output or "not available in PATH" in output:
@@ -106,16 +118,20 @@ def main():
             learned_entry["first_seen_at"] = "latest"
         learned[signature] = learned_entry
 
+        failure_type = classify_failure(check["name"], check["output"])
+        occurrence_count = learned_entry["occurrence_count"]
         normalized["failures"].append(
             {
                 "check_name": check["name"],
-                "failure_type": classify_failure(check["name"], check["output"]),
+                "failure_type": failure_type,
                 "signature_hash": signature,
                 "normalized_message": check["output"].splitlines()[0] if check["output"] else check["name"],
                 "raw_output": check["output"],
                 "file_paths": extract_files(check["output"]),
                 "remediation_hint": remediation_hint(check["name"], check["output"]),
-                "occurrence_count": learned_entry["occurrence_count"],
+                "occurrence_count": occurrence_count,
+                "retry_budget": RETRY_BUDGETS.get(failure_type, 0),
+                "promotion_candidate": occurrence_count >= 2,
             }
         )
 

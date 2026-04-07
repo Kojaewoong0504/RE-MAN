@@ -26,6 +26,7 @@ def main():
         "status": "failed" if normalized["failures"] else "passed",
         "mode": normalized["mode"],
         "attempt": 1,
+        "retry_budget": max((failure["retry_budget"] for failure in normalized["failures"]), default=0),
         "docs_to_consult": docs_to_consult,
         "failures": [
             {
@@ -36,6 +37,7 @@ def main():
                 "normalized_message": failure["normalized_message"],
                 "remediation_hint": failure["remediation_hint"],
                 "occurrence_count": failure["occurrence_count"],
+                "promotion_candidate": failure["promotion_candidate"],
             }
             for failure in normalized["failures"]
         ],

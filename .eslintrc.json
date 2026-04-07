@@ -1,3 +1,38 @@
 {
-  "extends": ["next/core-web-vitals"]
+  "extends": ["next/core-web-vitals"],
+  "overrides": [
+    {
+      "files": ["app/api/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": ["@/components/*"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["lib/**/*.ts", "lib/**/*.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": ["@/components/*", "@/app/*"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["components/**/*.ts", "components/**/*.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": ["@/app/api/*"]
+          }
+        ]
+      }
+    }
+  ]
 }

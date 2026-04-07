@@ -22,10 +22,12 @@
 ### Engineering
 
 - [architecture.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/architecture.md)
+- [invariants.md](/Users/gojaewoong/Desktop/ko/nerd/docs/architecture/invariants.md)
 - [frontend.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/frontend.md)
 - [security.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/security.md)
 - [reliability.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/reliability.md)
 - [save-gate.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/save-gate.md)
+- [required-checks.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/required-checks.md)
 - [hook-verification.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/hook-verification.md)
 - [codex-orchestrator.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/codex-orchestrator.md)
 - [garbage-collection.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/garbage-collection.md)

@@ -34,6 +34,11 @@ def main():
     lines = [
         f"# Incident: {first['check_name']}",
         "",
+        "## Classification",
+        f"- type: `{first['failure_type']}`",
+        f"- signature: `{first['signature_hash']}`",
+        f"- promotion_candidate: `{first.get('promotion_candidate', False)}`",
+        "",
         "## Symptom",
         first["normalized_message"],
         "",
@@ -47,6 +52,7 @@ def main():
         lines.append(f"- type: `{failure['failure_type']}`")
         lines.append(f"- signature: `{failure['signature_hash']}`")
         lines.append(f"- remediation hint: {failure['remediation_hint']}")
+        lines.append(f"- promotion candidate: `{failure.get('promotion_candidate', False)}`")
         if failure["file_paths"]:
             lines.append(f"- files: {', '.join(failure['file_paths'])}")
         lines.append("")

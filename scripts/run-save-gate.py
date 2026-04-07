@@ -24,6 +24,7 @@ def command_specs(mode: str):
         ("repository-harness", "python3 harness/repository/run.py"),
         ("application-harness", "python3 harness/application/run.py"),
         ("content-rules", "python3 harness/application/content_rules.py"),
+        ("architecture", "python3 harness/architecture/run.py"),
     ]
 
     if not Path("node_modules").exists():

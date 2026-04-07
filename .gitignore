@@ -13,6 +13,8 @@ harness/reports/
 
 node_modules/
 .next/
+playwright-report/
+test-results/
 dist/
 build/
 tsconfig.tsbuildinfo
