@@ -28,6 +28,7 @@ self-repair loop가 완성됐다고 보려면 아래가 모두 필요하다.
 5. `scripts/codex_repair_runner.py`가 Codex CLI를 비대화식으로 재호출한다
 6. 수정 후 같은 gate를 다시 실행한다
 7. 재시도 예산 소진 시 incident를 기록한다
+8. 런타임 storage 실패는 `harness/reports/runtime-incidents.json` 과 `runtime-learned-failures.json`에 별도로 누적한다
 
 ## Failure Report Schema
 

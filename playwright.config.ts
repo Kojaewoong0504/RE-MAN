@@ -10,8 +10,15 @@ export default defineConfig({
   },
   webServer: {
     command: "npm run dev",
+    env: {
+      AI_PROVIDER: "mock",
+      NEXT_PUBLIC_SUPABASE_URL: "",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+      SUPABASE_SERVICE_ROLE_KEY: "",
+      SUPABASE_STORAGE_BUCKET: ""
+    },
     url: "http://127.0.0.1:3001",
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 120000
   },
   projects: [

@@ -13,33 +13,33 @@
 > "유저 사진은 분석 후 즉시 사라져야 한다."
 
 ### 규칙
-- Firebase Storage 업로드 후 Gemini API 분석 완료 즉시 삭제
+- Supabase Storage 업로드 후 Gemini API 분석 완료 즉시 삭제
 - 피드백 결과(텍스트)만 Firestore에 저장 — 사진 URL 저장 금지
 - Storage 보관 최대 시간: **5분** (분석 완료 전 타임아웃 기준)
+- 삭제 실패와 업로드 실패는 런타임 incident로 기록하고 반복되면 rule promotion 대상으로 승격
 
 ### 구현
 ```typescript
 // /api/feedback 흐름
 const imageRef = await uploadToStorage(image, userId)
-const feedback = await callGemini(imageRef.url, context)
+const feedback = await callGemini(image, context)
 await deleteFromStorage(imageRef.path)  // 분석 직후 즉시 삭제
 await saveFeedbackToFirestore(userId, feedback)
 ```
 
-### Storage 보안 규칙 (Firebase)
+### Storage 접근 정책 (Supabase)
 ```
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /uploads/{userId}/{filename} {
-      // 본인 파일만 읽기/쓰기 가능
-      allow read, write: if request.auth.uid == userId;
-      // 이미지 파일만 허용
-      allow write: if request.resource.contentType.matches('image/.*');
-    }
-  }
-}
+bucket: private
+path: uploads/{userId}/{randomFileName}
+upload: server-side signed upload 또는 service-role 경유
+delete: Gemini 분석 직후 서버에서 즉시 삭제
+public URL: 금지
 ```
+
+### 하네스 고정 규칙
+- `app/api/feedback/route.ts`, `app/api/daily/route.ts` 는 직접 Storage를 다루지 않고 `withTemporaryStoredImage(...)` 경유
+- 삭제는 `lib/supabase/temp-image.ts` 의 `finally` 블록에서 수행
+- upload/delete 장애는 `harness/reports/runtime-incidents.json` 과 `runtime-learned-failures.json` 에 누적
 
 ---
 
@@ -51,6 +51,8 @@ service firebase.storage {
 - Gemini API 키: **서버사이드 전용** — Next.js API Route에서만 호출
 - Firebase 클라이언트 키: 공개 가능하나 Security Rules로 접근 제한
 - Firebase Admin SDK 키: **서버사이드 전용** — 절대 클라이언트 번들에 포함 금지
+- Supabase `anon` 키: 공개 가능하나 버킷 정책으로 접근 제한
+- Supabase `service_role` 키: **서버사이드 전용**
 
 ### 환경 변수 관리
 ```bash
@@ -58,10 +60,13 @@ service firebase.storage {
 GEMINI_API_KEY=
 FIREBASE_PRIVATE_KEY=
 FIREBASE_CLIENT_EMAIL=
+SUPABASE_SERVICE_ROLE_KEY=
 
 # 클라이언트에서 접근 가능한 변수만 NEXT_PUBLIC_ prefix 사용
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 ### 체크리스트
@@ -104,6 +109,8 @@ const filename = `${userId}/${crypto.randomUUID()}.jpg`
 - 동일 userId당 API 호출: **분당 5회** 제한
 - Vercel Edge Middleware 또는 Upstash Redis로 구현
 - 초과 시 응답: `429 Too Many Requests`
+- Supabase Storage 버킷은 `private` 유지, 공개 버킷 금지
+- 서버 업로드 전 MIME/type 검증과 10MB 크기 검증 수행
 
 ---
 
@@ -136,6 +143,8 @@ service cloud.firestore {
 }
 ```
 
+저장소 기준 파일: `firebase/firestore.rules`
+
 ---
 
 ## MVP 출시 전 보안 체크리스트
@@ -145,6 +154,7 @@ service cloud.firestore {
 - [ ] API 키 `.env.local`에만 존재, 커밋 이력 없음 확인
 - [ ] 파일 타입/크기 검증 동작 확인
 - [ ] Firebase Security Rules 배포 확인
+- [ ] Supabase Storage 버킷이 private 인지 확인
 - [ ] Rate Limiting 동작 확인
 
 ### 권장 (출시 후 빠르게)

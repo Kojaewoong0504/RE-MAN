@@ -10,9 +10,9 @@ const config: Config = {
     extend: {
       colors: {
         ink: "#111111",
-        accent: "#F5F500",
-        surface: "#1E1E1E",
-        muted: "#888888",
+        accent: "#F2E94E",
+        surface: "#F4ECDD",
+        muted: "#6B6558",
         success: "#4ADE80",
         danger: "#F87171"
       },

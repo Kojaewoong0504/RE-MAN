@@ -7,9 +7,12 @@ export type SurveyInput = {
 export type FeedbackHistoryItem = {
   day: number;
   summary: string;
+  action?: string;
+  next_focus?: string;
 };
 
 export type AgentRequest = {
+  user_id?: string;
   image?: string;
   text_description?: string;
   survey: SurveyInput;

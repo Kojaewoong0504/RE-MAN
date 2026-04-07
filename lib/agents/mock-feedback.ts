@@ -7,6 +7,15 @@ import type {
 const dayOneMission =
   "옷장에 있는 옷을 전부 꺼내서 바닥에 펼쳐보고, 어떤 조합이 많은지 먼저 확인해보세요.";
 
+const tomorrowPreviewByDay: Record<number, string> = {
+  2: "내일은 오늘 코디에서 딱 한 가지만 바꿔볼게요.",
+  3: "내일은 비율이 먼저 보이도록 상의와 하의 길이감을 다시 볼게요.",
+  4: "내일은 신발과 하의 연결이 자연스러운지 집중해서 볼게요.",
+  5: "내일은 컬러가 흩어지지 않도록 톤 정리를 해볼게요.",
+  6: "내일은 지금까지 바꾼 것 중 가장 효과 있었던 한 가지를 고정해볼게요.",
+  7: "오늘이 마지막이니, 처음보다 무엇이 또렷해졌는지 정리해볼게요."
+};
+
 export function buildMockOnboardingFeedback(
   payload: AgentRequest
 ): OnboardingAgentResponse {
@@ -27,6 +36,7 @@ export function buildMockOnboardingFeedback(
 
 export function buildMockDailyFeedback(payload: AgentRequest): DailyAgentResponse {
   const lastDay = payload.feedback_history.at(-1)?.day ?? 1;
+  const currentDay = Math.min(lastDay + 1, 7);
 
   return {
     diagnosis: `Day ${lastDay}보다 오늘 코디가 더 정돈돼 보이고, 핵심 아이템이 눈에 더 잘 들어옵니다.`,
@@ -37,6 +47,8 @@ export function buildMockDailyFeedback(payload: AgentRequest): DailyAgentRespons
     ],
     today_action:
       "지금 가진 신발 중 가장 단정한 한 켤레로 바꿔서 다시 사진을 비교해보세요.",
-    tomorrow_preview: "내일은 오늘 코디에서 딱 한 가지만 바꿔볼게요."
+    tomorrow_preview:
+      tomorrowPreviewByDay[currentDay] ??
+      "내일은 오늘 코디에서 딱 한 가지만 바꿔볼게요."
   };
 }

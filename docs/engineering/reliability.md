@@ -58,7 +58,7 @@ async function callGeminiWithRetry(payload: GeminiPayload, maxRetries = 2) {
 
 **원인:**
 - 네트워크 불안정
-- Firebase Storage 일시 장애
+- Supabase Storage 일시 장애
 - 파일 크기/형식 문제 (→ SECURITY.md에서 사전 차단)
 
 **대응 전략:**
@@ -69,12 +69,16 @@ async function callGeminiWithRetry(payload: GeminiPayload, maxRetries = 2) {
 | Storage 장애 | 에러 메시지 + 텍스트 대체 옵션 안내 |
 | 업로드 중 이탈 | 업로드 상태 유지 (페이지 이탈 경고 없음, 재시도 허용) |
 
+추가 규칙:
+- upload/delete 장애는 fallback UI로 끝내지 않고 runtime incident로 기록
+- 같은 signature가 2회 이상 반복되면 harness 승격 후보로 간주
+
 **구현:**
 ```typescript
 async function uploadWithRetry(file: File, userId: string, maxRetries = 2) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await uploadToStorage(file, userId)
+      return await uploadToSupabaseStorage(file, userId)
     } catch (error) {
       if (attempt === maxRetries) {
         // 최종 실패 시 텍스트 대체 모드로 전환 안내
@@ -122,7 +126,7 @@ try {
 
 **캡처 대상:**
 - Gemini API 호출 실패 (재시도 모두 소진 시)
-- Firebase Storage 업로드 실패
+- Supabase Storage 업로드 실패
 - 피드백 JSON 파싱 실패
 - Vercel 함수 타임아웃
 
@@ -149,10 +153,10 @@ try {
 3. 모든 피드백 요청에 Fallback 텍스트 반환
 4. 복구 후 피드백 재시도 안내 이메일 발송 (이메일 수집된 유저 대상)
 
-### Firebase 장애 시
-1. 상태 페이지 확인: https://status.firebase.google.com
-2. 신규 유저 온보딩 일시 중단 (랜딩에 공지 배너)
-3. 기존 유저 Day 진행은 로컬 캐시(Zustand)로 유지
+### Supabase Storage 장애 시
+1. 상태 페이지 확인: https://status.supabase.com
+2. 신규 사진 업로드 일시 중단 (텍스트 대체 모드 우선 안내)
+3. 기존 유저 Day 진행은 Firestore + 로컬 캐시로 유지
 
 ---
 
@@ -160,6 +164,7 @@ try {
 
 - [ ] Gemini 재시도 로직 동작 확인 (강제 오류 주입 테스트)
 - [ ] 사진 업로드 실패 시 Fallback UI 노출 확인
+- [ ] upload/delete 장애가 `runtime-incidents.json` 과 `runtime-learned-failures.json` 에 기록되는지 확인
 - [ ] Sentry 연동 및 에러 캡처 동작 확인
 - [ ] Firebase 사용량 알림 설정 완료
 - [ ] Vercel 배포 실패 알림 설정 완료

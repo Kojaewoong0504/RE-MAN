@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { OnboardingAgentResponse } from "@/lib/agents/contracts";
-import { buildOnboardingRequest, patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
+import { saveOnboardingFeedbackToFirestore } from "@/lib/firebase/firestore";
+import {
+  buildOnboardingRequest,
+  patchOnboardingState,
+  readOnboardingState,
+  syncHistoryFromState
+} from "@/lib/onboarding/storage";
 
 const steps = ["핏을 분석하는 중...", "컬러 밸런스 확인 중...", "개선 포인트 정리 중..."];
 
@@ -19,7 +25,7 @@ export default function AnalyzingPage() {
       const payload = buildOnboardingRequest(state);
 
       if (!payload) {
-        router.replace("/onboarding/upload");
+        router.replace("/programs/style/onboarding/upload");
         return;
       }
 
@@ -51,11 +57,14 @@ export default function AnalyzingPage() {
         return;
       }
 
-      patchOnboardingState({
+      const nextState = patchOnboardingState({
         feedback: data,
+        daily_feedbacks: {},
         fallback_message: undefined
       });
-      router.replace("/onboarding/result");
+      const syncedState = syncHistoryFromState(nextState);
+      void saveOnboardingFeedbackToFirestore(syncedState, data);
+      router.replace("/programs/style/onboarding/result");
     }
 
     void runAnalysis();
@@ -90,7 +99,7 @@ export default function AnalyzingPage() {
           <p className="text-sm leading-6 text-zinc-200">{errorMessage}</p>
           <button
             className="text-sm text-accent underline underline-offset-4"
-            onClick={() => router.replace("/onboarding/upload")}
+            onClick={() => router.replace("/programs/style/onboarding/upload")}
             type="button"
           >
             텍스트 설명 다시 입력하기

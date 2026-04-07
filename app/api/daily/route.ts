@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
 import {
   FALLBACK_MESSAGE,
-  validateAgentRequest,
-  validateDailyResponse
+  validateAgentRequest
 } from "@/lib/agents/contracts";
+import { generateDailyFeedback, resolveAiProvider } from "@/lib/agents/gemini";
+import {
+  isStorageFailureError,
+  recordStorageRuntimeFailure
+} from "@/lib/harness/runtime-failures";
 import { buildMockDailyFeedback } from "@/lib/agents/mock-feedback";
+import {
+  type StorageFailureMode,
+  withTemporaryStoredImage
+} from "@/lib/supabase/temp-image";
+
+function getStorageFailureMode(request: Request): StorageFailureMode {
+  const value = request.headers.get("x-harness-storage-failure-mode");
+  return value === "upload" || value === "delete" ? value : "none";
+}
 
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => null);
@@ -14,14 +27,25 @@ export async function POST(request: Request) {
   }
 
   try {
-    const feedback = buildMockDailyFeedback(payload);
-
-    if (!validateDailyResponse(feedback)) {
-      throw new Error("invalid_daily_response");
-    }
+    const feedback = await withTemporaryStoredImage(
+      payload,
+      async () =>
+        resolveAiProvider() === "mock"
+          ? buildMockDailyFeedback(payload)
+          : await generateDailyFeedback(payload),
+      getStorageFailureMode(request)
+    );
 
     return NextResponse.json(feedback);
-  } catch {
+  } catch (error) {
+    if (isStorageFailureError(error)) {
+      await recordStorageRuntimeFailure({
+        route: "daily",
+        error,
+        userId: payload.user_id
+      });
+    }
+
     return NextResponse.json(
       {
         error: "feedback_failed",

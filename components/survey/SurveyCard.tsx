@@ -16,28 +16,33 @@ export function SurveyCard({
   onChange
 }: SurveyCardProps) {
   return (
-    <section className="space-y-6 rounded-2xl bg-surface/80 p-6">
+    <section className="space-y-6 border-t-2 border-black pt-5">
       <div className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.22em] text-muted">Survey</p>
-        <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
-        <p className="text-sm leading-6 text-zinc-300">{caption}</p>
+        <p className="poster-kicker">Survey</p>
+        <h2 className="text-[34px] font-black leading-[1.04] tracking-[-0.05em] text-ink">
+          {title}
+        </h2>
+        <p className="max-w-md text-[15px] font-medium leading-7 text-muted">{caption}</p>
       </div>
-      <div className="grid gap-3">
+      <div className="grid gap-2.5">
         {options.map((option) => {
           const isActive = value === option;
 
           return (
             <button
               key={option}
-              className={`min-h-12 rounded-xl border px-4 py-4 text-left text-base text-white transition ${
+              className={`min-h-[64px] border-2 px-4 py-4 text-left text-[16px] font-bold tracking-tight text-ink transition ${
                 isActive
-                  ? "border-accent bg-accent/15"
-                  : "border-white/10 bg-black/20 hover:border-accent/60"
+                  ? "border-black bg-accent"
+                  : "border-[#111111] bg-[#fcf8ef] hover:-translate-y-0.5"
               }`}
               onClick={() => onChange(option)}
               type="button"
             >
-              {option}
+              <div className="flex items-center justify-between gap-4">
+                <span>{option}</span>
+                <span className="text-sm">{isActive ? "선택됨" : "→"}</span>
+              </div>
             </button>
           );
         })}

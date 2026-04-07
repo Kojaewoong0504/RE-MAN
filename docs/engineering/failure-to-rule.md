@@ -74,3 +74,18 @@
 
 실패를 고치는 것과 실패를 제거하는 것은 다르다.
 이 저장소는 후자를 목표로 한다.
+
+## Promoted Rules
+
+### Supabase Temp Storage Failure
+
+- 실패 설명: 임시 이미지 업로드 또는 삭제가 실패하면 onboarding/daily 흐름이 500으로 끝날 수 있다.
+- 직접 원인: temp storage 호출이 라우트별로 분산되거나, 삭제가 `finally` 밖으로 밀리면 재발 가능성이 높다.
+- 재발 가능성: 높음. AI가 새 라우트를 만들 때 기존 패턴을 따라 wrapper를 빼먹을 수 있다.
+- 추가한 규칙:
+  - `app/api/feedback/route.ts`, `app/api/daily/route.ts` 는 반드시 `withTemporaryStoredImage(...)` 를 사용한다.
+  - 두 라우트는 storage 예외를 `recordStorageRuntimeFailure(...)` 로 기록한다.
+  - `lib/supabase/temp-image.ts` 는 삭제를 `finally` 에서 수행한다.
+- 연결한 하네스:
+  - `harness/architecture/run.py`
+  - `tests/e2e/onboarding.spec.ts`

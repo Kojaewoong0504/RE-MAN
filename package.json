@@ -17,15 +17,17 @@
     "check": "python3 harness/repository/run.py && python3 harness/application/run.py && python3 harness/application/content_rules.py && python3 harness/architecture/run.py && python3 harness/gc/run.py && tsc --noEmit && next lint && next build"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.102.0",
+    "firebase": "^12.11.0",
     "next": "14.2.30",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.54.2",
     "@types/node": "22.15.3",
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.7",
-    "@playwright/test": "1.54.2",
     "autoprefixer": "10.4.21",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.30",

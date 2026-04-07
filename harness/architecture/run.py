@@ -8,6 +8,9 @@ from pathlib import Path
 ROOT = Path.cwd()
 IMPORT_RE = re.compile(r'from\s+["\']([^"\']+)["\']')
 ARCH_DOC = ROOT / "docs" / "engineering" / "architecture.md"
+FEEDBACK_ROUTE = ROOT / "app" / "api" / "feedback" / "route.ts"
+DAILY_ROUTE = ROOT / "app" / "api" / "daily" / "route.ts"
+TEMP_IMAGE_HELPER = ROOT / "lib" / "supabase" / "temp-image.ts"
 
 
 def print_result(ok: bool, message: str):
@@ -72,10 +75,49 @@ def doc_contract_failures():
     return failures
 
 
+def storage_contract_failures():
+    failures = []
+
+    route_expectations = [
+        (FEEDBACK_ROUTE, 'withTemporaryStoredImage(', 'feedback route must use temp storage wrapper'),
+        (FEEDBACK_ROUTE, 'recordStorageRuntimeFailure(', 'feedback route must record storage runtime failures'),
+        (DAILY_ROUTE, 'withTemporaryStoredImage(', 'daily route must use temp storage wrapper'),
+        (DAILY_ROUTE, 'recordStorageRuntimeFailure(', 'daily route must record storage runtime failures'),
+    ]
+
+    for path, needle, message in route_expectations:
+        if not path.exists():
+            failures.append(f"missing required file {path.relative_to(ROOT)}")
+            continue
+
+        text = path.read_text(encoding="utf-8")
+        if needle not in text:
+            failures.append(f"{path.relative_to(ROOT)}: {message}")
+
+    if not TEMP_IMAGE_HELPER.exists():
+        failures.append(f"missing required file {TEMP_IMAGE_HELPER.relative_to(ROOT)}")
+        return failures
+
+    helper_text = TEMP_IMAGE_HELPER.read_text(encoding="utf-8")
+    helper_needles = [
+        ("finally {", "temp-image helper must delete in a finally block"),
+        ("await deleteImageFromSupabaseStorage(uploadedImage);", "temp-image helper must delete uploaded image after work"),
+        ('failureMode === "delete"', "temp-image helper must support delete failure injection"),
+        ('failureMode === "upload"', "temp-image helper must support upload failure injection"),
+    ]
+
+    for needle, message in helper_needles:
+        if needle not in helper_text:
+            failures.append(f"{TEMP_IMAGE_HELPER.relative_to(ROOT)}: {message}")
+
+    return failures
+
+
 def main():
     failures = []
     failures.extend(boundary_failures())
     failures.extend(doc_contract_failures())
+    failures.extend(storage_contract_failures())
 
     if failures:
         print_result(False, "architecture")

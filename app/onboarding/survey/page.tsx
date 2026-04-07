@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BottomCTA } from "@/components/common/BottomCTA";
 import { ProgressBar } from "@/components/common/ProgressBar";
 import { SurveyCard } from "@/components/survey/SurveyCard";
+import { syncSurveyToFirestore } from "@/lib/firebase/firestore";
 import { patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
 
 export default function SurveyPage() {
@@ -24,7 +25,32 @@ export default function SurveyPage() {
 
   return (
     <main className="app-shell space-y-8">
-      <ProgressBar current={1} total={3} />
+      <div className="space-y-6 pt-6">
+        <div className="flex items-center justify-between border-b-2 border-black pb-4">
+          <div className="flex items-center gap-4">
+            <button className="text-lg" onClick={() => router.push("/programs/style")} type="button">
+              ←
+            </button>
+            <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
+          </div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black bg-[#f1eadb] text-sm font-bold">
+            R
+          </div>
+        </div>
+        <div className="space-y-3">
+          <ProgressBar current={1} total={3} />
+          <p className="poster-kicker">Style Program / Step 01</p>
+        </div>
+        <div className="space-y-4">
+          <h1 className="max-w-sm text-[42px] font-black leading-[1.02] tracking-[-0.06em] text-ink">
+            처음엔 복잡하게 묻지 않습니다
+          </h1>
+          <p className="max-w-sm text-[17px] font-medium leading-7 text-muted">
+            지금 어떤 조합에 익숙한지, 왜 바꾸고 싶은지, 예산 감각만 정리하면 첫 진단을
+            시작할 수 있습니다.
+          </p>
+        </div>
+      </div>
       <SurveyCard
         caption="질문은 세 개만 묻습니다. 먼저 지금 자주 입는 조합을 골라주세요."
         onChange={(current_style) => setSurvey((current) => ({ ...current, current_style }))}
@@ -56,12 +82,24 @@ export default function SurveyPage() {
         title="한 달 스타일링 예산은?"
         value={survey.budget}
       />
+      <section className="poster-rule space-y-3 pb-24">
+        <p className="poster-kicker">Why it works</p>
+        <p className="max-w-md text-lg font-black leading-7 tracking-tight text-ink">
+          여기서 정한 답변은 평가가 아니라, 지금 가진 조건 안에서 가장 현실적인 변화를
+          만들기 위한 출발점입니다.
+        </p>
+      </section>
       <BottomCTA
         disabled={!isComplete}
         label="사진 업로드로 이동"
         onClick={() => {
-          const nextState = patchOnboardingState({ survey, feedback: undefined, fallback_message: undefined });
-          router.push("/onboarding/upload");
+          const nextState = patchOnboardingState({
+            survey,
+            feedback: undefined,
+            fallback_message: undefined
+          });
+          void syncSurveyToFirestore(nextState);
+          router.push("/programs/style/onboarding/upload");
           return nextState;
         }}
       />
