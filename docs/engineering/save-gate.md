@@ -31,8 +31,10 @@
 3. content rules
 4. 타입 체크
 5. 린트
+6. 단위 테스트
 
 이 단계는 저장소 구조와 에이전트 계약이 깨졌는지 빠르게 확인하는 최소 게이트다.
+또한 e2e만으로 품질을 대표하지 않도록, 가능한 범위의 단위/통합 테스트도 이 단계 또는 CI 단계에 포함해야 한다.
 
 ### Level 3. Pre-Push
 
@@ -40,8 +42,11 @@
 
 - 타입 체크
 - 린트
+- 단위 테스트
+- 통합 테스트
 - build
 - garbage collection 검사
+- e2e 테스트
 
 현재 앱 코드가 없으므로 이 단계는 예약만 해 둔다.
 
@@ -63,11 +68,13 @@
 3. `python3 harness/application/content_rules.py`
 4. `npm run typecheck`
 5. `npm run lint`
+6. `npm run test:unit`
 
 pre-push에서는 여기에 아래가 추가된다.
 
-6. `python3 harness/gc/run.py`
-7. `npm run build`
+7. `npm run test:integration`
+8. `python3 harness/gc/run.py`
+9. `npm run build`
 
 하나라도 실패하면 gate는 실패다.
 
@@ -75,7 +82,9 @@ pre-push에서는 여기에 아래가 추가된다.
 
 앱 코드가 생기면 아래를 pre-push 또는 CI gate로 확장한다.
 
-1. 테스트
-2. dead code 탐지 고도화
-3. garbage collection 검사 고도화
-4. self-repair orchestration 연결
+1. 단위 테스트
+2. 통합 테스트
+3. e2e 테스트
+4. dead code 탐지 고도화
+5. garbage collection 검사 고도화
+6. self-repair orchestration 연결

@@ -3,45 +3,13 @@
 import {
   browserLocalPersistence,
   GoogleAuthProvider,
-  linkWithPopup,
+  signOut,
   setPersistence,
-  signInWithPopup,
-  signInAnonymously
+  signInWithPopup
 } from "firebase/auth";
 import { getFirebaseAuthInstance, hasFirebaseClientConfig } from "@/lib/firebase/client";
 
-let bootPromise: Promise<string | null> | null = null;
-
-export function ensureAnonymousSession() {
-  if (!hasFirebaseClientConfig()) {
-    return Promise.resolve<string | null>(null);
-  }
-
-  if (bootPromise) {
-    return bootPromise;
-  }
-
-  bootPromise = (async () => {
-    const auth = getFirebaseAuthInstance();
-
-    if (!auth) {
-      return null;
-    }
-
-    await setPersistence(auth, browserLocalPersistence);
-
-    if (auth.currentUser?.uid) {
-      return auth.currentUser.uid;
-    }
-
-    const credential = await signInAnonymously(auth);
-    return credential.user.uid;
-  })();
-
-  return bootPromise;
-}
-
-export async function upgradeAnonymousSessionToGoogle() {
+export async function signInWithGoogleSession() {
   if (!hasFirebaseClientConfig()) {
     throw new Error("missing_firebase_client_config");
   }
@@ -53,24 +21,29 @@ export async function upgradeAnonymousSessionToGoogle() {
   }
 
   await setPersistence(auth, browserLocalPersistence);
-
-  const provider = new GoogleAuthProvider();
-  const currentUser = auth.currentUser;
-
-  if (currentUser?.isAnonymous) {
-    const credential = await linkWithPopup(currentUser, provider);
-    return {
-      uid: credential.user.uid,
-      email: credential.user.email ?? null,
-      linked: true
-    };
+  if (typeof auth.authStateReady === "function") {
+    await auth.authStateReady();
   }
 
+  const provider = new GoogleAuthProvider();
   const credential = await signInWithPopup(auth, provider);
+  const idToken = await credential.user.getIdToken();
 
   return {
     uid: credential.user.uid,
     email: credential.user.email ?? null,
-    linked: false
+    displayName: credential.user.displayName ?? null,
+    photoURL: credential.user.photoURL ?? null,
+    idToken
   };
+}
+
+export async function signOutFirebaseSession() {
+  const auth = getFirebaseAuthInstance();
+
+  if (!auth) {
+    return;
+  }
+
+  await signOut(auth);
 }

@@ -166,6 +166,58 @@ function getLatestDailyDay(state: OnboardingState) {
   );
 }
 
+export function getStyleProgramLatestDay(state: OnboardingState) {
+  if (!state.feedback) {
+    return 0;
+  }
+
+  return getLatestDailyDay(state);
+}
+
+export function mergePersistedProgramState(
+  current: OnboardingState,
+  persisted: OnboardingState | null
+): OnboardingState {
+  if (!persisted?.user_id) {
+    return current;
+  }
+
+  const currentDay = getStyleProgramLatestDay(current);
+  const persistedDay = getStyleProgramLatestDay(persisted);
+  const shouldPreferPersistedProgram = persistedDay > currentDay;
+
+  return {
+    ...current,
+    user_id: persisted.user_id,
+    email: persisted.email ?? current.email,
+    survey: shouldPreferPersistedProgram
+      ? {
+          ...defaultSurvey,
+          ...persisted.survey
+        }
+      : {
+          ...defaultSurvey,
+          ...current.survey,
+          ...persisted.survey
+        },
+    feedback: shouldPreferPersistedProgram ? persisted.feedback : current.feedback ?? persisted.feedback,
+    daily_feedbacks: shouldPreferPersistedProgram
+      ? persisted.daily_feedbacks ?? {}
+      : {
+          ...(persisted.daily_feedbacks ?? {}),
+          ...(current.daily_feedbacks ?? {})
+        },
+    feedback_history: shouldPreferPersistedProgram
+      ? persisted.feedback_history ?? []
+      : current.feedback_history?.length
+        ? current.feedback_history
+        : persisted.feedback_history ?? [],
+    image: current.image,
+    text_description: current.text_description,
+    fallback_message: current.fallback_message ?? persisted.fallback_message
+  };
+}
+
 export function getStyleProgramStatus(state: OnboardingState): StyleProgramStatus {
   if (!state.feedback) {
     return "new";
@@ -263,7 +315,7 @@ export function buildDailyRequest(
   };
 }
 
-export function syncHistoryFromState(state: OnboardingState) {
+export function buildHistoryFromState(state: OnboardingState) {
   const nextHistory: FeedbackHistoryItem[] = [];
 
   if (state.feedback?.diagnosis) {
@@ -294,6 +346,12 @@ export function syncHistoryFromState(state: OnboardingState) {
     .sort((left, right) => left.day - right.day);
 
   nextHistory.push(...dailyEntries);
+
+  return nextHistory;
+}
+
+export function syncHistoryFromState(state: OnboardingState) {
+  const nextHistory = buildHistoryFromState(state);
 
   const nextState = {
     ...state,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { AccountAccessButton } from "@/components/common/AccountAccessButton";
 import { BottomCTA } from "@/components/common/BottomCTA";
 import {
   getStyleProgramEntryPath,
@@ -34,9 +35,7 @@ export default function StyleProgramPage() {
             </Link>
             <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
           </div>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black bg-[#f1eadb] text-sm font-bold">
-            R
-          </div>
+          <AccountAccessButton />
         </div>
         <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted">Style Program</p>
         <h1 className="max-w-sm text-[40px] font-black leading-[1.03] tracking-[-0.05em] text-ink">

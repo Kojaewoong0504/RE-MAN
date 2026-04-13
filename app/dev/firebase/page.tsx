@@ -9,7 +9,7 @@ import {
   isFirebaseEmulatorEnabled
 } from "@/lib/firebase/client";
 import { runFirebaseSmokeWrite } from "@/lib/firebase/firestore";
-import { ensureAnonymousSession } from "@/lib/firebase/session";
+import { getFirebaseAuthInstance } from "@/lib/firebase/client";
 import { patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
 
 export default function FirebaseDevPage() {
@@ -29,20 +29,34 @@ export default function FirebaseDevPage() {
         setStatus("localStorage에 저장된 userId를 읽었습니다.");
       }
 
-      const uid = await ensureAnonymousSession();
+      const auth = getFirebaseAuthInstance();
 
       if (cancelled) {
         return;
       }
 
-      if (!uid) {
-        setStatus("Firebase 설정이 없어 익명 인증을 건너뛰었습니다.");
+      if (!auth) {
+        setStatus("Firebase 설정이 없어 세션 확인을 건너뛰었습니다.");
         return;
       }
 
-      patchOnboardingState({ user_id: uid });
-      setUserId(uid);
-      setStatus("익명 인증 세션을 확인했습니다.");
+      if (typeof auth.authStateReady === "function") {
+        await auth.authStateReady();
+      }
+
+      const currentUser = auth.currentUser;
+
+      if (!currentUser) {
+        setStatus("현재 로그인된 Firebase 사용자가 없습니다.");
+        return;
+      }
+
+      patchOnboardingState({
+        user_id: currentUser.uid,
+        email: currentUser.email ?? undefined
+      });
+      setUserId(currentUser.uid);
+      setStatus("Google 로그인 세션을 확인했습니다.");
     }
 
     void bootstrap();
@@ -54,7 +68,7 @@ export default function FirebaseDevPage() {
 
   async function handleSmokeWrite() {
     if (!userId) {
-      setWriteStatus("익명 세션이 아직 없습니다.");
+      setWriteStatus("로그인된 세션이 아직 없습니다.");
       return;
     }
 
@@ -76,7 +90,7 @@ export default function FirebaseDevPage() {
       <div className="space-y-4 pt-10">
         <p className="text-xs uppercase tracking-[0.22em] text-accent">Firebase Dev</p>
         <h1 className="text-4xl font-bold tracking-[-0.04em]">
-          로컬에서 익명 인증과 Firestore 쓰기를 확인합니다
+          로컬에서 Google 로그인과 Firestore 쓰기를 확인합니다
         </h1>
         <p className="max-w-md text-base leading-7 text-zinc-300">
           프로덕션 배포와 분리된 로컬 진단 페이지입니다. emulator 또는 개발 프로젝트에만
@@ -93,7 +107,7 @@ export default function FirebaseDevPage() {
         body={`현재 연결 모드: ${getFirebaseConnectionMode()} / emulator enabled: ${isFirebaseEmulatorEnabled() ? "yes" : "no"}`}
         label="Connection Mode"
       />
-      <FeedbackCard body={status} label="Anonymous Auth" />
+      <FeedbackCard body={status} label="Firebase Session" />
       <FeedbackCard body={userId ?? "세션 없음"} label="Current userId" />
       <FeedbackCard body={writeStatus} label="Firestore Write" accent={writeStatus.startsWith("Firestore 쓰기 성공")} />
 

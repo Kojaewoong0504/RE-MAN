@@ -53,6 +53,7 @@ public URL: 금지
 - Firebase Admin SDK 키: **서버사이드 전용** — 절대 클라이언트 번들에 포함 금지
 - Supabase `anon` 키: 공개 가능하나 버킷 정책으로 접근 제한
 - Supabase `service_role` 키: **서버사이드 전용**
+- `AUTH_JWT_SECRET`: **서버사이드 전용** — access/refresh/session-state JWT 서명 키
 
 ### 환경 변수 관리
 ```bash
@@ -114,14 +115,14 @@ const filename = `${userId}/${crypto.randomUUID()}.jpg`
 
 ---
 
-## 4. 인증 우회 방지 (Anonymous Auth 악용)
+## 4. 인증 우회 방지
 
-> "익명 인증이 무제한 API 호출의 통로가 되어선 안 된다."
+> "로그인 세션이 브라우저 저장값만으로 위조되면 안 된다."
 
 ### 규칙
-- Anonymous userId당 피드백 생성 최대 **7회** (Day 1~7)
-- Firestore에서 userId별 호출 횟수 카운팅
-- 7회 초과 시 추가 피드백 생성 차단
+- 보호 페이지는 서버 세션 cookie 없이 접근 금지
+- 프로필/설정 접근은 `httpOnly` access 또는 refresh cookie가 있어야 한다
+- Firestore는 `request.auth.uid == userId` 규칙을 계속 유지한다
 
 ### Firestore 보안 규칙
 ```
@@ -144,6 +145,26 @@ service cloud.firestore {
 ```
 
 저장소 기준 파일: `firebase/firestore.rules`
+
+---
+
+## 5. JWT 세션 보안
+
+> "소셜 로그인을 붙이더라도 브라우저 세션은 서버가 관리해야 한다."
+
+### 규칙
+- access token은 short-lived JWT로 발급
+- refresh token은 RTR(refresh token rotation) 방식으로 재발급
+- refresh token family의 현재 tokenId는 서버 상태로 관리
+- refresh token과 session state가 어긋나거나, 회전된 이전 token pair가 다시 들어오면 세션 폐기
+- access / refresh / session-state token은 모두 `httpOnly` cookie로 저장
+
+### 구현 기준
+- `/api/auth/login` ← Firebase Google 로그인 후 ID token 검증
+- `/api/auth/session` ← access token 검증
+- `/api/auth/refresh` ← refresh rotation 수행
+- `/api/auth/logout` ← cookie 제거
+- refresh family 상태는 서버에서 Firestore `auth_refresh_families/{familyId}` 문서로 관리
 
 ---
 

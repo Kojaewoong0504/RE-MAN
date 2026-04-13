@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AccountAccessButton } from "@/components/common/AccountAccessButton";
 import { BottomCTA } from "@/components/common/BottomCTA";
 import { ProgressBar } from "@/components/common/ProgressBar";
 import { SurveyCard } from "@/components/survey/SurveyCard";
@@ -33,9 +34,7 @@ export default function SurveyPage() {
             </button>
             <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
           </div>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black bg-[#f1eadb] text-sm font-bold">
-            R
-          </div>
+          <AccountAccessButton />
         </div>
         <div className="space-y-3">
           <ProgressBar current={1} total={3} />

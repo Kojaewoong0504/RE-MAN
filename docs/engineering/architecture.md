@@ -15,7 +15,7 @@
 | 프론트엔드 | Next.js (React) | App Router 기반 SSR, API Route 내장 |
 | 배포 | Vercel | Next.js 최적화, 무중단 배포 |
 | 데이터베이스 | Firebase Firestore | 실시간 DB, 인증 통합, 빠른 세팅 |
-| 인증 | Firebase Anonymous Auth | 로그인 마찰 없이 시작, 이후 계정 연결 가능 |
+| 인증 | Firebase Auth + App JWT Session | Google 로그인, 서버 JWT 세션 분리 |
 | AI | Gemini API (Google) | Vision 지원, 멀티모달 피드백 |
 | 사진 업로드 | Supabase Storage | 임시 이미지 업로드 후 분석 직후 삭제 |
 | 이메일 발송 | Resend | 간단한 API, Next.js 친화적 |
@@ -42,8 +42,13 @@
       └── GET /api/dev/runtime-failures ← runtime incident 조회
 
 [Firebase]
-  ├── Auth       ← Anonymous userId 발급
-  └── Firestore  ← 유저 세션, 설문 답변, 피드백 이력
+  ├── Auth       ← Google social login
+  └── Firestore  ← 유저 프로필, 설문 답변, 피드백 이력
+
+[App Session]
+  ├── access token   ← short-lived JWT
+  ├── refresh token  ← rotated JWT
+  └── session state  ← RTR 검증용 cookie state
 
 [Supabase]
   └── Storage    ← 사진 업로드 (임시 저장, 분석 후 삭제)
@@ -102,12 +107,15 @@
 
 ## 유저 세션 관리
 
-- 회원가입 없이 시작 → Firebase Anonymous Auth로 임시 userId 발급
+- 로그인 시 Firebase popup 인증 후 서버에서 Firebase ID token을 검증하고 자체 JWT 세션 발급
+- access token + refresh token 조합 사용
+- refresh token은 RTR(refresh token rotation) 방식으로 재발급
+- 보호 페이지: `/profile`, `/settings`
 - 앱 진입 시 현재 사용자가 새 방문자인지, 진행 중인지, 완료자인지 분기한다
 - 재방문 사용자는 같은 onboarding을 반복하지 않고 현재 프로그램 상태로 복귀한다
-- userId는 브라우저 localStorage에 유지
-- Firebase client config가 없으면 로컬 개발에선 익명 인증 bootstrap을 건너뛴다
-- 로컬 진단 페이지: `/dev/firebase` 에서 익명 인증과 Firestore 쓰기 테스트 가능
+- 로그인 후 userId와 email은 브라우저 localStorage에 동기화한다
+- Firebase client config가 없으면 로컬 개발에선 로그인 세션 bootstrap을 건너뛴다
+- 로컬 진단 페이지: `/dev/firebase` 에서 Google 로그인 세션과 Firestore 쓰기 테스트 가능
 - 로컬 진단 페이지: `/dev/storage` 에서 Supabase 임시 업로드/삭제 테스트 가능
 - 로컬 진단 페이지: `/dev/gemini` 에서 실제 Gemini onboarding 응답 계약 테스트 가능
 - 로컬 진단 페이지: `/dev/runtime-failures` 에서 storage runtime failure 누적 상태 확인 가능
@@ -120,6 +128,7 @@
 AI_PROVIDER=gemini
 GOOGLE_API_KEY=
 GEMINI_API_KEY=          # legacy alias
+AUTH_JWT_SECRET=
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
@@ -134,9 +143,6 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_STORAGE_BUCKET=
-FIREBASE_PROJECT_ID=
-FIREBASE_CLIENT_EMAIL=
-FIREBASE_PRIVATE_KEY=
 RESEND_API_KEY=
 ```
 

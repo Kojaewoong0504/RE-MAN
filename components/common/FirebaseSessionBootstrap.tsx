@@ -1,27 +1,68 @@
 "use client";
 
 import { useEffect } from "react";
-import { ensureAnonymousSession } from "@/lib/firebase/session";
-import { patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
+import { createServerSession, fetchAuthSession } from "@/lib/auth/client";
+import { getFirebaseAuthInstance } from "@/lib/firebase/client";
+import { readStyleProgramStateFromFirestore } from "@/lib/firebase/firestore";
+import {
+  mergePersistedProgramState,
+  patchOnboardingState,
+  readOnboardingState,
+  writeOnboardingState
+} from "@/lib/onboarding/storage";
 
 export function FirebaseSessionBootstrap() {
   useEffect(() => {
     let cancelled = false;
 
     async function bootstrap() {
-      const uid = await ensureAnonymousSession();
+      const auth = getFirebaseAuthInstance();
 
-      if (!uid || cancelled) {
+      if (!auth) {
+        return;
+      }
+
+      if (typeof auth.authStateReady === "function") {
+        await auth.authStateReady();
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      const currentUser = auth?.currentUser ?? null;
+
+      if (!currentUser) {
         return;
       }
 
       const state = readOnboardingState();
 
-      if (state.user_id === uid) {
-        return;
+      const existingSession = await fetchAuthSession();
+
+      if (!existingSession) {
+        try {
+          const idToken = await currentUser.getIdToken();
+          await createServerSession(idToken);
+        } catch {
+          return;
+        }
       }
 
-      patchOnboardingState({ user_id: uid });
+      const syncedState = patchOnboardingState({
+        user_id: currentUser.uid,
+        email: currentUser.email ?? undefined
+      });
+
+      try {
+        const persisted = await readStyleProgramStateFromFirestore(currentUser.uid);
+
+        if (!cancelled && persisted) {
+          writeOnboardingState(mergePersistedProgramState(syncedState, persisted));
+        }
+      } catch {
+        return;
+      }
     }
 
     void bootstrap();

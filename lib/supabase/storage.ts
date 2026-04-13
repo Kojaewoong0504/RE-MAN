@@ -69,7 +69,7 @@ function parseDataUrl(image: string) {
 export async function uploadImageToSupabaseStorage(image: string, userId?: string) {
   const client = getSupabaseStorageClient();
   const { mimeType, buffer, extension } = parseDataUrl(image);
-  const safeUserId = userId?.trim() || "anonymous";
+  const safeUserId = userId?.trim() || "guest";
   const path = `${safeUserId}/${crypto.randomUUID()}.${extension}`;
   const bucket = getSupabaseBucket();
 

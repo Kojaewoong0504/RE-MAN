@@ -3,6 +3,7 @@
 이 저장소는 너드남의 변화를 돕는 AI 코치 서비스를 설계, 구현, 검증하기 위한 저장소다.
 현재 스타일은 첫 번째 프로그램이며, 장기적으로는 헤어, 체형/자세, 피부 같은 다른 변화 프로그램으로 확장한다.
 저장소의 최상위 규범은 [CONSTITUTION.md](/Users/gojaewoong/Desktop/ko/nerd/CONSTITUTION.md)이며, 모델 진입점은 [AGENTS.md](/Users/gojaewoong/Desktop/ko/nerd/AGENTS.md)다.
+현재 앱은 Firebase 기반 Google 로그인과 자체 JWT 세션(`access + refresh + RTR`)을 함께 사용한다.
 
 ## Entry Points
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { AccountAccessButton } from "@/components/common/AccountAccessButton";
 import { BottomCTA } from "@/components/common/BottomCTA";
 import { FeedbackCard } from "@/components/feedback/FeedbackCard";
 import {
@@ -48,9 +49,7 @@ export default function LandingPage() {
       <div className="poster-grid pt-6">
         <div className="flex items-center justify-between border-b-2 border-black pb-4">
           <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black bg-[#f1eadb] text-sm font-bold">
-            R
-          </div>
+          <AccountAccessButton />
         </div>
         <div className="space-y-5 pt-4">
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-muted">

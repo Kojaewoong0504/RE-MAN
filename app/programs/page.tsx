@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { AccountAccessButton } from "@/components/common/AccountAccessButton";
 
 type ProgramCard = {
   href: string;
@@ -57,9 +58,7 @@ export default function ProgramsPage() {
             <span className="text-lg">≡</span>
             <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
           </div>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black bg-[#f1eadb] text-sm font-bold">
-            R
-          </div>
+          <AccountAccessButton />
         </div>
         <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted">Determination</p>
         <h1 className="text-[38px] font-black leading-[1.05] tracking-[-0.05em] text-ink">

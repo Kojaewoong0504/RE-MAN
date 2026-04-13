@@ -287,3 +287,12 @@ test("program hub opens coming soon program placeholder", async ({ page }) => {
   await expect(page.getByRole("link", { name: "다른 프로그램으로 돌아가기" })).toBeVisible();
   await expect(page.getByRole("link", { name: "스타일 프로그램 먼저 시작하기" })).toBeVisible();
 });
+
+test("protected profile redirects to login when no session is present", async ({ page }) => {
+  await page.goto("/profile");
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fprofile$/);
+  await expect(
+    page.getByRole("heading", { name: "진행한 변화와 계정을 함께 관리합니다" })
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Google로 계속하기" })).toBeVisible();
+});

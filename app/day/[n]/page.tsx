@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AccountAccessButton } from "@/components/common/AccountAccessButton";
 import { BottomCTA } from "@/components/common/BottomCTA";
 import { ProgressBar } from "@/components/common/ProgressBar";
 import { FeedbackCard } from "@/components/feedback/FeedbackCard";
@@ -177,12 +178,10 @@ export default function DayPage({ params }: DayPageProps) {
               </button>
               <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black bg-[#f1eadb] text-sm font-bold">
-              R
-            </div>
+            <AccountAccessButton />
           </div>
           <div className="space-y-3">
-          <ProgressBar current={1} total={7} />
+            <ProgressBar current={1} total={7} />
             <p className="poster-kicker">Day 1</p>
           </div>
           <h1 className="text-4xl font-bold tracking-[-0.04em]">
@@ -213,12 +212,10 @@ export default function DayPage({ params }: DayPageProps) {
             </button>
             <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
           </div>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black bg-[#f1eadb] text-sm font-bold">
-            R
-          </div>
+          <AccountAccessButton />
         </div>
         <div className="space-y-3">
-        <ProgressBar current={Math.min(day, 7)} total={7} />
+          <ProgressBar current={Math.min(day, 7)} total={7} />
           <p className="poster-kicker">Day {day}</p>
         </div>
         {feedback && day === 7 ? (
@@ -226,7 +223,7 @@ export default function DayPage({ params }: DayPageProps) {
             <h1 className="text-4xl font-bold tracking-[-0.04em]">
               7일 피드백을 끝냈습니다
             </h1>
-            <p className="max-w-sm text-base leading-7 text-zinc-300">
+            <p className="max-w-sm text-base leading-7 text-muted">
               처음보다 무엇이 또렷해졌는지 정리하고, 다음 주에도 그대로 가져갈 기준
               하나만 남기면 됩니다.
             </p>

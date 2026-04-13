@@ -40,12 +40,14 @@ def command_specs(mode: str):
         [
             ("typecheck", "npm run typecheck --silent"),
             ("lint", "npm run lint --silent"),
+            ("unit-tests", "npm run test:unit --silent"),
         ]
     )
 
     if mode == "pre-push":
         checks.extend(
             [
+                ("integration-tests", "npm run test:integration --silent"),
                 ("gc", "python3 harness/gc/run.py"),
                 ("build", "npm run build --silent"),
             ]

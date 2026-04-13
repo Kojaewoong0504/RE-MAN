@@ -164,17 +164,21 @@ pre-commit에서 막을 것:
 - content rules
 - typecheck
 - lint
+- 빠르게 도는 단위 테스트
 
 pre-push에서 추가할 것:
 
 - gc
 - build
+- 통합 테스트
+- e2e 테스트
 
 핵심 원칙:
 
 - 성공은 조용히
 - 실패만 짧고 구조화
 - 사람이 부탁해서 고치게 하지 말고, 다음 단계로 못 넘어가게 막아라
+- e2e 하나로 모든 검증을 대신하지 말아라
 
 ## Phase 5. Harness Engineering Documents
 
@@ -215,6 +219,7 @@ pre-push에서 추가할 것:
 
 - 외부 연동보다 flow skeleton이 먼저다
 - 문서 계약에 없는 새 흐름은 만들지 않는다
+- skeleton이 생기면 곧바로 단위/통합/e2e 테스트 계층을 분리해 깔아야 한다
 
 ## Phase 7. Failure Pipeline
 
