@@ -96,7 +96,7 @@ export default function AnalyzingPage() {
   return (
     <main className="app-shell flex min-h-screen flex-col justify-center gap-8">
       <div className="space-y-4">
-        <p className="text-xs uppercase tracking-[0.28em] text-accent">Analyzing</p>
+        <p className="poster-kicker">Analyzing</p>
         <h1 className="text-4xl font-bold tracking-[-0.04em]">
           AI가 지금 스타일의 출발점을 읽고 있어요
         </h1>
@@ -105,8 +105,8 @@ export default function AnalyzingPage() {
         {steps.map((step, index) => (
           <div
             key={step}
-            className={`rounded-xl px-4 py-4 text-base ${
-              index === steps.length - 1 ? "bg-accent text-black" : "bg-surface text-white"
+            className={`px-4 py-4 text-base font-bold ${
+              index === steps.length - 1 ? "ui-panel-accent" : "ui-panel-muted text-ink"
             }`}
           >
             {step}
@@ -114,10 +114,10 @@ export default function AnalyzingPage() {
         ))}
       </div>
       {errorMessage ? (
-        <div className="space-y-4 rounded-2xl border border-white/10 bg-surface p-5">
-          <p className="text-sm leading-6 text-zinc-200">{errorMessage}</p>
+        <div className="ui-panel-muted space-y-4">
+          <p className="text-sm leading-6 text-ink">{errorMessage}</p>
           <button
-            className="text-sm text-accent underline underline-offset-4"
+            className="text-sm font-black text-ink underline underline-offset-4"
             onClick={() => router.replace("/programs/style/onboarding/upload")}
             type="button"
           >

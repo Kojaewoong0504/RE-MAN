@@ -34,21 +34,21 @@ export default function LandingPage() {
     snapshot.status === "new"
       ? "판단 없이, 변화를 시작하게 만드는 코치"
       : snapshot.status === "active"
-        ? "지금 하던 변화를 바로 이어가면 됩니다"
-        : "한 프로그램을 끝냈다면, 다음 선택만 남았습니다";
+        ? "최근 스타일 체크 결과에서 바로 이어가면 됩니다"
+        : "결과를 다시 보고, 다음 선택을 고르면 됩니다";
 
   const body =
     snapshot.status === "new"
       ? "스타일에서 시작하고, 나중에는 헤어와 체형, 피부까지 확장합니다. 지금은 스타일 프로그램이 먼저 열려 있습니다."
       : snapshot.status === "active"
-        ? "이미 시작한 사용자는 같은 onboarding을 반복하지 않습니다. 지금 진행 중인 스타일 프로그램으로 바로 복귀할 수 있습니다."
-        : "스타일 7일을 끝낸 사용자는 완료 내용을 다시 보거나, 다음 변화 영역을 고를 수 있습니다.";
+        ? "이미 시작한 사용자는 같은 onboarding을 반복하지 않습니다. 최근 스타일 체크 결과로 바로 복귀할 수 있습니다."
+        : "완료 기록이 있는 사용자도 최근 스타일 체크 결과를 다시 보거나, 다음 변화 영역을 고를 수 있습니다.";
 
   return (
     <main className="app-shell flex min-h-screen flex-col justify-between">
       <div className="poster-grid pt-6">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4">
-          <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
+        <div className="app-header">
+          <p className="app-brand">RE:MAN</p>
           <AccountAccessButton />
         </div>
         <div className="space-y-5 pt-4">
@@ -62,7 +62,7 @@ export default function LandingPage() {
             {body}
           </p>
         </div>
-        <div className="overflow-hidden border-2 border-black bg-surface">
+        <div className="overflow-hidden border border-black/15 bg-surface">
           <div className="flex items-center justify-between px-4 py-3">
             <span className="bg-black px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-[#fcf8ef]">
               Mission 01
@@ -78,7 +78,7 @@ export default function LandingPage() {
               fill
               src={landingHeroImage}
             />
-            <div className="absolute inset-x-0 bottom-0 border-t-2 border-black bg-black/85 p-4 text-[#fcf8ef]">
+            <div className="absolute inset-x-0 bottom-0 border-t border-black bg-black/85 p-4 text-[#fcf8ef]">
               <p className="text-sm font-bold leading-6">
                 사진 한 장과 몇 가지 답변만으로, 지금의 인상과 다음 한 걸음을 정리합니다.
               </p>
@@ -86,18 +86,18 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="grid gap-4">
-          <div className="border-2 border-black bg-accent p-4">
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-black">Start</p>
-            <p className="mt-2 text-lg font-bold leading-7 text-black">
+          <div className="ui-panel-accent">
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-[var(--color-accent-ink)]/70">Start</p>
+            <p className="mt-2 text-lg font-bold leading-7">
               회원가입 없이 먼저 시작하고, 진행 중인 사용자는 같은 onboarding을 반복하지 않습니다.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="border-2 border-black bg-[#fcf8ef] p-4">
+            <div className="ui-panel">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted">Private</p>
               <p className="mt-3 text-lg font-black leading-6 text-ink">사람 대신 AI만 봅니다</p>
             </div>
-            <div className="border-2 border-black bg-[#fcf8ef] p-4">
+            <div className="ui-panel">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted">Fast</p>
               <p className="mt-3 text-lg font-black leading-6 text-ink">첫 진단은 3분이면 충분합니다</p>
             </div>
@@ -113,7 +113,7 @@ export default function LandingPage() {
         {snapshot.status === "completed" ? (
           <FeedbackCard
             label="Next Step"
-            body="스타일 완료 내용을 다시 보거나, 다른 프로그램을 고르면서 다음 변화를 시작할 수 있습니다."
+            body="최근 스타일 체크 결과를 다시 보거나, 다른 프로그램을 고르면서 다음 변화를 시작할 수 있습니다."
           />
         ) : null}
       </div>

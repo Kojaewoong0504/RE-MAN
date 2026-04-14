@@ -1,9 +1,12 @@
 import type {
   AgentRequest,
   DailyAgentResponse,
+  DeepDiveRequest,
+  DeepDiveResponse,
   OnboardingAgentResponse
 } from "@/lib/agents/contracts";
 import {
+  validateDeepDiveResponse,
   validateDailyResponse,
   validateOnboardingResponse
 } from "@/lib/agents/contracts";
@@ -16,7 +19,7 @@ const DEFAULT_PRODUCTION_MAX_RETRIES = 2;
 const DEFAULT_LOCAL_MAX_RETRIES = 0;
 const RETRY_DELAY_MS = 2000;
 
-type AgentKind = "onboarding" | "daily";
+type AgentKind = "onboarding" | "daily" | "fit" | "color" | "occasion" | "closet";
 type InstructionMode = "default" | "smoke";
 type GeminiCallOptions = {
   timeoutMs?: number;
@@ -106,11 +109,37 @@ function getJsonShape(agent: AgentKind) {
 }`;
   }
 
-  return `{
+  if (agent === "daily") {
+    return `{
   "diagnosis": "오늘 코디 진단 1~2줄",
   "improvements": ["개선 포인트 1", "개선 포인트 2", "개선 포인트 3"],
   "today_action": "오늘 당장 할 수 있는 것 1가지",
   "tomorrow_preview": "내일 미션 예고 1줄"
+}`;
+  }
+
+  return `{
+  "title": "${
+    agent === "color"
+      ? "색 조합 체크 제목"
+      : agent === "occasion"
+        ? "상황별 코디 체크 제목"
+        : agent === "closet"
+          ? "내 옷장 다른 조합 제목"
+          : "핏 체크 제목"
+  }",
+  "diagnosis": "${
+    agent === "color"
+      ? "색/톤 균형 중심 진단 1~2줄"
+      : agent === "occasion"
+        ? "상황/목적 적합성 중심 진단 1~2줄"
+        : agent === "closet"
+          ? "옷장 안에서 가능한 다른 조합 진단 1~2줄"
+          : "핏/실루엣 중심 진단 1~2줄"
+  }",
+  "focus_points": ["체크 포인트 1", "체크 포인트 2", "체크 포인트 3"],
+  "recommendation": "현재 추천 조합에서 무엇을 어떻게 확인할지 1~2줄",
+  "action": "지금 가진 옷으로 바로 해볼 수 있는 행동 1가지"
 }`;
 }
 
@@ -164,10 +193,22 @@ function buildInstruction(
     "브랜드나 가격으로 사용자를 평가하지 마세요.",
     "improvements는 반드시 3개여야 합니다.",
     "today_action은 지금 가진 옷과 아이템으로 바로 할 수 있는 행동만 제안하세요.",
-    "Day 6 이전 구매 유도는 금지입니다. 쇼핑, 구매, 구입, 사세요 같은 제안을 하지 마세요.",
+    "사용자가 구매 후보를 명시적으로 요청하지 않았으므로 쇼핑, 구매, 구입, 사세요 같은 제안을 하지 마세요.",
     "daily-agent일 때는 바로 전날 피드백에서 사용자가 무엇을 반영했는지 먼저 비교하고, 같은 지적을 반복하지 말고 오늘 달라진 점을 기준으로 말하세요.",
     "기존 피드백 이력이 있다면 오늘 진단 첫 문장에서 어제와 비교해 무엇이 나아졌는지 또는 아직 남아 있는지 분명히 말하세요.",
-    `현재 작업: ${agent === "onboarding" ? "최초 온보딩 피드백" : "일일 피드백"}.`,
+    `현재 작업: ${
+      agent === "onboarding"
+        ? "스타일 체크 세션 결과"
+        : agent === "daily"
+          ? "선택형 루틴 피드백"
+          : agent === "fit"
+            ? "핏 deep dive"
+            : agent === "color"
+              ? "색 조합 deep dive"
+              : agent === "occasion"
+                ? "상황별 코디 deep dive"
+                : "내 옷장 다른 조합 deep dive"
+    }.`,
     `설문 응답:
 - current_style: ${payload.survey.current_style}
 - motivation: ${payload.survey.motivation}
@@ -182,7 +223,20 @@ function buildInstruction(
 - avoid: ${payload.closet_profile?.avoid || "미입력"}`,
     `기존 피드백 이력:
 ${history}`,
-    "onboarding-agent는 recommended_outfit을 반드시 포함하세요. 추천 조합은 현재 옷장 컨텍스트를 먼저 사용하고, Day 6 전 구매를 유도하지 마세요.",
+    agent === "fit" || agent === "color" || agent === "occasion" || agent === "closet"
+      ? `현재 세션 결과:
+${JSON.stringify((payload as DeepDiveRequest).current_feedback, null, 2)}
+
+${
+  agent === "fit"
+    ? "핏 deep dive는 새 추천을 많이 만들지 말고, 현재 추천 조합에서 상의 길이, 하의 핏, 밑단/신발 연결을 중심으로 설명하세요."
+    : agent === "color"
+      ? "색 조합 deep dive는 새 구매를 유도하지 말고, 현재 추천 조합과 사용자가 가진 옷 안에서 상의/하의/신발 톤 균형을 중심으로 설명하세요."
+      : agent === "occasion"
+        ? "상황별 코디 deep dive는 사용자의 motivation을 기준으로 소개팅, 출근, 주말 약속 같은 실제 상황에서 현재 추천 조합을 어떻게 조정할지 설명하세요. 새 구매는 유도하지 마세요."
+        : "내 옷장 다른 조합 deep dive는 closet_profile에 있는 상의, 하의, 신발, 겉옷 안에서만 다른 조합을 제안하세요. 새 구매나 없는 아이템을 제안하지 마세요."
+}`
+      : "onboarding-agent는 recommended_outfit을 반드시 포함하세요. 추천 조합은 현재 옷장 컨텍스트를 먼저 사용하고 구매를 유도하지 마세요.",
     "recommended_outfit.try_on_prompt는 별도 실착 이미지 생성 API에 넘길 수 있게 짧고 구체적으로 작성하세요.",
     "응답은 JSON만 반환하세요. 코드펜스 없이 순수 JSON만 반환하세요.",
     `JSON 스키마:
@@ -341,4 +395,20 @@ export async function generateDailyFeedback(
   }
 
   return response as DailyAgentResponse;
+}
+
+export async function generateDeepDiveFeedback(
+  payload: DeepDiveRequest,
+  options: GeminiCallOptions = {}
+) {
+  const response = await withRetry(
+    () => callGeminiApi(payload.module, payload, options),
+    options.maxRetries ?? getDefaultMaxRetries()
+  );
+
+  if (!validateDeepDiveResponse(response)) {
+    throw new Error("invalid_deep_dive_response");
+  }
+
+  return response as DeepDiveResponse;
 }

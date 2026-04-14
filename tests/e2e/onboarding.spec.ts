@@ -134,65 +134,101 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(page.getByAltText("업로드한 상품 이미지")).toBeVisible();
   await expect(page.getByRole("button", { name: "실제 실착 생성 비활성화" })).toBeDisabled();
   await expect(page.getByText("현재는 실제 실착 생성이 아니라")).toBeVisible();
-  await page.getByRole("link", { name: "Day 1 미션 시작하기" }).click();
-  await expect(page).toHaveURL(/\/programs\/style\/day\/1$/);
-  await expect(page.getByText("오늘 미션 하나만 끝내면 됩니다")).toBeVisible();
-  await page.getByRole("link", { name: "Day 2 피드백 시작하기" }).click();
-  await expect(page).toHaveURL(/\/programs\/style\/day\/2$/);
-  await expect(
-    page.getByText("어제 피드백에서 가장 쉬운 한 가지만 반영해서 다시 올려보세요.")
-  ).toBeVisible();
-
-  const dailyResponsePromise = page.waitForResponse(
-    (response) => response.url().includes("/api/daily") && response.request().method() === "POST"
+  await expect(page.getByRole("heading", { name: "더 보고 싶은 것만 고르세요" })).toBeVisible();
+  const fitCheckResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/deep-dive") && response.request().method() === "POST"
   );
-
-  await page.locator("#photo-upload").setInputFiles(tinyPng);
-  await page.getByRole("button", { name: "오늘 피드백 받기" }).click();
-
-  const dailyResponse = await dailyResponsePromise;
-  expect(dailyResponse.ok()).toBeTruthy();
-  const dailyPayload = dailyResponse.request().postDataJSON();
-  expect(typeof dailyPayload.image).toBe("string");
-  expect(dailyPayload.image.startsWith("data:image/jpeg;base64,")).toBeTruthy();
+  await page.getByRole("button", { name: /핏 더 보기/ }).click();
+  const fitCheckResponse = await fitCheckResponsePromise;
+  expect(fitCheckResponse.ok()).toBeTruthy();
+  const fitCheckPayload = fitCheckResponse.request().postDataJSON();
+  expect(fitCheckPayload.module).toBe("fit");
+  expect(fitCheckPayload.current_feedback.recommended_outfit.title).toBe(
+    "지금 가진 옷으로 만드는 깔끔한 기본 조합"
+  );
+  await expect(page.getByRole("heading", { name: "핏 체크" })).toBeVisible();
+  await expect(page.getByText("상의 끝이 골반을 너무 많이 덮으면")).toBeVisible();
+  const colorCheckResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/deep-dive") && response.request().method() === "POST"
+  );
+  await page.getByRole("button", { name: /색 조합 보기/ }).click();
+  const colorCheckResponse = await colorCheckResponsePromise;
+  expect(colorCheckResponse.ok()).toBeTruthy();
+  const colorCheckPayload = colorCheckResponse.request().postDataJSON();
+  expect(colorCheckPayload.module).toBe("color");
+  await expect(page.getByText("Color Check")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "색 조합 체크" })).toBeVisible();
+  const occasionCheckResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/deep-dive") && response.request().method() === "POST"
+  );
+  await page.getByRole("button", { name: /상황별 코디/ }).click();
+  const occasionCheckResponse = await occasionCheckResponsePromise;
+  expect(occasionCheckResponse.ok()).toBeTruthy();
+  const occasionCheckPayload = occasionCheckResponse.request().postDataJSON();
+  expect(occasionCheckPayload.module).toBe("occasion");
+  await expect(page.getByText("Occasion Check")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "상황별 코디 체크" })).toBeVisible();
+  const closetCheckResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/deep-dive") && response.request().method() === "POST"
+  );
+  await page.getByRole("button", { name: /내 옷장 다른 조합/ }).click();
+  const closetCheckResponse = await closetCheckResponsePromise;
+  expect(closetCheckResponse.ok()).toBeTruthy();
+  const closetCheckPayload = closetCheckResponse.request().postDataJSON();
+  expect(closetCheckPayload.module).toBe("closet");
+  expect(closetCheckPayload.closet_profile.tops).toContain("무지 티셔츠");
+  await expect(page.getByText("Closet Remix")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "내 옷장 다른 조합" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "원하면 루틴 모드로 이어가기" })).toBeVisible();
+  await page.getByRole("link", { name: "결과 저장하고 홈으로" }).click();
+  await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByText(
-      "Day 1보다 오늘 코디가 더 정돈돼 보이고, 핵심 아이템이 눈에 더 잘 들어옵니다.",
-      { exact: true }
-    )
+    page.getByRole("heading", { name: "최근 스타일 체크 결과에서 바로 이어가면 됩니다" })
   ).toBeVisible();
-  await expect(
-    page.getByText("내일은 오늘 코디에서 딱 한 가지만 바꿔볼게요.", {
-      exact: true
-    })
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Day 3로 이동" })).toBeVisible();
+  await expect(page.getByText("최근 스타일 체크 결과가 저장되어 있습니다.")).toBeVisible();
+});
 
-  for (const nextDay of [3, 4, 5, 6, 7]) {
-    await page.getByRole("link", { name: `Day ${nextDay}로 이동` }).click();
-    await expect(page).toHaveURL(new RegExp(`/programs/style/day/${nextDay}$`));
+test("result action hub can start a new style check", async ({ page }) => {
+  const uploadedImage = `data:image/png;base64,${tinyPng.buffer.toString("base64")}`;
 
-    const nextResponsePromise = page.waitForResponse(
-      (response) => response.url().includes("/api/daily") && response.request().method() === "POST"
+  await page.addInitScript(({ outfit, uploadedImage }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원",
+          style_goal: "전체적인 스타일 리셋",
+          confidence_level: "배우는 중"
+        },
+        closet_profile: {
+          tops: "무지 티셔츠",
+          bottoms: "청바지",
+          shoes: "흰색 스니커즈"
+        },
+        image: uploadedImage,
+        feedback: {
+          diagnosis: "기존 스타일 체크 결과",
+          improvements: ["a", "b", "c"],
+          recommended_outfit: outfit,
+          today_action: "오늘 바로 할 것",
+          day1_mission: "루틴 미션"
+        },
+        feedback_history: [{ day: 1, summary: "긴 기록" }]
+      })
     );
+  }, { outfit: recommendedOutfit, uploadedImage });
 
-    await page.locator("#photo-upload").setInputFiles(tinyPng);
-    await page.getByRole("button", { name: "오늘 피드백 받기" }).click();
-
-    const nextResponse = await nextResponsePromise;
-    expect(nextResponse.ok()).toBeTruthy();
-
-    if (nextDay < 7) {
-      await expect(page.getByRole("link", { name: `Day ${nextDay + 1}로 이동` })).toBeVisible();
-    }
-  }
-
-  await expect(page.getByRole("heading", { name: "7일 피드백을 끝냈습니다" })).toBeVisible();
-  await expect(page.getByText("완료한 일수 7/7일")).toBeVisible();
-  await expect(page.getByText("Before Day 1")).toBeVisible();
-  await expect(page.getByText("After Day 7")).toBeVisible();
-  await expect(page.getByText("Keep This Going")).toBeVisible();
-  await expect(page.getByRole("button", { name: "온보딩 결과 다시 보기" })).toBeVisible();
+  await page.goto("/programs/style/onboarding/result");
+  await page.getByRole("button", { name: /새 스타일 체크 시작하기/ }).click();
+  await expect(page).toHaveURL(/\/programs\/style\/onboarding\/upload$/);
+  await expect(page.getByRole("heading", { name: "사진이 이번 체크의 기준입니다" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
 });
 
 test("onboarding shows fallback when storage upload fails", async ({ page }) => {
@@ -279,7 +315,7 @@ test("day flow shows fallback when storage delete fails", async ({ page }) => {
   await fillUploadContext(page);
   await page.getByRole("button", { name: "AI 분석 시작하기" }).click();
   await page.waitForURL(/\/programs\/style\/onboarding\/result$/);
-  await page.getByRole("link", { name: "Day 1 미션 시작하기" }).click();
+  await page.getByRole("link", { name: "원하면 루틴 모드로 이어가기" }).click();
   await page.getByRole("link", { name: "Day 2 피드백 시작하기" }).click();
 
   await page.route("**/api/daily", async (route) => {
@@ -334,12 +370,12 @@ test("home shows resume branch for active style user", async ({ page }) => {
 
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "지금 하던 변화를 바로 이어가면 됩니다" })
+    page.getByRole("heading", { name: "최근 스타일 체크 결과에서 바로 이어가면 됩니다" })
   ).toBeVisible();
-  await expect(page.getByText("스타일 프로그램 Day 3 진행 중")).toBeVisible();
+  await expect(page.getByText("최근 스타일 체크 결과가 저장되어 있습니다.")).toBeVisible();
   await expect(page.getByRole("link", { name: "프로그램 보기" })).toBeVisible();
-  await page.getByRole("link", { name: "스타일 이어서 하기" }).click();
-  await expect(page).toHaveURL(/\/programs\/style\/day\/3$/);
+  await page.getByRole("link", { name: "최근 스타일 체크 보기" }).click();
+  await expect(page).toHaveURL(/\/programs\/style\/onboarding\/result$/);
 });
 
 test("home shows completed branch for finished style user", async ({ page }) => {
@@ -381,15 +417,15 @@ test("home shows completed branch for finished style user", async ({ page }) => 
 
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "한 프로그램을 끝냈다면, 다음 선택만 남았습니다" })
+    page.getByRole("heading", { name: "결과를 다시 보고, 다음 선택을 고르면 됩니다" })
   ).toBeVisible();
-  await expect(page.getByText("스타일 7일 프로그램을 완료했습니다.")).toBeVisible();
+  await expect(page.getByText("루틴 기록이 있더라도 기본 복귀는 최근 스타일 체크 결과입니다.")).toBeVisible();
   await expect(
-    page.getByText("스타일 완료 내용을 다시 보거나, 다른 프로그램을 고르면서 다음 변화를 시작할 수 있습니다.")
+    page.getByText("최근 스타일 체크 결과를 다시 보거나, 다른 프로그램을 고르면서 다음 변화를 시작할 수 있습니다.")
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "다른 프로그램 보기" })).toBeVisible();
-  await page.getByRole("link", { name: "스타일 완료 내용 보기" }).click();
-  await expect(page).toHaveURL(/\/programs\/style\/day\/7$/);
+  await page.getByRole("link", { name: "최근 스타일 체크 보기" }).click();
+  await expect(page).toHaveURL(/\/programs\/style\/onboarding\/result$/);
 });
 
 test("program hub opens coming soon program placeholder", async ({ page }) => {
@@ -409,4 +445,102 @@ test("protected profile redirects to login when no session is present", async ({
     page.getByRole("heading", { name: "진행한 변화와 계정을 함께 관리합니다" })
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Google로 계속하기" })).toBeVisible();
+});
+
+test("profile shows saved style check context for signed-in users", async ({ page }) => {
+  await page.addInitScript(({ outfit }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        user_id: "e2e-try-on-user",
+        email: "try-on@example.com",
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원",
+          style_goal: "전체적인 스타일 리셋",
+          confidence_level: "배우는 중"
+        },
+        closet_profile: {
+          tops: "무지 티셔츠, 후드티",
+          bottoms: "청바지, 검정 슬랙스",
+          shoes: "흰색 스니커즈",
+          outerwear: "셔츠"
+        },
+        feedback: {
+          diagnosis: "최근 스타일 체크 진단",
+          improvements: ["핏", "색", "신발"],
+          recommended_outfit: outfit,
+          today_action: "오늘은 상의 길이를 비교해보세요.",
+          day1_mission: "옷장 조합을 확인해보세요."
+        },
+        feedback_history: [
+          {
+            day: 1,
+            summary: "최근 스타일 체크 진단",
+            action: "오늘은 상의 길이를 비교해보세요."
+          }
+        ]
+      })
+    );
+  }, { outfit: recommendedOutfit });
+
+  await addTryOnSession(page);
+  await page.goto("/profile");
+
+  await expect(
+    page.getByRole("heading", { name: "계정과 프로그램 상태를 한 곳에서 봅니다" })
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "기본 조합" })).toBeVisible();
+  await expect(page.getByText("상의 무지 티셔츠, 후드티")).toBeVisible();
+  await expect(page.getByText("Day 1: 최근 스타일 체크 진단")).toBeVisible();
+  await page.getByRole("link", { name: /최근 스타일 체크 보기/ }).click();
+  await expect(page).toHaveURL(/\/programs\/style\/onboarding\/result$/);
+});
+
+test("settings saves style profile into the next analysis context", async ({ page }) => {
+  await addTryOnSession(page);
+  await page.goto("/settings");
+
+  await expect(
+    page.getByRole("heading", { name: "계정에 붙일 기본 정보를 정리합니다" })
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "다음 체크에 쓸 기준" })).toBeVisible();
+
+  await page.getByPlaceholder("예: 소개팅 전에 단정한 인상 만들기").fill("면접 전 단정한 인상");
+  await page.getByLabel("Confidence").selectOption("조금 자신 있음");
+  await page.getByPlaceholder("무지 티셔츠, 셔츠").fill("네이비 셔츠");
+  await page.getByPlaceholder("청바지, 검정 슬랙스").fill("검정 슬랙스");
+  await page.getByPlaceholder("흰색 스니커즈").fill("검정 로퍼");
+  await page.getByPlaceholder("셔츠, 가디건, 자켓").fill("차콜 자켓");
+  await page.getByPlaceholder("피하고 싶은 핏, 색, 아이템").fill("너무 큰 후드티");
+  await page.getByRole("button", { name: "정보 저장" }).click();
+  await expect(page.getByText("저장되었습니다.")).toBeVisible();
+
+  await page.goto("/programs/style/onboarding/survey");
+  await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
+  await page.getByRole("button", { name: "직장 이미지 변화" }).click();
+  await page.getByRole("button", { name: "15~30만원" }).click();
+  await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
+  await page.locator("#photo-upload").setInputFiles(tinyPng);
+  await expect(page.locator('input[value="네이비 셔츠"]')).toBeVisible();
+  await expect(page.locator('input[value="검정 슬랙스"]')).toBeVisible();
+  await expect(page.locator('input[value="검정 로퍼"]')).toBeVisible();
+
+  const onboardingResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/feedback") && response.request().method() === "POST"
+  );
+
+  await page.getByRole("button", { name: "AI 분석 시작하기" }).click();
+  const onboardingResponse = await onboardingResponsePromise;
+  const onboardingPayload = onboardingResponse.request().postDataJSON();
+
+  expect(onboardingPayload.survey.style_goal).toBe("면접 전 단정한 인상");
+  expect(onboardingPayload.survey.confidence_level).toBe("조금 자신 있음");
+  expect(onboardingPayload.closet_profile.tops).toBe("네이비 셔츠");
+  expect(onboardingPayload.closet_profile.bottoms).toBe("검정 슬랙스");
+  expect(onboardingPayload.closet_profile.shoes).toBe("검정 로퍼");
+  expect(onboardingPayload.closet_profile.outerwear).toBe("차콜 자켓");
+  expect(onboardingPayload.closet_profile.avoid).toBe("너무 큰 후드티");
 });

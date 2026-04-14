@@ -52,6 +52,21 @@ export type DailyAgentResponse = {
   tomorrow_preview: string;
 };
 
+export type DeepDiveModule = "fit" | "color" | "occasion" | "closet";
+
+export type DeepDiveRequest = AgentRequest & {
+  module: DeepDiveModule;
+  current_feedback: OnboardingAgentResponse;
+};
+
+export type DeepDiveResponse = {
+  title: string;
+  diagnosis: string;
+  focus_points: [string, string, string];
+  recommendation: string;
+  action: string;
+};
+
 export const FALLBACK_MESSAGE =
   "지금 사진 분석이 잠깐 어려운 상황이에요. 오늘 입은 옷을 간단히 텍스트로 설명해주시면 바로 피드백 드릴게요.";
 
@@ -158,5 +173,35 @@ export function validateDailyResponse(payload: unknown): payload is DailyAgentRe
     isNonEmptyString(response.today_action) &&
     isNonEmptyString(response.tomorrow_preview) &&
     response.day1_mission === undefined
+  );
+}
+
+export function validateDeepDiveRequest(payload: unknown): payload is DeepDiveRequest {
+  if (!validateAgentRequest(payload)) {
+    return false;
+  }
+
+  const request = payload as Record<string, unknown>;
+  return (
+    (request.module === "fit" ||
+      request.module === "color" ||
+      request.module === "occasion" ||
+      request.module === "closet") &&
+    validateOnboardingResponse(request.current_feedback)
+  );
+}
+
+export function validateDeepDiveResponse(payload: unknown): payload is DeepDiveResponse {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  const response = payload as Record<string, unknown>;
+  return (
+    isNonEmptyString(response.title) &&
+    isNonEmptyString(response.diagnosis) &&
+    validateImprovements(response.focus_points) &&
+    isNonEmptyString(response.recommendation) &&
+    isNonEmptyString(response.action)
   );
 }

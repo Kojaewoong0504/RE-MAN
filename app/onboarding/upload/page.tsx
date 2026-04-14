@@ -85,16 +85,16 @@ export default function UploadPage() {
   return (
     <main className="app-shell space-y-7">
       <div className="space-y-5 pt-4">
-        <div className="flex items-center justify-between border-b border-black/15 pb-4">
+        <div className="app-header">
           <div className="flex items-center gap-4">
             <button
-              className="text-lg"
+              className="app-back-button"
               onClick={() => router.push("/programs/style/onboarding/survey")}
               type="button"
             >
               ←
             </button>
-            <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
+            <p className="app-brand">RE:MAN</p>
           </div>
           <AccountAccessButton />
         </div>
@@ -141,7 +141,7 @@ export default function UploadPage() {
               <label key={field.key} className="grid gap-2">
                 <span className="text-sm font-black text-ink">{field.label}</span>
                 <input
-                  className="min-h-12 border border-black/20 bg-white px-3 text-sm font-semibold text-ink outline-none placeholder:text-black/35 focus:border-black"
+                  className="ui-input"
                   onChange={(event) =>
                     setClosetProfile((current) => ({
                       ...current,
@@ -170,11 +170,7 @@ export default function UploadPage() {
                 <button
                   key={goal}
                   aria-pressed={selected}
-                  className={`flex items-center justify-between border px-4 py-4 text-left text-base font-bold transition ${
-                    selected
-                      ? "border-black bg-black text-[#fcf8ef]"
-                      : "border-black/15 bg-[#fcf8ef] text-ink"
-                  }`}
+                  className={`ui-choice flex items-center justify-between py-4 text-base ${selected ? "ui-choice-selected" : ""}`}
                   onClick={() => setStyleGoal(goal)}
                   type="button"
                 >
@@ -197,11 +193,7 @@ export default function UploadPage() {
               <button
                 key={item}
                 aria-pressed={confidenceLevel === item}
-                className={`border px-2 py-3 text-center text-sm font-bold transition ${
-                  confidenceLevel === item
-                    ? "border-black bg-black text-[#fcf8ef]"
-                    : "border-black/15 bg-[#fcf8ef] text-ink"
-                }`}
+                className={`ui-choice px-2 py-3 text-center text-sm ${confidenceLevel === item ? "ui-choice-selected" : ""}`}
                 onClick={() => setConfidenceLevel(item)}
                 type="button"
               >

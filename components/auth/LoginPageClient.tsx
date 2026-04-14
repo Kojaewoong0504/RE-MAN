@@ -64,14 +64,14 @@ export function LoginPageClient({ returnTo }: LoginPageClientProps) {
   return (
     <main className="app-shell flex min-h-screen flex-col justify-between">
       <div className="space-y-8 pt-6">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4">
+        <div className="app-header">
           <div className="flex items-center gap-4">
-            <Link className="text-lg" href="/">
+            <Link className="app-back-button" href="/">
               ←
             </Link>
-            <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
+            <p className="app-brand">RE:MAN</p>
           </div>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black bg-[#f1eadb] text-sm font-bold">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-[#fffaf0] text-sm font-bold">
             R
           </div>
         </div>
@@ -85,10 +85,10 @@ export function LoginPageClient({ returnTo }: LoginPageClientProps) {
             프로그램 자체는 계속 지금처럼 가볍게 시작할 수 있습니다.
           </p>
         </div>
-        <section className="space-y-4 border-2 border-black bg-[#fcf8ef] p-5">
+        <section className="ui-panel space-y-4">
           <p className="poster-kicker">Google Login</p>
           <button
-            className="flex h-14 w-full items-center justify-center border-2 border-black bg-accent text-base font-black text-black disabled:opacity-40"
+            className="ui-button-accent h-14 w-full text-base"
             disabled={isLoading}
             onClick={() => void handleGoogleLogin()}
             type="button"

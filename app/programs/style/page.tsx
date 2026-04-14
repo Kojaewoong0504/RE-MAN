@@ -28,24 +28,24 @@ export default function StyleProgramPage() {
   return (
     <main className="app-shell flex min-h-screen flex-col justify-between">
       <div className="space-y-6 pt-6">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4">
+        <div className="app-header">
           <div className="flex items-center gap-4">
-            <Link className="text-lg" href="/programs">
+            <Link className="app-back-button" href="/programs">
               ←
             </Link>
-            <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
+            <p className="app-brand">RE:MAN</p>
           </div>
           <AccountAccessButton />
         </div>
         <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted">Style Program</p>
         <h1 className="max-w-sm text-[40px] font-black leading-[1.03] tracking-[-0.05em] text-ink">
-          지금 가진 옷에서 시작하는 7일 스타일 코칭
+          지금 가진 옷에서 시작하는 스타일 체크
         </h1>
         <p className="max-w-md text-[17px] font-medium leading-7 text-muted">
-          첫날엔 현재 인상을 읽고, 그 뒤에는 하루에 한 가지만 더 또렷하게 만들도록
-          안내합니다.
+          하루 안에 현재 인상, 추천 조합, 레퍼런스/실착 가능성을 확인합니다. 루틴은
+          원할 때만 선택합니다.
         </p>
-        <div className="overflow-hidden border-2 border-black bg-[#fcf8ef]">
+        <div className="overflow-hidden border border-black/15 bg-[var(--color-surface-raised)]">
           <Image
             alt="스타일 프로그램 소개 이미지"
             className="aspect-[4/3] w-full object-cover grayscale"
@@ -55,24 +55,24 @@ export default function StyleProgramPage() {
           />
         </div>
         <div className="grid gap-3">
-          <div className="border-2 border-black bg-[#fcf8ef] p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted">Day 1</p>
+          <div className="ui-panel">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted">Session</p>
             <p className="mt-2 text-lg font-black leading-6 text-ink">
-              지금 가진 옷부터 다시 봅니다
+              사진과 옷장 스냅샷으로 바로 결과를 봅니다
             </p>
           </div>
-          <div className="border-2 border-black bg-accent p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-black/70">
+          <div className="ui-panel-accent">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--color-accent-ink)]/70">
               Promise
             </p>
-            <p className="mt-2 text-lg font-black leading-6 text-black">
-              Day 6 전까지는 구매를 밀지 않고, 지금 가진 조합 안에서만 바꿉니다.
+            <p className="mt-2 text-lg font-black leading-6">
+              구매를 먼저 밀지 않고, 지금 가진 조합 안에서 가능한 변화를 먼저 봅니다.
             </p>
           </div>
-          <div className="border-2 border-black bg-[#fcf8ef] p-4">
+          <div className="ui-panel">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted">Return</p>
             <p className="mt-2 text-lg font-black leading-6 text-ink">
-              다시 들어오면 지금 진행 중인 day로 바로 이어집니다.
+              다시 들어오면 최근 스타일 체크 결과로 바로 이어집니다.
             </p>
           </div>
         </div>
@@ -90,8 +90,8 @@ export default function StyleProgramPage() {
             status === "new"
               ? "스타일 프로그램 시작하기"
               : status === "active"
-              ? "스타일 이어서 하기"
-                : "스타일 완료 내용 보기"
+              ? "최근 스타일 체크 보기"
+                : "최근 스타일 체크 보기"
           }
         />
       </div>

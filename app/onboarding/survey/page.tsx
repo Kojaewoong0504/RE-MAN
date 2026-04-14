@@ -28,16 +28,14 @@ export default function SurveyPage() {
   return (
     <main className="app-shell space-y-8">
       <div className="space-y-8 pt-6">
-        <div className="flex items-center justify-between border-b border-black/15 pb-4">
+        <div className="app-header">
           <div className="flex items-center gap-4">
-            <button className="text-lg" onClick={() => router.push("/programs/style")} type="button">
+            <button className="app-back-button" onClick={() => router.push("/programs/style")} type="button">
               ←
             </button>
             <div>
-              <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
-              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted">
-                Style Check
-              </p>
+              <p className="app-brand">RE:MAN</p>
+              <p className="app-subbrand">Style Check</p>
             </div>
           </div>
           <AccountAccessButton />
@@ -85,7 +83,7 @@ export default function SurveyPage() {
         value={survey.motivation}
       />
       <SurveyCard
-        caption="Day 6 전까지는 구매를 강요하지 않습니다. 예산 감각만 맞춰 둡니다."
+        caption="기본 체크에서는 구매를 강요하지 않습니다. 예산 감각만 맞춰 둡니다."
         onChange={(budget) => setSurvey((current) => ({ ...current, budget }))}
         options={["5만원 이하", "5~15만원", "15~30만원", "30만원 이상"]}
         title="한 달 스타일링 예산은?"

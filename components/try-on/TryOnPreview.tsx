@@ -364,7 +364,7 @@ export function TryOnPreview({ personImage, prompt, recommendation }: TryOnPrevi
       </div>
 
       {!personImage ? (
-        <div className="border border-black/15 bg-[#fcf8ef] p-5">
+        <div className="ui-panel">
           <p className="text-sm font-bold leading-6 text-ink">
             텍스트 설명으로 진행한 경우 실착 미리보기를 만들 수 없습니다. 전신 사진을 다시
             업로드하면 상품 이미지와 함께 확인할 수 있습니다.
@@ -372,7 +372,7 @@ export function TryOnPreview({ personImage, prompt, recommendation }: TryOnPrevi
         </div>
       ) : (
         <div className="grid gap-4">
-          <div className="space-y-3 bg-[#fcf8ef] p-4">
+          <div className="ui-panel space-y-3">
             <div className="space-y-1">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-muted">
                 Reference Images
@@ -389,11 +389,7 @@ export function TryOnPreview({ personImage, prompt, recommendation }: TryOnPrevi
                   <button
                     key={preset.id}
                     aria-pressed={selected}
-                    className={`border p-3 text-left transition ${
-                      selected
-                        ? "border-black bg-black text-[#fcf8ef]"
-                        : "border-black/15 bg-white text-ink"
-                    }`}
+                    className={`ui-choice p-3 text-left ${selected ? "ui-choice-selected" : ""}`}
                     onClick={() => handleReferenceSelect(preset)}
                     type="button"
                   >
@@ -408,7 +404,7 @@ export function TryOnPreview({ personImage, prompt, recommendation }: TryOnPrevi
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="bg-[#fcf8ef] p-4">
+            <div className="ui-panel">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-muted">
                 Person Image
               </p>
@@ -421,7 +417,7 @@ export function TryOnPreview({ personImage, prompt, recommendation }: TryOnPrevi
                 width={480}
               />
             </div>
-            <div className="bg-[#fcf8ef] p-4">
+            <div className="ui-panel">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-muted">
                 Product Image
               </p>
@@ -435,15 +431,15 @@ export function TryOnPreview({ personImage, prompt, recommendation }: TryOnPrevi
                   width={480}
                 />
               ) : (
-                <div className="mt-3 flex aspect-[3/4] items-center justify-center border border-dashed border-black/30 bg-[#f4ecdd] px-5 text-center text-sm font-black leading-6 text-ink">
+                <div className="mt-3 flex aspect-[3/4] items-center justify-center border border-dashed border-black/30 bg-surface px-5 text-center text-sm font-black leading-6 text-ink">
                   입혀보고 싶은 상품 이미지를 올려주세요
                 </div>
               )}
             </div>
           </div>
 
-          <div className="bg-accent p-4 text-black">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-black/70">
+          <div className="ui-panel-accent">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--color-accent-ink)]/70">
               Prompt
             </p>
             <p className="mt-2 text-sm font-bold leading-6">{prompt}</p>
@@ -451,7 +447,7 @@ export function TryOnPreview({ personImage, prompt, recommendation }: TryOnPrevi
 
           <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <label
-              className="block cursor-pointer border border-black/20 bg-[#fcf8ef] px-4 py-4 text-center text-sm font-black text-ink"
+              className="ui-button-secondary cursor-pointer py-4"
               htmlFor="try-on-product-upload"
             >
               내 상품 이미지 선택
@@ -472,7 +468,7 @@ export function TryOnPreview({ personImage, prompt, recommendation }: TryOnPrevi
               type="file"
             />
             <button
-              className="border border-black bg-black px-5 py-4 text-sm font-black text-[#fcf8ef] disabled:cursor-not-allowed disabled:bg-black/40"
+              className="ui-button px-5 py-4 disabled:bg-black/40"
               disabled={isDisabled}
               onClick={handleTryOn}
               type="button"
@@ -486,7 +482,7 @@ export function TryOnPreview({ personImage, prompt, recommendation }: TryOnPrevi
           </div>
 
           {!providerState.realGenerationEnabled ? (
-            <p className="border border-black/15 bg-[#fcf8ef] p-4 text-sm font-black leading-6 text-ink">
+            <p className="ui-panel text-sm font-black leading-6 text-ink">
               실제 실착 생성은 아직 활성화되지 않았습니다. `TRY_ON_PROVIDER=vertex`와
               `VERTEX_*` 서버 환경변수가 준비된 뒤에만 생성 버튼을 열 수 있습니다.
               {providerState.missingConfig.length > 0

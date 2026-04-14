@@ -16,7 +16,7 @@ const programs: ProgramCard[] = [
   {
     href: "/programs/style",
     title: "스타일",
-    description: "지금 가진 옷에서 시작하는 7일 스타일 코칭",
+    description: "지금 가진 옷에서 시작하는 스타일 체크",
     status: "지금 시작 가능",
     icon: "스타일",
     featured: true,
@@ -53,10 +53,10 @@ export default function ProgramsPage() {
   return (
     <main className="app-shell space-y-8">
       <div className="space-y-4 pt-6">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4">
+        <div className="app-header">
           <div className="flex items-center gap-4">
             <span className="text-lg">≡</span>
-            <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
+            <p className="app-brand">RE:MAN</p>
           </div>
           <AccountAccessButton />
         </div>
@@ -66,14 +66,14 @@ export default function ProgramsPage() {
           <br />
           당신의 첫 변화.
         </h1>
-        <div className="inline-block border-2 border-black bg-accent px-4 py-3">
-          <span className="text-base font-black text-black">신규 방문자: Day 0</span>
+        <div className="inline-block border border-black bg-[var(--color-accent)] px-4 py-3">
+          <span className="text-base font-black text-[var(--color-accent-ink)]">신규 방문자: Day 0</span>
         </div>
       </div>
       <section className="space-y-5">
         <p className="text-lg font-black tracking-tight text-ink">변화 프로그램</p>
         <Link
-          className="block border-2 border-black bg-[#fcf8ef] p-5 transition hover:-translate-y-0.5"
+          className="ui-panel block transition hover:-translate-y-0.5"
           href={featuredProgram.href}
         >
           <div className="mb-6 flex items-start justify-between">
@@ -89,7 +89,7 @@ export default function ProgramsPage() {
               {featuredProgram.icon}
             </span>
           </div>
-          <div className="mb-4 overflow-hidden border-2 border-black">
+          <div className="mb-4 overflow-hidden border border-black/15">
             <Image
               alt="스타일 프로그램 대표 이미지"
               className="aspect-video w-full object-cover grayscale"
@@ -101,7 +101,7 @@ export default function ProgramsPage() {
           <p className="mb-5 text-base font-medium leading-7 text-muted">
             {featuredProgram.description}
           </p>
-          <div className="w-full bg-black py-4 text-center text-base font-bold text-[#fcf8ef] transition hover:bg-accent hover:text-black">
+          <div className="ui-button w-full py-4 text-base">
             프로그램 시작하기
           </div>
         </Link>
@@ -109,7 +109,7 @@ export default function ProgramsPage() {
           {queuedPrograms.slice(0, 2).map((program) => (
             <Link
               key={program.title}
-              className="flex min-h-[180px] flex-col justify-between border-2 border-black bg-[#fcf8ef] p-4"
+              className="ui-panel flex min-h-[180px] flex-col justify-between"
               href={program.href}
             >
               <div className="flex items-start justify-between">
@@ -127,7 +127,7 @@ export default function ProgramsPage() {
             </Link>
           ))}
           <Link
-            className="col-span-2 flex items-center justify-between border-2 border-black bg-[#fcf8ef] p-4"
+            className="ui-panel col-span-2 flex items-center justify-between"
             href={queuedPrograms[2].href}
           >
             <div className="flex items-center gap-4">
@@ -147,9 +147,9 @@ export default function ProgramsPage() {
           </Link>
         </div>
       </section>
-      <section className="rotate-[1deg] border-2 border-black bg-accent p-5 pb-28">
-        <p className="text-lg font-black tracking-tight text-black">시작 팁</p>
-        <p className="mt-2 text-sm font-semibold leading-6 text-black">
+      <section className="ui-panel-accent p-5 pb-28">
+        <p className="text-lg font-black tracking-tight">시작 팁</p>
+        <p className="mt-2 text-sm font-semibold leading-6">
           첫 진단은 3분이면 충분합니다. 지금 스타일 프로그램을 시작해 당신의 잠재력을
           확인하세요.
         </p>

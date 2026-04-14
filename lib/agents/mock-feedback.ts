@@ -1,6 +1,8 @@
 import type {
   AgentRequest,
   DailyAgentResponse,
+  DeepDiveRequest,
+  DeepDiveResponse,
   OnboardingAgentResponse
 } from "@/lib/agents/contracts";
 
@@ -64,5 +66,67 @@ export function buildMockDailyFeedback(payload: AgentRequest): DailyAgentRespons
     tomorrow_preview:
       tomorrowPreviewByDay[currentDay] ??
       "내일은 오늘 코디에서 딱 한 가지만 바꿔볼게요."
+  };
+}
+
+export function buildMockDeepDiveFeedback(payload: DeepDiveRequest): DeepDiveResponse {
+  if (payload.module === "color") {
+    return {
+      title: "색 조합 체크",
+      diagnosis: `${payload.survey.current_style} 기준으로 보면 색이 크게 튀지는 않지만, 상의와 신발 톤이 따로 보이면 전체 인상이 덜 정돈돼 보일 수 있습니다.`,
+      focus_points: [
+        "상의와 신발 중 하나를 비슷한 밝기로 맞추면 조합이 더 안정적으로 보여요.",
+        "하의가 어두우면 상의는 너무 진한 색보다 밝은 중간 톤이 덜 무거워 보입니다.",
+        "색을 많이 늘리기보다 검정, 흰색, 데님, 베이지 중 두세 가지 안에서 먼저 맞추세요."
+      ],
+      recommendation: `${payload.current_feedback.recommended_outfit.items.join(" + ")} 조합에서 상의와 신발 톤이 서로 너무 멀어지지 않게 맞춰보세요.`,
+      action: "지금 가진 신발 중 상의와 가장 비슷한 밝기의 한 켤레를 골라 사진으로 비교해보세요."
+    };
+  }
+
+  if (payload.module === "occasion") {
+    return {
+      title: "상황별 코디 체크",
+      diagnosis: `${payload.survey.motivation} 상황에서는 새 옷보다 지금 조합을 얼마나 단정하게 보이게 정리하는지가 먼저입니다.`,
+      focus_points: [
+        "소개팅이나 첫 만남이면 너무 편한 인상보다 상의와 신발의 단정함을 먼저 보세요.",
+        "출근이나 발표처럼 신뢰가 중요한 상황이면 색 수를 줄이고 주름을 정리하는 편이 안전합니다.",
+        "주말 약속이면 편안함은 유지하되 신발과 겉옷 하나로 외출감을 더하면 됩니다."
+      ],
+      recommendation: `${payload.current_feedback.recommended_outfit.items.join(" + ")} 조합은 ${payload.survey.motivation} 기준으로 과하지 않게 정리하기 좋은 출발점입니다.`,
+      action: "오늘 갈 장소를 하나 정하고, 그 장소에서 너무 집안복처럼 보이는 요소가 있는지만 먼저 빼보세요."
+    };
+  }
+
+  if (payload.module === "closet") {
+    const tops = payload.closet_profile?.tops || "가장 깔끔한 상의";
+    const bottoms = payload.closet_profile?.bottoms || "주름이 적은 바지";
+    const shoes = payload.closet_profile?.shoes || "가장 단정한 신발";
+    const outerwear = payload.closet_profile?.outerwear || "가벼운 겉옷";
+
+    return {
+      title: "내 옷장 다른 조합",
+      diagnosis:
+        "지금 추천 조합이 기준점이라면, 옷장 안에서 바꿔볼 수 있는 후보는 상의나 겉옷 하나를 바꾸는 쪽이 가장 안전합니다.",
+      focus_points: [
+        `${tops}는 그대로 두고 ${bottoms}의 주름과 기장만 정리하면 기본 조합으로 쓸 수 있어요.`,
+        `${outerwear}가 있다면 상의 위에 하나만 더해도 집안복 느낌이 줄어듭니다.`,
+        `${shoes}는 전체 톤을 묶는 역할이므로 가장 덜 낡아 보이는 것을 먼저 고르세요.`
+      ],
+      recommendation: `${tops} + ${bottoms} + ${shoes} 조합을 기본으로 두고, 필요할 때 ${outerwear}만 더해보세요.`,
+      action: "옷장에서 상의 2개와 바지 1개만 꺼내 같은 신발로 번갈아 입어보고 사진을 비교해보세요."
+    };
+  }
+
+  return {
+    title: "핏 체크",
+    diagnosis: `${payload.survey.current_style} 기준으로 보면 지금은 편안함은 있지만 상의 길이와 하의 라인이 전체 비율을 조금 눌러 보이게 만들 수 있습니다.`,
+    focus_points: [
+      "상의 끝이 골반을 너무 많이 덮으면 다리가 짧아 보여요.",
+      "하의는 주름이 적고 곧게 떨어지는 쪽이 가장 먼저 정돈돼 보입니다.",
+      "신발과 바지 밑단 사이가 너무 뭉치지 않게 정리하면 전체 실루엣이 가벼워집니다."
+    ],
+    recommendation: `${payload.current_feedback.recommended_outfit.items.join(" + ")} 조합에서 상의 길이와 바지 밑단만 먼저 확인하세요.`,
+    action: "거울 앞에서 상의를 한 번 넣어 입은 버전과 빼서 입은 버전을 나란히 비교해보세요."
   };
 }

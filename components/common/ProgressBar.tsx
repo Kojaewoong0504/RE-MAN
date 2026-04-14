@@ -14,7 +14,7 @@ export function ProgressBar({ current, total }: ProgressBarProps) {
           {current}/{total}
         </span>
       </div>
-      <div className="h-2 border border-black bg-transparent">
+      <div className="h-1.5 bg-black/10">
         <div
           className="h-full bg-black transition-all"
           style={{ width: `${progress}%` }}

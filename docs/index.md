@@ -16,6 +16,7 @@
 - [core-beliefs.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/core-beliefs.md)
 - [product-sense.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/product-sense.md)
 - [style-program-ux-v2.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/style-program-ux-v2.md)
+- [style-check-session.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/style-check-session.md)
 - [onboarding.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/onboarding.md)
 - [coaching-flow.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/coaching-flow.md)
 - [plans.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/plans.md)

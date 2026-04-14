@@ -96,7 +96,7 @@ export function PhotoUploader({
               JPEG로 정리됩니다.
             </p>
           </div>
-          <div className="overflow-hidden bg-[#f4ecdd]">
+          <div className="overflow-hidden bg-surface">
             {image ? (
               <NextImage
                 alt="업로드한 스타일 사진 미리보기"
@@ -118,13 +118,13 @@ export function PhotoUploader({
             )}
           </div>
           <div className="grid grid-cols-3 gap-2 text-center text-xs font-black text-muted">
-            <span className="border border-black/15 bg-[#fcf8ef] px-2 py-3">전신</span>
-            <span className="border border-black/15 bg-[#fcf8ef] px-2 py-3">정면</span>
-            <span className="border border-black/15 bg-[#fcf8ef] px-2 py-3">밝은 곳</span>
+            <span className="ui-panel px-2 py-3">전신</span>
+            <span className="ui-panel px-2 py-3">정면</span>
+            <span className="ui-panel px-2 py-3">밝은 곳</span>
           </div>
           <div className="space-y-3">
             <label
-              className="block cursor-pointer bg-black px-4 py-4 text-center text-sm font-black text-[#fcf8ef]"
+              className="ui-button cursor-pointer py-4"
               htmlFor="photo-upload"
             >
               {image ? "사진 다시 선택하기" : "사진 선택하기"}
@@ -153,7 +153,7 @@ export function PhotoUploader({
           </div>
         </div>
       ) : (
-        <div className="space-y-3 bg-[#fcf8ef] p-5">
+        <div className="ui-panel space-y-3">
           <label
             className="text-sm font-black uppercase tracking-[0.22em] text-muted"
             htmlFor="text-description"
@@ -161,7 +161,7 @@ export function PhotoUploader({
             오늘 입은 옷 설명
           </label>
           <textarea
-            className="min-h-40 w-full border-2 border-black bg-white p-4 text-sm text-ink outline-none placeholder:text-muted"
+            className="min-h-40 w-full border border-black/20 bg-white p-4 text-sm text-ink outline-none placeholder:text-muted focus:border-black"
             id="text-description"
             onChange={(event) =>
               onChange({

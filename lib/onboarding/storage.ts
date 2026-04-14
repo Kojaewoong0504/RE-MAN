@@ -10,6 +10,7 @@ import type {
 } from "@/lib/agents/contracts";
 
 const ONBOARDING_STORAGE_KEY = "reman:onboarding";
+const HISTORY_SUMMARY_MAX_LENGTH = 64;
 
 export type OnboardingInput = {
   survey: SurveyInput;
@@ -63,18 +64,48 @@ function isStorageAvailable() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 }
 
-function buildHistorySummary(summary: string, action?: string, nextFocus?: string) {
-  const segments = [summary.trim()];
+function compactText(value: string, maxLength = HISTORY_SUMMARY_MAX_LENGTH) {
+  const normalized = value.replace(/\s+/g, " ").trim();
 
-  if (action?.trim()) {
-    segments.push(`실행: ${action.trim()}`);
+  if (normalized.length <= maxLength) {
+    return normalized;
   }
 
-  if (nextFocus?.trim()) {
-    segments.push(`다음 초점: ${nextFocus.trim()}`);
+  return `${normalized.slice(0, maxLength - 1)}…`;
+}
+
+function getPrimaryHistorySummary(summary: string) {
+  return compactText(summary.split(" / 실행:")[0].split(" / 다음 초점:")[0]);
+}
+
+function buildHistorySummary(summary: string) {
+  return compactText(summary);
+}
+
+function buildHistoryAction(action?: string) {
+  if (!action?.trim()) {
+    return undefined;
   }
 
-  return segments.join(" / ");
+  return compactText(action);
+}
+
+function buildHistoryNextFocus(nextFocus?: string) {
+  if (!nextFocus?.trim()) {
+    return undefined;
+  }
+
+  return compactText(nextFocus);
+}
+
+function buildHistoryPreview(item: FeedbackHistoryItem) {
+  const parts = [getPrimaryHistorySummary(item.summary)];
+
+  if (item.action) {
+    parts.push(`실행 ${compactText(item.action, 42)}`);
+  }
+
+  return `Day ${item.day}: ${parts.join(" · ")}`;
 }
 
 function getClosetProfileOrUndefined(profile: ClosetProfile | undefined) {
@@ -280,17 +311,7 @@ export function getStyleProgramEntryPath(state: OnboardingState) {
     return "/programs/style/onboarding/survey";
   }
 
-  const latestDay = getLatestDailyDay(state);
-
-  if (latestDay >= 7) {
-    return "/programs/style/day/7";
-  }
-
-  if (latestDay === 1) {
-    return "/programs/style/day/1";
-  }
-
-  return `/programs/style/day/${latestDay + 1}`;
+  return "/programs/style/onboarding/result";
 }
 
 export function getStyleProgramSnapshot(state: OnboardingState): StyleProgramSnapshot {
@@ -309,24 +330,23 @@ export function getStyleProgramSnapshot(state: OnboardingState): StyleProgramSna
   }
 
   if (status === "active") {
-    const latestDay = getLatestDailyDay(state);
     return {
       status,
       entryPath,
-      primaryLabel: "스타일 이어서 하기",
+      primaryLabel: "최근 스타일 체크 보기",
       secondaryLabel: "프로그램 보기",
       summaryLabel: "Current Program",
-      summaryBody: `스타일 프로그램 Day ${latestDay === 1 ? 1 : latestDay + 1} 진행 중`
+      summaryBody: "최근 스타일 체크 결과가 저장되어 있습니다. 필요하면 같은 결과에서 추가 체크를 이어갈 수 있습니다."
     };
   }
 
   return {
     status,
-    entryPath,
-    primaryLabel: "스타일 완료 내용 보기",
+    entryPath: "/programs/style/onboarding/result",
+    primaryLabel: "최근 스타일 체크 보기",
     secondaryLabel: "다른 프로그램 보기",
     summaryLabel: "Completed Program",
-    summaryBody: "스타일 7일 프로그램을 완료했습니다. 유지할 기준을 다시 보거나 다른 변화를 시작할 수 있습니다."
+    summaryBody: "루틴 기록이 있더라도 기본 복귀는 최근 스타일 체크 결과입니다. 새 체크나 다른 프로그램을 선택할 수 있습니다."
   };
 }
 
@@ -362,26 +382,18 @@ export function buildHistoryFromState(state: OnboardingState) {
   if (state.feedback?.diagnosis) {
     nextHistory.push({
       day: 1,
-      summary: buildHistorySummary(
-        state.feedback.diagnosis,
-        state.feedback.today_action,
-        state.feedback.day1_mission
-      ),
-      action: state.feedback.today_action,
-      next_focus: state.feedback.day1_mission
+      summary: buildHistorySummary(state.feedback.diagnosis),
+      action: buildHistoryAction(state.feedback.today_action),
+      next_focus: buildHistoryNextFocus(state.feedback.day1_mission)
     });
   }
 
   const dailyEntries = Object.entries(state.daily_feedbacks ?? {})
     .map(([day, feedback]) => ({
       day: Number(day),
-      summary: buildHistorySummary(
-        feedback.diagnosis,
-        feedback.today_action,
-        feedback.tomorrow_preview
-      ),
-      action: feedback.today_action,
-      next_focus: feedback.tomorrow_preview
+      summary: buildHistorySummary(feedback.diagnosis),
+      action: buildHistoryAction(feedback.today_action),
+      next_focus: buildHistoryNextFocus(feedback.tomorrow_preview)
     }))
     .filter((entry) => Number.isFinite(entry.day))
     .sort((left, right) => left.day - right.day);
@@ -406,5 +418,5 @@ export function syncHistoryFromState(state: OnboardingState) {
 export function getRecentHistoryPreview(state: OnboardingState, limit = 3) {
   return (state.feedback_history ?? [])
     .slice(-limit)
-    .map((item) => `Day ${item.day}: ${item.summary}`);
+    .map(buildHistoryPreview);
 }

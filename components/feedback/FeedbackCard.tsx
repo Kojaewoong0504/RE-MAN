@@ -11,18 +11,16 @@ export function FeedbackCard({
 }: FeedbackCardProps) {
   return (
     <section
-      className={`border-2 p-5 ${
-        accent ? "border-black bg-accent text-black" : "border-black bg-[#fcf8ef] text-ink"
-      }`}
+      className={accent ? "ui-panel-accent" : "ui-panel"}
     >
       <p
         className={`mb-3 text-xs uppercase tracking-[0.22em] ${
-          accent ? "text-black/70" : "text-muted"
+          accent ? "text-[var(--color-accent-ink)]/70" : "text-muted"
         }`}
       >
         {label}
       </p>
-      <p className="whitespace-pre-line text-[18px] font-semibold leading-7 tracking-tight">
+      <p className="whitespace-pre-line text-[17px] font-semibold leading-7 tracking-tight">
         {body}
       </p>
     </section>

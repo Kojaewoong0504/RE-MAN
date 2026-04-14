@@ -4,22 +4,35 @@
 
 :root {
   color-scheme: light;
+  --color-bg: #f2eee3;
+  --color-bg-soft: #e7dfd0;
+  --color-surface: #ddd4c2;
+  --color-surface-raised: #faf6ed;
+  --color-ink: #15130f;
+  --color-muted: #6f6654;
+  --color-line: rgba(21, 19, 15, 0.16);
+  --color-line-strong: rgba(21, 19, 15, 0.32);
+  --color-accent: #6f5f2d;
+  --color-accent-ink: #f9f2df;
+  --shell-width: 480px;
+  --bottom-cta-height: 96px;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(242, 233, 78, 0.35), transparent 28%),
-    radial-gradient(circle at top right, rgba(17, 17, 17, 0.05), transparent 24%),
-    linear-gradient(180deg, #fcf8ef 0%, #f5efe3 100%);
-  color: #111111;
+    radial-gradient(circle at top left, rgba(111, 95, 45, 0.16), transparent 28%),
+    radial-gradient(circle at top right, rgba(47, 58, 46, 0.08), transparent 24%),
+    linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-soft) 100%);
+  color: var(--color-ink);
   font-family: Pretendard, Inter, system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 body::selection {
-  background: rgba(242, 233, 78, 0.82);
-  color: #111111;
+  background: rgba(111, 95, 45, 0.9);
+  color: var(--color-accent-ink);
 }
 
 a {
@@ -34,9 +47,9 @@ a {
 .app-shell {
   min-height: 100vh;
   width: 100%;
-  max-width: 480px;
+  max-width: var(--shell-width);
   margin: 0 auto;
-  padding: 24px 20px 164px;
+  padding: 24px 20px calc(var(--bottom-cta-height) + 68px);
 }
 
 .poster-grid {
@@ -45,7 +58,7 @@ a {
 }
 
 .poster-panel {
-  border-top: 1px solid rgba(17, 17, 17, 0.12);
+  border-top: 1px solid var(--color-line);
   padding-top: 24px;
 }
 
@@ -54,10 +67,105 @@ a {
   font-weight: 800;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #6b6558;
+  color: var(--color-muted);
 }
 
 .poster-rule {
-  border-top: 2px solid #111111;
+  border-top: 1px solid var(--color-line);
   padding-top: 16px;
+}
+
+@layer components {
+  .app-header {
+    @apply flex items-center justify-between border-b pb-4;
+    border-color: var(--color-line);
+  }
+
+  .app-brand {
+    @apply text-sm font-black tracking-tight;
+    color: var(--color-ink);
+  }
+
+  .app-subbrand {
+    @apply text-[11px] font-bold uppercase tracking-[0.28em];
+    color: var(--color-muted);
+  }
+
+  .app-back-button {
+    @apply text-lg transition active:translate-y-px;
+    color: var(--color-ink);
+  }
+
+  .ui-section {
+    @apply space-y-4 border-t pt-6;
+    border-color: var(--color-line);
+  }
+
+  .ui-panel {
+    @apply border p-5;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .ui-panel-muted {
+    @apply border p-5;
+    border-color: var(--color-line);
+    background: var(--color-surface);
+  }
+
+  .ui-panel-accent {
+    @apply border p-5;
+    border-color: var(--color-ink);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  .ui-button {
+    @apply flex min-h-12 items-center justify-center px-4 text-center text-sm font-black tracking-tight transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
+    border: 1px solid var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-bg);
+  }
+
+  .ui-button-secondary {
+    @apply flex min-h-12 items-center justify-center px-4 text-center text-sm font-black tracking-tight transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-surface-raised);
+    color: var(--color-ink);
+  }
+
+  .ui-button-accent {
+    @apply flex min-h-12 items-center justify-center px-4 text-center text-sm font-black tracking-tight transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
+    border: 1px solid var(--color-ink);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  .ui-choice {
+    @apply border px-4 py-3 text-left font-bold tracking-tight transition;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+    color: var(--color-ink);
+  }
+
+  .ui-choice:hover {
+    border-color: var(--color-line-strong);
+  }
+
+  .ui-choice-selected {
+    border-color: var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-bg);
+  }
+
+  .ui-input {
+    @apply min-h-12 border px-3 text-sm font-semibold outline-none transition placeholder:text-black/35;
+    border-color: var(--color-line-strong);
+    background: var(--color-surface-raised);
+    color: var(--color-ink);
+  }
+
+  .ui-input:focus {
+    border-color: var(--color-ink);
+  }
 }

@@ -53,6 +53,32 @@ function getCompletionBaseline(
   return `${feedback.today_action} 이 기준만은 다음에도 그대로 가져가세요.`;
 }
 
+function RecentProgressList({ items }: { items: string[] }) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="ui-panel space-y-4">
+      <p className="poster-kicker">Recent Progress</p>
+      <div className="grid gap-3">
+        {items.map((item) => {
+          const [dayLabel, ...summaryParts] = item.split(": ");
+
+          return (
+            <div key={item} className="grid grid-cols-[56px_1fr] gap-3 border-t border-black/10 pt-3 first:border-t-0 first:pt-0">
+              <p className="text-sm font-black text-ink">{dayLabel}</p>
+              <p className="text-[14px] font-semibold leading-6 text-muted">
+                {summaryParts.join(": ")}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export default function DayPage({ params }: DayPageProps) {
   const router = useRouter();
   const day = Number(params.n);
@@ -167,16 +193,16 @@ export default function DayPage({ params }: DayPageProps) {
     return (
       <main className="app-shell space-y-8">
         <div className="space-y-6 pt-6">
-          <div className="flex items-center justify-between border-b-2 border-black pb-4">
+          <div className="app-header">
             <div className="flex items-center gap-4">
               <button
-                className="text-lg"
+                className="app-back-button"
                 onClick={() => router.push("/programs/style/onboarding/result")}
                 type="button"
               >
                 ←
               </button>
-              <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
+              <p className="app-brand">RE:MAN</p>
             </div>
             <AccountAccessButton />
           </div>
@@ -201,16 +227,16 @@ export default function DayPage({ params }: DayPageProps) {
   return (
     <main className="app-shell space-y-8">
       <div className="space-y-6 pt-6">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4">
+        <div className="app-header">
           <div className="flex items-center gap-4">
             <button
-              className="text-lg"
+              className="app-back-button"
               onClick={() => router.push(day === 2 ? "/programs/style/day/1" : `/programs/style/day/${day - 1}`)}
               type="button"
             >
               ←
             </button>
-            <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
+            <p className="app-brand">RE:MAN</p>
           </div>
           <AccountAccessButton />
         </div>
@@ -240,9 +266,7 @@ export default function DayPage({ params }: DayPageProps) {
         )}
       </div>
       <FeedbackCard body={mission || getDefaultMission(day)} label="Today's Mission" accent />
-      {recentHistory.length > 0 ? (
-        <FeedbackCard body={recentHistory.join("\n")} label="Recent Progress" />
-      ) : null}
+      <RecentProgressList items={recentHistory} />
       <PhotoUploader
         image={image}
         onChange={({ image: nextImage, text_description }) => {

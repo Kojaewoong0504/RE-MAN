@@ -37,7 +37,7 @@ export function AccountAccessButton() {
 
   return (
     <Link
-      className="flex h-8 min-w-8 items-center justify-center rounded-full border border-black bg-[#f1eadb] px-3 text-[11px] font-black uppercase tracking-[0.12em]"
+      className="flex h-8 min-w-8 items-center justify-center rounded-full border border-black/15 bg-[#fffaf0] px-3 text-[11px] font-black uppercase tracking-[0.12em] text-ink transition active:translate-y-px"
       href={href}
     >
       {label}

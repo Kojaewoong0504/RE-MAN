@@ -15,11 +15,8 @@ export function BottomCTA({
   disabled = false,
   onClick
 }: BottomCTAProps) {
-  const palette =
-    tone === "accent"
-      ? "bg-accent text-black border-black"
-      : "bg-[#fcf8ef] text-ink border-black";
-  const className = `${disabled ? "pointer-events-none" : "pointer-events-auto"} flex h-14 w-full max-w-[440px] items-center justify-center border-2 text-base font-black tracking-tight transition ${palette} ${
+  const palette = tone === "accent" ? "ui-button-accent" : "ui-button-secondary";
+  const className = `${disabled ? "pointer-events-none" : "pointer-events-auto"} ${palette} h-14 w-full max-w-[440px] text-base ${
     disabled ? "cursor-not-allowed opacity-40" : "active:translate-y-px"
   }`;
 

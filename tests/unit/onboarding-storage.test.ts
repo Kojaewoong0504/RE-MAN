@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { mergePersistedProgramState, type OnboardingState } from "@/lib/onboarding/storage";
+import {
+  buildHistoryFromState,
+  getRecentHistoryPreview,
+  mergePersistedProgramState,
+  type OnboardingState
+} from "@/lib/onboarding/storage";
 
 const baseSurvey = {
   current_style: "청바지 + 무지 티셔츠",
@@ -91,5 +96,53 @@ describe("onboarding state merge", () => {
 
     expect(merged.daily_feedbacks?.["3"]?.diagnosis).toBe("Day 3 diagnosis");
     expect(merged.survey.current_style).toBe("remote style");
+  });
+});
+
+describe("onboarding feedback history", () => {
+  it("stores and renders compact history previews", () => {
+    const longDiagnosis =
+      "지금은 편안한 검정 티셔츠와 바지 조합으로 집이나 동네에서 편하게 입는 스타일을 즐겨 입으시는 것 같아요. 전체적으로는 안정적이지만 변화 지점이 필요합니다.";
+    const longAction =
+      "오늘 저녁에 옷장을 한번 쭉 둘러보면서 내가 어떤 색깔의 옷을 가장 많이 가지고 있는지 확인해보세요.";
+
+    const state: OnboardingState = {
+      survey: baseSurvey,
+      feedback: {
+        diagnosis: longDiagnosis,
+        improvements: ["a", "b", "c"],
+        recommended_outfit: baseRecommendedOutfit,
+        today_action: longAction,
+        day1_mission: "내일은 평소에 잘 안 입던 티셔츠를 꺼내 입어보세요."
+      },
+      daily_feedbacks: {
+        "2": {
+          diagnosis: longDiagnosis,
+          improvements: ["d", "e", "f"],
+          today_action: longAction,
+          tomorrow_preview: "내일은 거울 앞에서 자신감을 확인해보세요."
+        }
+      }
+    };
+
+    const history = buildHistoryFromState(state);
+
+    expect(history).toHaveLength(2);
+    expect(history[0].summary.length).toBeLessThanOrEqual(64);
+    expect(history[0].action?.length).toBeLessThanOrEqual(64);
+
+    const preview = getRecentHistoryPreview({
+      ...state,
+      feedback_history: [
+        {
+          day: 1,
+          summary: `${longDiagnosis} / 실행: ${longAction} / 다음 초점: 내일은 다른 조합 확인`
+        }
+      ]
+    });
+
+    expect(preview[0]).toContain("Day 1:");
+    expect(preview[0].length).toBeLessThan(120);
+    expect(preview[0]).not.toContain("다음 초점");
   });
 });

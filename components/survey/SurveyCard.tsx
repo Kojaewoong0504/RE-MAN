@@ -16,7 +16,7 @@ export function SurveyCard({
   onChange
 }: SurveyCardProps) {
   return (
-    <section className="space-y-4 border-t border-black/15 pt-6">
+    <section className="ui-section">
       <div className="space-y-2">
         <p className="poster-kicker">Style Check</p>
         <h2 className="text-[27px] font-black leading-[1.08] tracking-[-0.05em] text-ink">
@@ -32,11 +32,7 @@ export function SurveyCard({
             <button
               key={option}
               aria-pressed={isActive}
-              className={`min-h-[56px] border px-4 py-3 text-left text-[15px] font-bold tracking-tight transition ${
-                isActive
-                  ? "border-black bg-black text-[#fcf8ef]"
-                  : "border-black/15 bg-[#fcf8ef] text-ink hover:border-black/40"
-              }`}
+              className={`ui-choice min-h-[56px] text-[15px] ${isActive ? "ui-choice-selected" : ""}`}
               onClick={() => onChange(option)}
               type="button"
             >

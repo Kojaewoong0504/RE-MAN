@@ -37,6 +37,7 @@
   │
   └── /app/api (서버사이드 API Routes)
       ├── POST /api/feedback      ← onboarding-agent 호출
+      ├── POST /api/deep-dive     ← 선택형 deep dive 호출 (`fit`, `color`, `occasion`, `closet`)
       ├── POST /api/daily         ← daily-agent 호출
       ├── POST /api/try-on        ← 로컬 mock try-on, Vertex 연동 전 실험 계약
       ├── POST /api/email         ← 다음날 미션 이메일 발송
@@ -55,7 +56,7 @@
 [Supabase]
   └── Storage    ← 사진 업로드 (임시 저장, 분석 후 삭제)
 
-[Gemini API]  ← /api/feedback, /api/daily 에서 호출
+[Gemini API]  ← /api/feedback, /api/deep-dive, /api/daily 에서 호출
 [Vertex AI Virtual Try-On] ← /api/try-on 의 추후 provider 후보
 [Resend]      ← /api/email 에서 호출
 ```
@@ -120,6 +121,10 @@
   → Supabase Storage에서 이미지 삭제 (개인정보)
   → 클라이언트에 피드백 반환
 ```
+
+선택형 deep dive는 `/api/deep-dive`를 사용한다.
+MVP에서는 `module: "fit"`, `module: "color"`, `module: "occasion"`, `module: "closet"`이 실제 응답을 생성하며, 현재 세션 결과와 사진/옷장 컨텍스트를 함께 넘긴다.
+새 deep dive 항목은 API 계약, 테스트, 화면 연결이 모두 준비되기 전까지 완료된 기능처럼 노출하지 않는다.
 
 ### 실착 미리보기 흐름
 

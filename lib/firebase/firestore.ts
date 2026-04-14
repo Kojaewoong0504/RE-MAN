@@ -167,7 +167,10 @@ export async function readCurrentUserProfile(userId: string) {
 
 export async function updateCurrentUserProfile(
   userId: string,
-  profile: Pick<UserProfileDocument, "displayName" | "bio" | "preferredProgram">
+  profile: Pick<
+    UserProfileDocument,
+    "displayName" | "bio" | "preferredProgram" | "survey" | "closet_profile"
+  >
 ) {
   const db = getFirestore();
 
@@ -181,7 +184,9 @@ export async function updateCurrentUserProfile(
       updatedAt: serverTimestamp(),
       displayName: profile.displayName ?? null,
       bio: profile.bio ?? null,
-      preferredProgram: profile.preferredProgram ?? null
+      preferredProgram: profile.preferredProgram ?? null,
+      ...(profile.survey ? { survey: profile.survey } : {}),
+      ...(profile.closet_profile ? { closet_profile: profile.closet_profile } : {})
     },
     { merge: true }
   );
