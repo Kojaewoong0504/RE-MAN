@@ -2,6 +2,7 @@
 
 import type {
   AgentRequest,
+  ClosetProfile,
   DailyAgentResponse,
   FeedbackHistoryItem,
   OnboardingAgentResponse,
@@ -12,6 +13,7 @@ const ONBOARDING_STORAGE_KEY = "reman:onboarding";
 
 export type OnboardingInput = {
   survey: SurveyInput;
+  closet_profile?: ClosetProfile;
   image?: string;
   text_description?: string;
 };
@@ -38,7 +40,17 @@ export type StyleProgramSnapshot = {
 const defaultSurvey: SurveyInput = {
   current_style: "",
   motivation: "",
-  budget: ""
+  budget: "",
+  style_goal: "",
+  confidence_level: ""
+};
+
+const defaultClosetProfile: ClosetProfile = {
+  tops: "",
+  bottoms: "",
+  shoes: "",
+  outerwear: "",
+  avoid: ""
 };
 
 function getEmptyState(): OnboardingState {
@@ -65,6 +77,14 @@ function buildHistorySummary(summary: string, action?: string, nextFocus?: strin
   return segments.join(" / ");
 }
 
+function getClosetProfileOrUndefined(profile: ClosetProfile | undefined) {
+  if (!profile || !Object.values(profile).some((value) => value?.trim())) {
+    return undefined;
+  }
+
+  return profile;
+}
+
 export function readOnboardingState(): OnboardingState {
   if (!isStorageAvailable()) {
     return getEmptyState();
@@ -82,6 +102,10 @@ export function readOnboardingState(): OnboardingState {
       survey: {
         ...defaultSurvey,
         ...parsed.survey
+      },
+      closet_profile: {
+        ...defaultClosetProfile,
+        ...parsed.closet_profile
       },
       user_id: parsed.user_id,
       email: parsed.email,
@@ -113,6 +137,11 @@ export function patchOnboardingState(patch: Partial<OnboardingState>) {
     survey: {
       ...current.survey,
       ...patch.survey
+    },
+    closet_profile: {
+      ...defaultClosetProfile,
+      ...current.closet_profile,
+      ...patch.closet_profile
     }
   };
 
@@ -129,7 +158,7 @@ export function clearOnboardingState() {
 }
 
 export function buildOnboardingRequest(state: OnboardingState): AgentRequest | null {
-  const { survey, image, text_description, user_id } = state;
+  const { survey, closet_profile, image, text_description, user_id } = state;
 
   if (
     !survey.current_style.trim() ||
@@ -143,6 +172,7 @@ export function buildOnboardingRequest(state: OnboardingState): AgentRequest | n
   return {
     user_id,
     survey,
+    closet_profile: getClosetProfileOrUndefined(closet_profile),
     image,
     text_description,
     feedback_history: []
@@ -199,6 +229,16 @@ export function mergePersistedProgramState(
           ...defaultSurvey,
           ...current.survey,
           ...persisted.survey
+        },
+    closet_profile: shouldPreferPersistedProgram
+      ? {
+          ...defaultClosetProfile,
+          ...persisted.closet_profile
+        }
+      : {
+          ...defaultClosetProfile,
+          ...current.closet_profile,
+          ...persisted.closet_profile
         },
     feedback: shouldPreferPersistedProgram ? persisted.feedback : current.feedback ?? persisted.feedback,
     daily_feedbacks: shouldPreferPersistedProgram
@@ -294,7 +334,7 @@ export function buildDailyRequest(
   state: OnboardingState,
   day: number
 ): AgentRequest | null {
-  const { survey, image, text_description, feedback_history = [], user_id } = state;
+  const { survey, closet_profile, image, text_description, feedback_history = [], user_id } = state;
 
   if (
     day < 2 ||
@@ -309,6 +349,7 @@ export function buildDailyRequest(
   return {
     user_id,
     survey,
+    closet_profile: getClosetProfileOrUndefined(closet_profile),
     image,
     text_description,
     feedback_history

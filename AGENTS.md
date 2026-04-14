@@ -3,7 +3,7 @@
 ## 개요
 
 이 앱의 AI 에이전트는 단일 목적이다.
-**유저의 사진 + 컨텍스트를 받아 스타일 피드백을 반환한다.**
+**유저의 전신 사진 + 옷장 컨텍스트를 받아 스타일 피드백과 추천 조합을 반환한다.**
 판단하지 않고, 솔직하게, 한 번에 하나씩. (`docs/product/core-beliefs.md` 참고)
 
 ---
@@ -12,6 +12,7 @@
 
 - **Primary**: Gemini (Google)
 - Vision 기능 필수 — 사진 분석이 핵심이므로 멀티모달 지원 모델 사용
+- 실착 미리보기는 Gemini 피드백 에이전트가 아니라 별도 `try-on` provider가 담당
 - 모델 버전은 `docs/engineering/architecture.md`에서 관리
 
 ---
@@ -37,7 +38,16 @@
   "survey": {
     "current_style": "청바지 + 무지 티셔츠",
     "motivation": "소개팅 / 이성 만남",
-    "budget": "15~30만원"
+    "budget": "15~30만원",
+    "style_goal": "전체적인 스타일 리셋",
+    "confidence_level": "배우는 중"
+  },
+  "closet_profile": {
+    "tops": "무지 티셔츠, 후드티",
+    "bottoms": "청바지, 검정 슬랙스",
+    "shoes": "흰색 스니커즈",
+    "outerwear": "바람막이",
+    "avoid": "너무 튀는 색"
   },
   "feedback_history": [
     {
@@ -79,6 +89,12 @@
     "개선 포인트 2",
     "개선 포인트 3"
   ],
+  "recommended_outfit": {
+    "title": "추천 조합 이름",
+    "items": ["상의", "하의", "신발"],
+    "reason": "왜 이 조합이 현재 사진과 옷장에 맞는지",
+    "try_on_prompt": "실착 이미지 생성을 위한 짧은 프롬프트"
+  },
   "today_action": "오늘 당장 할 수 있는 것 1가지",
   "tomorrow_preview": "내일 미션 예고 1줄"
 }
@@ -93,7 +109,19 @@
 - `improvements`는 항상 3개. 2개나 4개 반환 시 재요청.
 - `today_action`은 반드시 "지금 가진 것"으로 할 수 있는 것이어야 함.
   (구매를 유도하는 액션은 Day 6 이전 금지 — `docs/product/core-beliefs.md` 참고)
+- `recommended_outfit`은 현재 옷장 컨텍스트를 우선 사용해야 함. Day 6 전까지 구매 유도 금지.
 - 응답 실패 또는 포맷 불일치 시 최대 2회 재시도, 이후 fallback 메시지 노출.
+
+---
+
+## 검증 보고 규칙
+
+- `AI_PROVIDER=mock` 기반 E2E 통과를 실제 Gemini 사진 분석 검증으로 보고하지 않는다.
+- 실제 Gemini 사진 분석이 된다고 말하려면 로컬 서버를 `AI_PROVIDER=gemini`로 실행한 뒤 `npm run smoke:feedback:gemini` 성공 결과를 확인해야 한다.
+- 브라우저 업로드 플로우까지 된다고 말하려면 같은 서버에서 `npm run smoke:feedback:browser`도 성공해야 한다.
+- smoke 없이 말할 수 있는 것은 "mock 사용자 흐름이 통과했다" 또는 "API smoke가 통과했다"까지다.
+- 실패가 발생하면 "테스트 통과"로 덮지 말고 provider, timeout, storage, image input 중 어느 경계에서 실패했는지 분리해 보고한다.
+- 사용자가 버튼처럼 보는 선택지는 실제 `button`이어야 하며, 선택 상태가 저장되고 `/api/feedback` 요청 payload에 포함되는지 E2E로 확인해야 한다.
 
 ---
 
@@ -109,5 +137,7 @@ AI 응답 실패 시 노출할 기본 메시지:
 ## 제약 사항
 
 - 1회 API 호출당 이미지 1장만 허용
+- `try-on`은 사람 사진 1장 + 상품 이미지 1장만 허용하며, 사용자가 명시적으로 요청할 때만 호출
+- `TRY_ON_PROVIDER=mock` 상태를 실제 실착 이미지 생성으로 표현하지 않는다. mock 상태에서는 레퍼런스 확인까지만 제공한다.
 - 응답 토큰 제한: 500 tokens 이하 (간결함 유지)
-- 유저 데이터(사진)는 피드백 생성 후 서버에 저장하지 않음 (개인정보)
+- 유저 데이터(사진/실착 생성 이미지)는 피드백 또는 미리보기 생성 후 서버에 영구 저장하지 않음 (개인정보)

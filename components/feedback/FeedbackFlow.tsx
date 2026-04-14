@@ -6,6 +6,11 @@ import { FeedbackCard } from "@/components/feedback/FeedbackCard";
 type FeedbackFlowProps = {
   diagnosis: string;
   improvements: string[];
+  recommendedOutfit?: {
+    title: string;
+    items: [string, string, string];
+    reason: string;
+  };
   todayAction: string;
   closingLabel: string;
 };
@@ -13,6 +18,7 @@ type FeedbackFlowProps = {
 export function FeedbackFlow({
   diagnosis,
   improvements,
+  recommendedOutfit,
   todayAction,
   closingLabel
 }: FeedbackFlowProps) {
@@ -23,6 +29,15 @@ export function FeedbackFlow({
       body: item,
       accent: false
     })),
+    ...(recommendedOutfit
+      ? [
+          {
+            label: "추천 조합",
+            body: `${recommendedOutfit.title}\n${recommendedOutfit.items.join(" + ")}\n${recommendedOutfit.reason}`,
+            accent: false
+          }
+        ]
+      : []),
     { label: closingLabel, body: todayAction, accent: true }
   ];
   const [activeIndex, setActiveIndex] = useState(0);

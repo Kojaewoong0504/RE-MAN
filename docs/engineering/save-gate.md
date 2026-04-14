@@ -78,6 +78,30 @@ pre-push에서는 여기에 아래가 추가된다.
 
 하나라도 실패하면 gate는 실패다.
 
+## Execution Rule
+
+- `npm run test:e2e`와 `npm run build`는 병렬 실행하지 않는다.
+- 둘 다 `.next` 산출물을 사용하므로 병렬 실행 시 `PageNotFoundError: /_document` 같은 거짓 실패가 발생할 수 있다.
+- 이 경우 코드 실패로 보고하지 말고, 실행 방식을 수정한 뒤 build를 단독으로 재실행한다.
+
+## Provider Smoke Rule
+
+기본 gate는 비용과 외부 장애 가능성 때문에 실제 Gemini 호출을 자동 실행하지 않는다.
+따라서 아래를 엄격히 구분한다.
+
+- `npm run test:e2e`: `AI_PROVIDER=mock` 기반 사용자 흐름 검증
+- `npm run smoke:feedback:gemini`: 로컬 서버의 실제 Gemini 사진 분석 smoke 검증
+- `npm run smoke:feedback:browser`: 실제 브라우저 업로드 경로에서 Gemini 사진 분석 smoke 검증
+
+에이전트는 실제 Gemini 사진 분석이 된다고 보고하기 전에 반드시 아래 조건을 만족해야 한다.
+
+1. `npm run dev`가 3001 포트에서 실행 중이어야 한다.
+2. `.env.local`에 `AI_PROVIDER=gemini`, `GOOGLE_API_KEY`, `GEMINI_REQUEST_TIMEOUT_MS=30000`, `GEMINI_MAX_RETRIES=0`이 있어야 한다.
+3. `npm run smoke:feedback:gemini`가 200 응답과 필수 필드를 확인해야 한다.
+4. "브라우저 업로드 플로우가 된다"고 보고하려면 `npm run smoke:feedback:browser`도 200 응답을 확인해야 한다.
+
+이 smoke를 실행하지 않은 경우 최종 보고에서 "실제 Gemini smoke 미실행"이라고 명시한다.
+
 ## Future v1
 
 앱 코드가 생기면 아래를 pre-push 또는 CI gate로 확장한다.

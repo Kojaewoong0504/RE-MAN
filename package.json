@@ -11,6 +11,8 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
+    "smoke:feedback:gemini": "python3 scripts/smoke-feedback-gemini.py",
+    "smoke:feedback:browser": "node scripts/smoke-feedback-browser-gemini.mjs",
     "check:architecture": "python3 harness/architecture/run.py",
     "check:repo": "python3 harness/repository/run.py",
     "check:app": "python3 harness/application/run.py",

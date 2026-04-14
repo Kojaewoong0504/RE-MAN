@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { SESSION_COOKIE_NAMES } from "../../lib/auth/constants";
+import { issueSessionTokens } from "../../lib/auth/server";
 
 const tinyPng = {
   name: "outfit.png",
@@ -8,6 +10,51 @@ const tinyPng = {
     "base64"
   )
 };
+
+async function fillClosetSnapshot(page: import("@playwright/test").Page) {
+  await page.getByLabel("자주 입는 상의").fill("무지 티셔츠, 후드티");
+  await page.getByLabel("자주 입는 하의").fill("청바지, 검정 슬랙스");
+  await page.getByLabel("자주 신는 신발").fill("흰색 스니커즈");
+}
+
+async function fillUploadContext(page: import("@playwright/test").Page) {
+  await fillClosetSnapshot(page);
+  await page.getByRole("button", { name: /전체적인 스타일 리셋/ }).click();
+  await page.getByRole("button", { name: "배우는 중" }).click();
+}
+
+const recommendedOutfit = {
+  title: "기본 조합",
+  items: ["상의", "하의", "신발"],
+  reason: "지금 가진 옷으로 가능한 조합",
+  try_on_prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+};
+
+async function addTryOnSession(page: import("@playwright/test").Page) {
+  process.env.AUTH_JWT_SECRET = "e2e-auth-secret";
+  const { accessToken } = await issueSessionTokens(
+    {
+      uid: "e2e-try-on-user",
+      email: "try-on@example.com",
+      name: "Try On User",
+      picture: null,
+      provider: "google"
+    },
+    "e2e-try-on-family",
+    "e2e-try-on-token"
+  );
+
+  await page.context().addCookies([
+    {
+      name: SESSION_COOKIE_NAMES.access,
+      value: accessToken,
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax"
+    }
+  ]);
+}
 
 test("onboarding flow captures input and renders feedback", async ({ page }) => {
   await page.goto("/");
@@ -46,10 +93,11 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await surveyCta.click();
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/upload$/);
   await expect(
-    page.getByRole("heading", { name: "현재 스타일 사진을 업로드해 주세요" })
+    page.getByRole("heading", { name: "사진이 이번 체크의 기준입니다" })
   ).toBeVisible();
 
   await page.locator("#photo-upload").setInputFiles(tinyPng);
+  await fillUploadContext(page);
 
   const onboardingResponsePromise = page.waitForResponse(
     (response) =>
@@ -64,13 +112,28 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   expect(onboardingResponse.ok()).toBeTruthy();
   const onboardingPayload = onboardingResponse.request().postDataJSON();
   expect(typeof onboardingPayload.image).toBe("string");
-  expect(onboardingPayload.image.startsWith("data:image/png;base64,")).toBeTruthy();
+  expect(onboardingPayload.image.startsWith("data:image/jpeg;base64,")).toBeTruthy();
+  expect(onboardingPayload.closet_profile.tops).toContain("무지 티셔츠");
+  expect(onboardingPayload.survey.style_goal).toBe("전체적인 스타일 리셋");
+  expect(onboardingPayload.survey.confidence_level).toBe("배우는 중");
 
   await page.waitForURL(/\/programs\/style\/onboarding\/result$/);
   await expect(
-    page.getByRole("heading", { name: "첫 피드백은 칭찬보다 방향을 먼저 줍니다" })
+    page.getByRole("heading", { name: "지금 사진에서 시작점을 잡았습니다" })
   ).toBeVisible();
   await expect(page.getByText("청바지 + 무지 티셔츠 중심의 코디라")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "지금 가진 옷으로 만드는 깔끔한 기본 조합" })
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "추천 조합을 눈으로 확인합니다" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "로그인하고 실착 미리보기 사용하기" })
+  ).toBeVisible();
+  await addTryOnSession(page);
+  await page.getByRole("button", { name: /추천 조합 그대로/ }).click();
+  await expect(page.getByAltText("업로드한 상품 이미지")).toBeVisible();
+  await expect(page.getByRole("button", { name: "실제 실착 생성 비활성화" })).toBeDisabled();
+  await expect(page.getByText("현재는 실제 실착 생성이 아니라")).toBeVisible();
   await page.getByRole("link", { name: "Day 1 미션 시작하기" }).click();
   await expect(page).toHaveURL(/\/programs\/style\/day\/1$/);
   await expect(page.getByText("오늘 미션 하나만 끝내면 됩니다")).toBeVisible();
@@ -91,7 +154,7 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   expect(dailyResponse.ok()).toBeTruthy();
   const dailyPayload = dailyResponse.request().postDataJSON();
   expect(typeof dailyPayload.image).toBe("string");
-  expect(dailyPayload.image.startsWith("data:image/png;base64,")).toBeTruthy();
+  expect(dailyPayload.image.startsWith("data:image/jpeg;base64,")).toBeTruthy();
   await expect(
     page.getByText(
       "Day 1보다 오늘 코디가 더 정돈돼 보이고, 핵심 아이템이 눈에 더 잘 들어옵니다.",
@@ -149,6 +212,7 @@ test("onboarding shows fallback when storage upload fails", async ({ page }) => 
   await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
 
   await page.locator("#photo-upload").setInputFiles(tinyPng);
+  await fillUploadContext(page);
   await page.getByRole("button", { name: "AI 분석 시작하기" }).click();
 
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/analyzing$/);
@@ -158,6 +222,53 @@ test("onboarding shows fallback when storage upload fails", async ({ page }) => 
   await expect(page.getByRole("button", { name: "텍스트 설명 다시 입력하기" })).toBeVisible();
 });
 
+test("try-on rejects unauthenticated requests", async ({ request }) => {
+  const response = await request.post("/api/try-on", {
+    data: {
+      person_image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}`,
+      product_image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}`,
+      prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+    }
+  });
+
+  expect(response.status()).toBe(401);
+});
+
+test("try-on explains the limitation when onboarding used text instead of a photo", async ({ page }) => {
+  await page.addInitScript((outfit) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원"
+        },
+        closet_profile: {
+          tops: "무지 티셔츠",
+          bottoms: "청바지",
+          shoes: "흰색 스니커즈"
+        },
+        text_description: "무지 티셔츠, 청바지, 흰색 스니커즈",
+        feedback: {
+          diagnosis: "텍스트 설명 기반 피드백",
+          improvements: ["a", "b", "c"],
+          recommended_outfit: outfit,
+          today_action: "오늘 바로 할 것",
+          day1_mission: "Day 1 미션"
+        }
+      })
+    );
+  }, recommendedOutfit);
+
+  await page.goto("/programs/style/onboarding/result");
+  await expect(page.getByRole("heading", { name: "추천 조합을 눈으로 확인합니다" })).toBeVisible();
+  await expect(
+    page.getByText("텍스트 설명으로 진행한 경우 실착 미리보기를 만들 수 없습니다.")
+  ).toBeVisible();
+  await expect(page.locator("#try-on-product-upload")).toHaveCount(0);
+});
+
 test("day flow shows fallback when storage delete fails", async ({ page }) => {
   await page.goto("/programs/style/onboarding/survey");
   await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
@@ -165,6 +276,7 @@ test("day flow shows fallback when storage delete fails", async ({ page }) => {
   await page.getByRole("button", { name: "15~30만원" }).click();
   await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
   await page.locator("#photo-upload").setInputFiles(tinyPng);
+  await fillUploadContext(page);
   await page.getByRole("button", { name: "AI 분석 시작하기" }).click();
   await page.waitForURL(/\/programs\/style\/onboarding\/result$/);
   await page.getByRole("link", { name: "Day 1 미션 시작하기" }).click();
@@ -188,7 +300,7 @@ test("day flow shows fallback when storage delete fails", async ({ page }) => {
 });
 
 test("home shows resume branch for active style user", async ({ page }) => {
-  await page.addInitScript(() => {
+  await page.addInitScript((outfit) => {
     window.localStorage.setItem(
       "reman:onboarding",
       JSON.stringify({
@@ -200,6 +312,7 @@ test("home shows resume branch for active style user", async ({ page }) => {
         feedback: {
           diagnosis: "첫 피드백이 저장된 상태",
           improvements: ["a", "b", "c"],
+          recommended_outfit: outfit,
           today_action: "오늘 바로 할 것",
           day1_mission: "Day 1 미션"
         },
@@ -217,7 +330,7 @@ test("home shows resume branch for active style user", async ({ page }) => {
         ]
       })
     );
-  });
+  }, recommendedOutfit);
 
   await page.goto("/");
   await expect(
@@ -230,7 +343,7 @@ test("home shows resume branch for active style user", async ({ page }) => {
 });
 
 test("home shows completed branch for finished style user", async ({ page }) => {
-  await page.addInitScript(() => {
+  await page.addInitScript((outfit) => {
     const dailyFeedbacks: Record<string, unknown> = {};
 
     for (let day = 2; day <= 7; day += 1) {
@@ -253,6 +366,7 @@ test("home shows completed branch for finished style user", async ({ page }) => 
         feedback: {
           diagnosis: "첫 피드백이 저장된 상태",
           improvements: ["a", "b", "c"],
+          recommended_outfit: outfit,
           today_action: "오늘 바로 할 것",
           day1_mission: "Day 1 미션"
         },
@@ -263,7 +377,7 @@ test("home shows completed branch for finished style user", async ({ page }) => 
         ]
       })
     );
-  });
+  }, recommendedOutfit);
 
   await page.goto("/");
   await expect(

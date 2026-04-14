@@ -16,6 +16,8 @@ node_modules/
 .next/
 playwright-report/
 test-results/
+.playwright-cli/
+output/
 dist/
 build/
 tsconfig.tsbuildinfo

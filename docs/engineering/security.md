@@ -15,6 +15,7 @@
 ### 규칙
 - Supabase Storage 업로드 후 Gemini API 분석 완료 즉시 삭제
 - 피드백 결과(텍스트)만 Firestore에 저장 — 사진 URL 저장 금지
+- 실착 미리보기 생성 이미지도 민감 데이터로 취급 — 기본 영구 저장 금지
 - Storage 보관 최대 시간: **5분** (분석 완료 전 타임아웃 기준)
 - 삭제 실패와 업로드 실패는 런타임 incident로 기록하고 반복되면 rule promotion 대상으로 승격
 
@@ -49,6 +50,7 @@ public URL: 금지
 
 ### 규칙
 - Gemini API 키: **서버사이드 전용** — Next.js API Route에서만 호출
+- Vertex AI / Google Cloud 인증 정보: **서버사이드 전용** — 실착 미리보기 provider에서만 사용
 - Firebase 클라이언트 키: 공개 가능하나 Security Rules로 접근 제한
 - Firebase Admin SDK 키: **서버사이드 전용** — 절대 클라이언트 번들에 포함 금지
 - Supabase `anon` 키: 공개 가능하나 버킷 정책으로 접근 제한
@@ -62,6 +64,11 @@ GEMINI_API_KEY=
 FIREBASE_PRIVATE_KEY=
 FIREBASE_CLIENT_EMAIL=
 SUPABASE_SERVICE_ROLE_KEY=
+VERTEX_PROJECT_ID=
+VERTEX_LOCATION=
+VERTEX_TRY_ON_MODEL=virtual-try-on-001
+VERTEX_ACCESS_TOKEN=
+VERTEX_TRY_ON_STORAGE_URI=
 
 # 클라이언트에서 접근 가능한 변수만 NEXT_PUBLIC_ prefix 사용
 NEXT_PUBLIC_FIREBASE_API_KEY=
@@ -85,6 +92,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ### 규칙
 - 허용 파일 타입: `image/jpeg`, `image/png`, `image/webp` 만
 - 최대 파일 크기: **10MB**
+- `/api/try-on` person/product image도 data URL 기준 같은 MIME과 10MB 제한을 적용
+- `/api/try-on` prompt는 500자 이하로 제한
 - 파일명 랜덤 생성 — 유저 입력 파일명 사용 금지
 
 ### 구현
@@ -108,6 +117,8 @@ const filename = `${userId}/${crypto.randomUUID()}.jpg`
 
 ### Rate Limiting
 - 동일 userId당 API 호출: **분당 5회** 제한
+- `/api/try-on`은 이미지 생성 비용이 있으므로 실제 Vertex provider 활성화 전 인증 사용자 + 레이트리밋 + 사용량 제한이 필요
+- `/api/try-on`은 access token이 있는 인증 사용자만 호출 가능하며, 사용자 단위 rate limit을 둔다
 - Vercel Edge Middleware 또는 Upstash Redis로 구현
 - 초과 시 응답: `429 Too Many Requests`
 - Supabase Storage 버킷은 `private` 유지, 공개 버킷 금지

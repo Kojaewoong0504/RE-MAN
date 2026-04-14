@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AccountAccessButton } from "@/components/common/AccountAccessButton";
 import { BottomCTA } from "@/components/common/BottomCTA";
-import { ProgressBar } from "@/components/common/ProgressBar";
 import { SurveyCard } from "@/components/survey/SurveyCard";
 import { syncSurveyToFirestore } from "@/lib/firebase/firestore";
 import { patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
@@ -22,33 +21,44 @@ export default function SurveyPage() {
     setSurvey(state.survey);
   }, []);
 
-  const isComplete = Object.values(survey).every((value) => value.trim().length > 0);
+  const isComplete = Boolean(
+    survey.current_style.trim() && survey.motivation.trim() && survey.budget.trim()
+  );
 
   return (
     <main className="app-shell space-y-8">
-      <div className="space-y-6 pt-6">
-        <div className="flex items-center justify-between border-b-2 border-black pb-4">
+      <div className="space-y-8 pt-6">
+        <div className="flex items-center justify-between border-b border-black/15 pb-4">
           <div className="flex items-center gap-4">
             <button className="text-lg" onClick={() => router.push("/programs/style")} type="button">
               ←
             </button>
-            <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
+            <div>
+              <p className="text-sm font-black tracking-tight text-ink">RE:MAN</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted">
+                Style Check
+              </p>
+            </div>
           </div>
           <AccountAccessButton />
         </div>
-        <div className="space-y-3">
-          <ProgressBar current={1} total={3} />
-          <p className="poster-kicker">Style Program / Step 01</p>
-        </div>
         <div className="space-y-4">
-          <h1 className="max-w-sm text-[42px] font-black leading-[1.02] tracking-[-0.06em] text-ink">
-            처음엔 복잡하게 묻지 않습니다
+          <p className="poster-kicker">Step 01 / Baseline</p>
+          <h1 className="max-w-sm text-[40px] font-black leading-[1.02] tracking-[-0.06em] text-ink">
+            세 가지만 고르면 시작할 수 있습니다
           </h1>
           <p className="max-w-sm text-[17px] font-medium leading-7 text-muted">
-            지금 어떤 조합에 익숙한지, 왜 바꾸고 싶은지, 예산 감각만 정리하면 첫 진단을
-            시작할 수 있습니다.
+            지금 자주 입는 조합, 바꾸고 싶은 이유, 예산 감각만 먼저 잡습니다. 진단은
+            평가가 아니라 다음 행동을 정하기 위한 기준선입니다.
           </p>
         </div>
+        <section className="grid grid-cols-3 border-y border-black/15 py-4 text-center">
+          {["3분 안에 끝", "판단 없음", "구매 강요 없음"].map((item) => (
+            <p key={item} className="text-[12px] font-black tracking-[-0.02em] text-ink">
+              {item}
+            </p>
+          ))}
+        </section>
       </div>
       <SurveyCard
         caption="질문은 세 개만 묻습니다. 먼저 지금 자주 입는 조합을 골라주세요."
@@ -81,7 +91,7 @@ export default function SurveyPage() {
         title="한 달 스타일링 예산은?"
         value={survey.budget}
       />
-      <section className="poster-rule space-y-3 pb-24">
+      <section className="space-y-3 border-t border-black/15 pt-6 pb-24">
         <p className="poster-kicker">Why it works</p>
         <p className="max-w-md text-lg font-black leading-7 tracking-tight text-ink">
           여기서 정한 답변은 평가가 아니라, 지금 가진 조건 안에서 가장 현실적인 변화를

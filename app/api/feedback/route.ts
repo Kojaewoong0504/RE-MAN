@@ -41,6 +41,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(feedback);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown_feedback_error";
+
+    console.error("[feedback_failed]", message);
+
     if (isStorageFailureError(error)) {
       await recordStorageRuntimeFailure({
         route: "feedback",
@@ -52,6 +56,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "feedback_failed",
+        ...(process.env.NODE_ENV === "development" ? { detail: message } : {}),
         fallback_message: FALLBACK_MESSAGE
       },
       { status: 500 }

@@ -4,6 +4,7 @@
       "required_fields": [
         "diagnosis",
         "improvements",
+        "recommended_outfit",
         "today_action",
         "day1_mission"
       ],

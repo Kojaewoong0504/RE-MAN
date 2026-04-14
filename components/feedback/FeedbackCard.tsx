@@ -22,7 +22,9 @@ export function FeedbackCard({
       >
         {label}
       </p>
-      <p className="text-[18px] font-semibold leading-7 tracking-tight">{body}</p>
+      <p className="whitespace-pre-line text-[18px] font-semibold leading-7 tracking-tight">
+        {body}
+      </p>
     </section>
   );
 }

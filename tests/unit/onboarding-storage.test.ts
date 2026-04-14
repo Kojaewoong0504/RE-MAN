@@ -7,6 +7,13 @@ const baseSurvey = {
   budget: "15~30만원"
 };
 
+const baseRecommendedOutfit = {
+  title: "기본 조합",
+  items: ["상의", "하의", "신발"] as [string, string, string],
+  reason: "지금 가진 옷으로 가능한 조합",
+  try_on_prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+};
+
 describe("onboarding state merge", () => {
   it("prefers a farther Firestore program state while preserving local image input", () => {
     const current: OnboardingState = {
@@ -17,6 +24,7 @@ describe("onboarding state merge", () => {
       feedback: {
         diagnosis: "Day 1 diagnosis",
         improvements: ["a", "b", "c"],
+        recommended_outfit: baseRecommendedOutfit,
         today_action: "오늘 액션",
         day1_mission: "Day 1 미션"
       }
@@ -56,6 +64,7 @@ describe("onboarding state merge", () => {
       feedback: {
         diagnosis: "Day 1 diagnosis",
         improvements: ["a", "b", "c"],
+        recommended_outfit: baseRecommendedOutfit,
         today_action: "오늘 액션",
         day1_mission: "Day 1 미션"
       },

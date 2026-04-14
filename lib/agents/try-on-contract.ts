@@ -1,0 +1,2 @@
+export const TRY_ON_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export const TRY_ON_MAX_PROMPT_LENGTH = 500;

@@ -19,6 +19,7 @@ export default function AnalyzingPage() {
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
 
     async function runAnalysis() {
       const state = readOnboardingState();
@@ -29,17 +30,28 @@ export default function AnalyzingPage() {
         return;
       }
 
-      const response = await fetch("/api/feedback", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
+      let response: Response;
+
+      try {
+        response = await fetch("/api/feedback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        throw error;
+      }
 
       const data = (await response.json().catch(() => null)) as
         | OnboardingAgentResponse
-        | { fallback_message?: string }
+        | { fallback_message?: string; detail?: string }
         | null;
 
       if (!isMounted) {
@@ -51,9 +63,15 @@ export default function AnalyzingPage() {
           data && "fallback_message" in data && typeof data.fallback_message === "string"
             ? data.fallback_message
             : "피드백을 가져오지 못했습니다. 다시 시도해 주세요.";
+        const detail =
+          data && "detail" in data && typeof data.detail === "string" ? data.detail : "";
+        const visibleMessage =
+          process.env.NODE_ENV === "development" && detail
+            ? `${fallback} [dev detail: ${detail}]`
+            : fallback;
 
-        patchOnboardingState({ feedback: undefined, fallback_message: fallback });
-        setErrorMessage(fallback);
+        patchOnboardingState({ feedback: undefined, fallback_message: visibleMessage });
+        setErrorMessage(visibleMessage);
         return;
       }
 
@@ -71,6 +89,7 @@ export default function AnalyzingPage() {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, [router]);
 

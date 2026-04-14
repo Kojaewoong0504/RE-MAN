@@ -52,6 +52,8 @@
 - 실패만 짧고 분명하게 알린다.
 - 실패한 변경은 다음 단계로 넘어갈 수 없다.
 - e2e만으로 검증을 끝내지 않고, 로직은 단위/통합 테스트로 먼저 잡는다.
+- mock provider 테스트와 real provider smoke를 구분한다.
+- 실제 외부 API 동작을 주장하려면 별도 smoke evidence가 있어야 한다.
 
 ### 3. Tool Boundaries
 
@@ -102,6 +104,14 @@ garbage collection의 목표는 다음과 같다.
 2. gate 추가
 3. harness 체크 추가
 4. garbage collection 체크리스트 추가
+
+이번 저장소의 provider 검증 규칙:
+
+1. `npm run test:e2e`는 기본적으로 `AI_PROVIDER=mock` 사용자 흐름을 검증한다.
+2. Gemini 실제 사진 분석 API 검증은 `npm run smoke:feedback:gemini`가 담당한다.
+3. 브라우저 업로드까지 포함한 실제 플로우 검증은 `npm run smoke:feedback:browser`가 담당한다.
+4. 비용/외부 의존성이 있는 smoke는 pre-commit에 넣지 않는다. 대신 실제 provider가 된다고 보고하기 전 반드시 수동 실행한다.
+5. smoke를 실행하지 않았다면 최종 보고에서 그 사실을 명시한다.
 
 ## Testing Principle
 

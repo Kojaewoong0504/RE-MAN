@@ -1,7 +1,11 @@
 "use client";
 
 import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
-import type { DailyAgentResponse, OnboardingAgentResponse } from "@/lib/agents/contracts";
+import type {
+  ClosetProfile,
+  DailyAgentResponse,
+  OnboardingAgentResponse
+} from "@/lib/agents/contracts";
 import { getFirebaseFirestoreInstance, hasFirebaseClientConfig } from "@/lib/firebase/client";
 import { buildHistoryFromState, type OnboardingState } from "@/lib/onboarding/storage";
 import type { SurveyInput } from "@/lib/agents/contracts";
@@ -13,6 +17,7 @@ export type UserProfileDocument = {
   bio?: string | null;
   preferredProgram?: string | null;
   survey?: Partial<SurveyInput> | null;
+  closet_profile?: Partial<ClosetProfile> | null;
 };
 
 function getFirestore() {
@@ -39,7 +44,8 @@ export async function syncSurveyToFirestore(state: OnboardingState) {
     {
       createdAt: serverTimestamp(),
       email: state.email ?? null,
-      survey: state.survey
+      survey: state.survey,
+      closet_profile: state.closet_profile ?? null
     },
     { merge: true }
   );
@@ -90,6 +96,7 @@ export async function saveOnboardingFeedbackToFirestore(
     createdAt: serverTimestamp(),
     diagnosis: feedback.diagnosis,
     improvements: feedback.improvements,
+    recommended_outfit: feedback.recommended_outfit,
     today_action: feedback.today_action,
     day1_mission: feedback.day1_mission
   });
@@ -186,7 +193,74 @@ function parseSurvey(input: UserProfileDocument | null): SurveyInput {
   return {
     current_style: typeof survey.current_style === "string" ? survey.current_style : "",
     motivation: typeof survey.motivation === "string" ? survey.motivation : "",
-    budget: typeof survey.budget === "string" ? survey.budget : ""
+    budget: typeof survey.budget === "string" ? survey.budget : "",
+    style_goal: typeof survey.style_goal === "string" ? survey.style_goal : "",
+    confidence_level:
+      typeof survey.confidence_level === "string" ? survey.confidence_level : ""
+  };
+}
+
+function parseClosetProfile(input: UserProfileDocument | null): ClosetProfile | undefined {
+  const closet = input?.closet_profile ?? {};
+  const profile: ClosetProfile = {
+    tops: typeof closet.tops === "string" ? closet.tops : "",
+    bottoms: typeof closet.bottoms === "string" ? closet.bottoms : "",
+    shoes: typeof closet.shoes === "string" ? closet.shoes : "",
+    outerwear: typeof closet.outerwear === "string" ? closet.outerwear : "",
+    avoid: typeof closet.avoid === "string" ? closet.avoid : ""
+  };
+
+  if (!Object.values(profile).some((value) => value.trim())) {
+    return undefined;
+  }
+
+  return profile;
+}
+
+function parseRecommendedOutfit(data: Record<string, unknown>) {
+  const raw = data.recommended_outfit;
+
+  if (!raw || typeof raw !== "object") {
+    return {
+      title: "기존 피드백 기반 기본 추천 조합",
+      items: ["가장 깔끔한 상의", "주름이 적은 바지", "톤이 맞는 신발"] as [
+        string,
+        string,
+        string
+      ],
+      reason: "기존 저장 데이터에 추천 조합이 없어 기본 조합으로 복원했습니다.",
+      try_on_prompt: "전신 정면 사진을 기준으로 깔끔한 상의, 바지, 신발 조합을 자연스럽게 착용한 미리보기"
+    };
+  }
+
+  const recommendation = raw as Record<string, unknown>;
+  const items = Array.isArray(recommendation.items)
+    ? recommendation.items.filter((item): item is string => typeof item === "string")
+    : [];
+
+  if (
+    typeof recommendation.title !== "string" ||
+    typeof recommendation.reason !== "string" ||
+    typeof recommendation.try_on_prompt !== "string" ||
+    items.length !== 3
+  ) {
+    return {
+      title: "기존 피드백 기반 기본 추천 조합",
+      items: ["가장 깔끔한 상의", "주름이 적은 바지", "톤이 맞는 신발"] as [
+        string,
+        string,
+        string
+      ],
+      reason: "기존 저장 데이터의 추천 조합 형식이 맞지 않아 기본 조합으로 복원했습니다.",
+      try_on_prompt: "전신 정면 사진을 기준으로 깔끔한 상의, 바지, 신발 조합을 자연스럽게 착용한 미리보기"
+    };
+  }
+
+  return {
+    title: recommendation.title,
+    items: [items[0], items[1], items[2]] as [string, string, string],
+    reason: recommendation.reason,
+    try_on_prompt: recommendation.try_on_prompt
   };
 }
 
@@ -211,8 +285,9 @@ function parseFeedbackDoc(day: number, data: Record<string, unknown>) {
 
   if (day === 1) {
     const day1_mission = typeof data.day1_mission === "string" ? data.day1_mission : "";
+    const recommended_outfit = parseRecommendedOutfit(data);
 
-    if (!day1_mission) {
+    if (!day1_mission || !recommended_outfit) {
       return null;
     }
 
@@ -220,6 +295,7 @@ function parseFeedbackDoc(day: number, data: Record<string, unknown>) {
       day,
       feedback: {
         ...common,
+        recommended_outfit,
         day1_mission
       } satisfies OnboardingAgentResponse
     };
@@ -257,6 +333,7 @@ export async function readStyleProgramStateFromFirestore(userId: string) {
     user_id: userId,
     email: userProfile?.email ?? undefined,
     survey: parseSurvey(userProfile),
+    closet_profile: parseClosetProfile(userProfile),
     daily_feedbacks: {}
   };
 

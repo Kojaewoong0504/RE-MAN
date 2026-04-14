@@ -2,6 +2,16 @@ export type SurveyInput = {
   current_style: string;
   motivation: string;
   budget: string;
+  style_goal?: string;
+  confidence_level?: string;
+};
+
+export type ClosetProfile = {
+  tops: string;
+  bottoms: string;
+  shoes: string;
+  outerwear?: string;
+  avoid?: string;
 };
 
 export type FeedbackHistoryItem = {
@@ -16,12 +26,21 @@ export type AgentRequest = {
   image?: string;
   text_description?: string;
   survey: SurveyInput;
+  closet_profile?: ClosetProfile;
   feedback_history: FeedbackHistoryItem[];
+};
+
+export type OutfitRecommendation = {
+  title: string;
+  items: [string, string, string];
+  reason: string;
+  try_on_prompt: string;
 };
 
 export type OnboardingAgentResponse = {
   diagnosis: string;
   improvements: [string, string, string];
+  recommended_outfit: OutfitRecommendation;
   today_action: string;
   day1_mission: string;
 };
@@ -38,6 +57,17 @@ export const FALLBACK_MESSAGE =
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function hasClosetSignal(value: unknown): value is ClosetProfile {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const closet = value as Record<string, unknown>;
+  return [closet.tops, closet.bottoms, closet.shoes, closet.outerwear, closet.avoid].some(
+    (item) => typeof item === "string" && item.trim().length > 0
+  );
 }
 
 export function validateAgentRequest(payload: unknown): payload is AgentRequest {
@@ -69,6 +99,10 @@ export function validateAgentRequest(payload: unknown): payload is AgentRequest 
     return false;
   }
 
+  if (request.closet_profile !== undefined && !hasClosetSignal(request.closet_profile)) {
+    return false;
+  }
+
   return true;
 }
 
@@ -77,6 +111,20 @@ function validateImprovements(value: unknown): value is [string, string, string]
     Array.isArray(value) &&
     value.length === 3 &&
     value.every((item) => isNonEmptyString(item))
+  );
+}
+
+function validateOutfitRecommendation(value: unknown): value is OutfitRecommendation {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const recommendation = value as Record<string, unknown>;
+  return (
+    isNonEmptyString(recommendation.title) &&
+    validateImprovements(recommendation.items) &&
+    isNonEmptyString(recommendation.reason) &&
+    isNonEmptyString(recommendation.try_on_prompt)
   );
 }
 
@@ -91,6 +139,7 @@ export function validateOnboardingResponse(
   return (
     isNonEmptyString(response.diagnosis) &&
     validateImprovements(response.improvements) &&
+    validateOutfitRecommendation(response.recommended_outfit) &&
     isNonEmptyString(response.today_action) &&
     isNonEmptyString(response.day1_mission) &&
     response.tomorrow_preview === undefined

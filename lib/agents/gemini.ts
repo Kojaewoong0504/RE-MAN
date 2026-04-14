@@ -10,8 +10,10 @@ import {
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-const REQUEST_TIMEOUT_MS = 8000;
-const MAX_RETRIES = 2;
+const DEFAULT_PRODUCTION_REQUEST_TIMEOUT_MS = 8000;
+const DEFAULT_LOCAL_REQUEST_TIMEOUT_MS = 30000;
+const DEFAULT_PRODUCTION_MAX_RETRIES = 2;
+const DEFAULT_LOCAL_MAX_RETRIES = 0;
 const RETRY_DELAY_MS = 2000;
 
 type AgentKind = "onboarding" | "daily";
@@ -49,6 +51,29 @@ function getGoogleApiKey() {
   return process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
 }
 
+function getNumberEnv(name: string, fallback: number) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+function getDefaultRequestTimeoutMs() {
+  return getNumberEnv(
+    "GEMINI_REQUEST_TIMEOUT_MS",
+    process.env.NODE_ENV === "production"
+      ? DEFAULT_PRODUCTION_REQUEST_TIMEOUT_MS
+      : DEFAULT_LOCAL_REQUEST_TIMEOUT_MS
+  );
+}
+
+function getDefaultMaxRetries() {
+  return getNumberEnv(
+    "GEMINI_MAX_RETRIES",
+    process.env.NODE_ENV === "production"
+      ? DEFAULT_PRODUCTION_MAX_RETRIES
+      : DEFAULT_LOCAL_MAX_RETRIES
+  );
+}
+
 export function resolveAiProvider() {
   if (process.env.AI_PROVIDER === "mock") {
     return "mock";
@@ -70,6 +95,12 @@ function getJsonShape(agent: AgentKind) {
     return `{
   "diagnosis": "현재 스타일 진단 1~2줄",
   "improvements": ["개선 포인트 1", "개선 포인트 2", "개선 포인트 3"],
+  "recommended_outfit": {
+    "title": "추천 조합 이름",
+    "items": ["상의/겉옷", "하의", "신발"],
+    "reason": "왜 이 조합이 현재 옷장과 사진에 맞는지 1~2줄",
+    "try_on_prompt": "실착 이미지 생성을 위한 간결한 프롬프트 1줄"
+  },
   "today_action": "오늘 당장 할 수 있는 것 1가지",
   "day1_mission": "내일이 아니라 오늘 바로 시작할 수 있는 Day 1 미션 1줄"
 }`;
@@ -97,7 +128,10 @@ function buildInstruction(
       "improvements는 정확히 3개여야 합니다.",
       "today_action은 지금 가진 옷으로 가능한 행동만 제안하세요.",
       "Day 6 이전 구매 유도 금지.",
-      `설문: ${payload.survey.current_style} / ${payload.survey.motivation} / ${payload.survey.budget}`,
+      `설문: ${payload.survey.current_style} / ${payload.survey.motivation} / ${payload.survey.budget} / 목표=${payload.survey.style_goal || "미입력"} / 자신감=${payload.survey.confidence_level || "미입력"}`,
+      payload.closet_profile
+        ? `옷장 컨텍스트: 상의=${payload.closet_profile.tops || "없음"} / 하의=${payload.closet_profile.bottoms || "없음"} / 신발=${payload.closet_profile.shoes || "없음"} / 겉옷=${payload.closet_profile.outerwear || "없음"} / 피하고 싶은 것=${payload.closet_profile.avoid || "없음"}`
+        : "옷장 컨텍스트: 없음",
       payload.text_description
         ? `설명: ${payload.text_description}`
         : "설명: 이미지 없음",
@@ -137,9 +171,19 @@ function buildInstruction(
     `설문 응답:
 - current_style: ${payload.survey.current_style}
 - motivation: ${payload.survey.motivation}
-- budget: ${payload.survey.budget}`,
+- budget: ${payload.survey.budget}
+- style_goal: ${payload.survey.style_goal || "미입력"}
+- confidence_level: ${payload.survey.confidence_level || "미입력"}`,
+    `현재 옷장/평소 착장 컨텍스트:
+- tops: ${payload.closet_profile?.tops || "미입력"}
+- bottoms: ${payload.closet_profile?.bottoms || "미입력"}
+- shoes: ${payload.closet_profile?.shoes || "미입력"}
+- outerwear: ${payload.closet_profile?.outerwear || "미입력"}
+- avoid: ${payload.closet_profile?.avoid || "미입력"}`,
     `기존 피드백 이력:
 ${history}`,
+    "onboarding-agent는 recommended_outfit을 반드시 포함하세요. 추천 조합은 현재 옷장 컨텍스트를 먼저 사용하고, Day 6 전 구매를 유도하지 마세요.",
+    "recommended_outfit.try_on_prompt는 별도 실착 이미지 생성 API에 넘길 수 있게 짧고 구체적으로 작성하세요.",
     "응답은 JSON만 반환하세요. 코드펜스 없이 순수 JSON만 반환하세요.",
     `JSON 스키마:
 ${getJsonShape(agent)}`
@@ -208,7 +252,7 @@ async function callGeminiApi(
   options: GeminiCallOptions = {}
 ) {
   const apiKey = getGoogleApiKey();
-  const timeoutMs = options.timeoutMs ?? REQUEST_TIMEOUT_MS;
+  const timeoutMs = options.timeoutMs ?? getDefaultRequestTimeoutMs();
 
   if (!apiKey) {
     throw new Error("missing_google_api_key");
@@ -239,7 +283,9 @@ async function callGeminiApi(
     });
 
     if (!response.ok) {
-      throw new Error(`gemini_http_${response.status}`);
+      const body = await response.text().catch(() => "");
+      const excerpt = body.replace(/\s+/g, " ").slice(0, 500);
+      throw new Error(`gemini_http_${response.status}:${excerpt || "empty_error_body"}`);
     }
 
     const body = (await response.json()) as GeminiResponse;
@@ -249,7 +295,7 @@ async function callGeminiApi(
   }
 }
 
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = MAX_RETRIES) {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries: number) {
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     try {
       return await fn();
@@ -271,7 +317,7 @@ export async function generateOnboardingFeedback(
 ) {
   const response = await withRetry(
     () => callGeminiApi("onboarding", payload, options),
-    options.maxRetries
+    options.maxRetries ?? getDefaultMaxRetries()
   );
 
   if (!validateOnboardingResponse(response)) {
@@ -287,7 +333,7 @@ export async function generateDailyFeedback(
 ) {
   const response = await withRetry(
     () => callGeminiApi("daily", payload, options),
-    options.maxRetries
+    options.maxRetries ?? getDefaultMaxRetries()
   );
 
   if (!validateDailyResponse(response)) {

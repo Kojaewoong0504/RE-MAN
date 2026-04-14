@@ -12,10 +12,17 @@ export default defineConfig({
     command: "npm run dev",
     env: {
       AI_PROVIDER: "mock",
+      AUTH_JWT_SECRET: "e2e-auth-secret",
       NEXT_PUBLIC_SUPABASE_URL: "",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
       SUPABASE_SERVICE_ROLE_KEY: "",
-      SUPABASE_STORAGE_BUCKET: ""
+      SUPABASE_STORAGE_BUCKET: "",
+      TRY_ON_PROVIDER: "mock",
+      VERTEX_ACCESS_TOKEN: "",
+      VERTEX_PROJECT_ID: "",
+      VERTEX_LOCATION: "",
+      VERTEX_TRY_ON_MODEL: "",
+      VERTEX_TRY_ON_STORAGE_URI: ""
     },
     url: "http://127.0.0.1:3001",
     reuseExistingServer: false,

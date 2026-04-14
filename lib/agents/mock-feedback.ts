@@ -20,14 +20,28 @@ export function buildMockOnboardingFeedback(
   payload: AgentRequest
 ): OnboardingAgentResponse {
   const style = payload.survey.current_style;
+  const goal = payload.survey.style_goal || "전체적인 스타일 개선";
+  const confidence = payload.survey.confidence_level || "미입력";
 
   return {
-    diagnosis: `${style} 중심의 코디라 편한 인상은 있지만, 실루엣과 레이어가 아직 약해서 스타일 의도가 잘 안 보입니다.`,
+    diagnosis: `${style} 중심의 코디라 편한 인상은 있지만, ${goal} 목표와 현재 자신감(${confidence})을 기준으로 보면 실루엣과 레이어가 아직 약합니다.`,
     improvements: [
       "바지 핏을 조금 더 곧게 잡으면 전체 인상이 훨씬 정리돼 보여요.",
       "상의에 얇은 겉옷이나 셔츠 하나만 추가해도 단조로운 느낌이 줄어요.",
       "신발 톤을 상의나 하의와 맞추면 코디가 덜 흩어져 보여요."
     ],
+    recommended_outfit: {
+      title: "지금 가진 옷으로 만드는 깔끔한 기본 조합",
+      items: [
+        payload.closet_profile?.tops || "가장 깔끔한 무지 상의",
+        payload.closet_profile?.bottoms || "주름이 적은 일자핏 바지",
+        payload.closet_profile?.shoes || "상의나 바지와 톤이 맞는 신발"
+      ],
+      reason:
+        `${goal}에는 새로 사기보다 지금 가진 옷 중 실루엣이 가장 단정한 조합을 먼저 고르는 편이 변화가 바로 보입니다.`,
+      try_on_prompt:
+        "전신 정면 사진을 기준으로 무지 상의, 일자핏 바지, 톤이 맞는 신발을 자연스럽게 착용한 미리보기"
+    },
     today_action:
       "지금 가진 옷 중 가장 깔끔한 상의와 바지를 한 번 다시 조합해서 거울로 비교해보세요.",
     day1_mission: dayOneMission

@@ -153,6 +153,14 @@ try {
 3. 모든 피드백 요청에 Fallback 텍스트 반환
 4. 복구 후 피드백 재시도 안내 이메일 발송 (이메일 수집된 유저 대상)
 
+### 로컬 Gemini Vision 타임아웃
+1. 증상: `/api/feedback` 이 약 30초 후 500으로 끝나고 로그에 `This operation was aborted` 가 나온다.
+2. 원인: 사진 분석은 텍스트 smoke test보다 오래 걸릴 수 있으며, 짧은 타임아웃 + 재시도 조합이 실패 시간을 늘린다.
+3. 로컬 권장값: `GEMINI_REQUEST_TIMEOUT_MS=30000`, `GEMINI_MAX_RETRIES=0`
+4. 먼저 `/api/dev/gemini` POST smoke test로 키와 기본 모델 응답을 확인한다.
+5. 실제 사진 분석 API 검증은 `npm run smoke:feedback:gemini`로 확인한다. mock E2E 통과를 실제 Gemini 검증으로 간주하지 않는다.
+6. 실제 브라우저 업로드 경로 검증은 같은 로컬 서버에서 `npm run smoke:feedback:browser`로 확인한다.
+
 ### Supabase Storage 장애 시
 1. 상태 페이지 확인: https://status.supabase.com
 2. 신규 사진 업로드 일시 중단 (텍스트 대체 모드 우선 안내)
