@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import NextImage from "next/image";
-
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-const MAX_ANALYSIS_IMAGE_EDGE = 1600;
-const ANALYSIS_IMAGE_QUALITY = 0.85;
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+import {
+  ANALYSIS_IMAGE_QUALITY,
+  isValidTextDescription,
+  MAX_ANALYSIS_IMAGE_EDGE,
+  MIN_TEXT_DESCRIPTION_LENGTH,
+  normalizeTextDescription,
+  validatePhotoFile
+} from "@/lib/upload/photo-input";
 
 type PhotoUploaderProps = {
   image?: string;
@@ -68,35 +71,34 @@ export function PhotoUploader({
   async function handleFileChange(file: File) {
     setError(null);
 
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      setError("PNG, JPG, WEBP 이미지만 업로드할 수 있습니다.");
+    const validation = validatePhotoFile(file);
+
+    if (!validation.ok) {
+      setError(validation.message);
       onChange({ image: undefined, text_description: undefined });
       return;
     }
 
-    if (file.size > MAX_UPLOAD_BYTES) {
-      setError("10MB 이하 사진만 업로드할 수 있습니다.");
+    try {
+      const dataUrl = await normalizeImageForAnalysis(file);
+      onChange({ image: dataUrl, text_description: undefined });
+    } catch {
+      setError("사진을 읽지 못했습니다.");
       onChange({ image: undefined, text_description: undefined });
-      return;
     }
-
-    const dataUrl = await normalizeImageForAnalysis(file);
-
-    onChange({ image: dataUrl, text_description: undefined });
   }
 
   return (
     <div className="space-y-5">
       {mode === "photo" ? (
         <div className="space-y-5">
-          <div className="space-y-2 text-left">
+          <div className="space-y-1 text-left">
             <p className="poster-kicker">Photo First</p>
-            <p className="text-sm leading-6 text-stone-700">
-              전신, 정면, 밝은 곳이면 충분합니다. 분석용 이미지는 자동으로 1600px 이하
-              JPEG로 정리됩니다.
+            <p className="text-sm font-semibold leading-6 text-muted">
+              전신이 보이면 됩니다.
             </p>
           </div>
-          <div className="overflow-hidden bg-surface">
+          <div className="work-surface overflow-hidden">
             {image ? (
               <NextImage
                 alt="업로드한 스타일 사진 미리보기"
@@ -112,15 +114,15 @@ export function PhotoUploader({
                   지금 입은 모습 그대로
                 </p>
                 <p className="mt-3 max-w-xs text-sm font-bold leading-6 text-muted">
-                  잘 나온 사진보다 전체 실루엣이 보이는 사진이 더 중요합니다.
+                  전신, 정면, 밝은 곳.
                 </p>
               </div>
             )}
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center text-xs font-black text-muted">
-            <span className="ui-panel px-2 py-3">전신</span>
-            <span className="ui-panel px-2 py-3">정면</span>
-            <span className="ui-panel px-2 py-3">밝은 곳</span>
+          <div className="metric-strip grid-cols-3 text-xs font-black text-muted">
+            <span className="metric-cell">전신</span>
+            <span className="metric-cell">정면</span>
+            <span className="metric-cell">밝은 곳</span>
           </div>
           <div className="space-y-3">
             <label
@@ -130,7 +132,7 @@ export function PhotoUploader({
               {image ? "사진 다시 선택하기" : "사진 선택하기"}
             </label>
             <p className="text-center text-xs font-bold leading-5 text-muted">
-              업로드된 사진은 분석 직후 삭제됩니다.
+              분석 후 삭제.
             </p>
             {error ? (
               <p className="text-center text-sm font-black leading-6 text-red-700">{error}</p>
@@ -153,7 +155,7 @@ export function PhotoUploader({
           </div>
         </div>
       ) : (
-        <div className="ui-panel space-y-3">
+        <div className="work-surface space-y-3 p-5">
           <label
             className="text-sm font-black uppercase tracking-[0.22em] text-muted"
             htmlFor="text-description"
@@ -172,6 +174,12 @@ export function PhotoUploader({
             placeholder="예: 검은 후드티, 중청 와이드 데님, 회색 운동화"
             value={textDescription ?? ""}
           />
+          <p className="text-xs font-bold leading-5 text-muted">
+            최소 {MIN_TEXT_DESCRIPTION_LENGTH}자.
+            {textDescription && !isValidTextDescription(textDescription)
+              ? ` 현재 ${normalizeTextDescription(textDescription).length}자입니다.`
+              : ""}
+          </p>
         </div>
       )}
       <button

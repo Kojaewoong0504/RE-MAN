@@ -21,7 +21,7 @@ export function BottomCTA({
   }`;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 flex justify-center border-t border-black/10 bg-[rgba(252,248,239,0.92)] px-5 pb-5 pt-4 backdrop-blur-md">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[var(--bottom-tab-height)] z-20 flex justify-center border-t border-black/10 bg-[rgba(252,248,239,0.92)] px-5 pb-4 pt-3 backdrop-blur-md">
       {href && !disabled ? (
         <Link className={className} href={href}>
           {label}

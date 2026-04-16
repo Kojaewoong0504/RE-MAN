@@ -8,6 +8,28 @@ import { SurveyCard } from "@/components/survey/SurveyCard";
 import { syncSurveyToFirestore } from "@/lib/firebase/firestore";
 import { patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
 
+function readSavedStyleSettings() {
+  try {
+    const raw = window.sessionStorage.getItem("reman:style-settings");
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<{
+      style_goal: string;
+      confidence_level: string;
+    }>;
+
+    return {
+      style_goal: parsed.style_goal ?? "",
+      confidence_level: parsed.confidence_level ?? ""
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function SurveyPage() {
   const router = useRouter();
   const [survey, setSurvey] = useState({
@@ -100,8 +122,21 @@ export default function SurveyPage() {
         disabled={!isComplete}
         label="사진 업로드로 이동"
         onClick={() => {
+          const currentState = readOnboardingState();
+          const savedStyleSettings = readSavedStyleSettings();
           const nextState = patchOnboardingState({
-            survey,
+            survey: {
+              ...currentState.survey,
+              current_style: survey.current_style,
+              motivation: survey.motivation,
+              budget: survey.budget,
+              style_goal:
+                currentState.survey.style_goal || savedStyleSettings?.style_goal || "",
+              confidence_level:
+                currentState.survey.confidence_level ||
+                savedStyleSettings?.confidence_level ||
+                ""
+            },
             feedback: undefined,
             fallback_message: undefined
           });

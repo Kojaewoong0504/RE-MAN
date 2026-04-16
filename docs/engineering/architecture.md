@@ -83,7 +83,17 @@
     "shoes": "흰색 스니커즈",
     "outerwear": "바람막이",
     "avoid": "너무 튀는 색"
-  }
+  },
+  "closet_items": [
+    {
+      "id": "local-id",
+      "category": "tops",
+      "name": "흰색 무지 티셔츠",
+      "color": "흰색",
+      "fit": "레귤러",
+      "notes": "자주 입음"
+    }
+  ]
 }
 ```
 
@@ -111,7 +121,7 @@
 
 ```
 스타일 프로그램 클라이언트
-  → 사진(base64) + 설문 데이터 + 목표/자신감 + 옷장 컨텍스트를 /api/feedback 으로 POST
+  → 사진(base64) + 설문 데이터 + 목표/자신감 + 옷장 아이템 요약을 /api/feedback 으로 POST
 
 /api/feedback (Next.js API Route)
   → Supabase Storage에 임시 업로드
@@ -206,6 +216,7 @@ RESEND_API_KEY=
 - 실착 미리보기 provider는 기본 `mock` 이며, Vertex AI 연동은 `TRY_ON_PROVIDER=vertex`, `VERTEX_PROJECT_ID`, `VERTEX_LOCATION`, 인증 토큰(`VERTEX_ACCESS_TOKEN` 또는 로컬 `gcloud auth print-access-token`)이 있을 때 동작한다
 - `VERTEX_TRY_ON_STORAGE_URI`는 선택값이다. 설정하면 GCS output 경로를 요청에 포함하고, 설정하지 않으면 inline image bytes 응답을 기대한다
 - Vertex Virtual Try-On 기본 모델 ID는 `virtual-try-on-001`이며, 변경이 필요하면 `VERTEX_TRY_ON_MODEL`로 명시한다
+- provider 실패는 `missing_vertex_config`, `vertex_http_error`, `vertex_output_uri_only`, `empty_vertex_response` 같은 코드로 분류한다. 사용자에게는 내부 오류 전문을 노출하지 않고 안전한 fallback 문구만 반환한다
 - 스타일은 첫 번째 프로그램이며, 앱 전체 진입 구조와 동일시하지 않는다
 - Vercel 무료 플랜 함수 실행 시간 제한: 10초 → AI 호출 타임아웃 8초로 설정
 - Firebase Spark 플랜 한도 주의 (초기엔 충분, 트래픽 증가 시 Blaze 전환)

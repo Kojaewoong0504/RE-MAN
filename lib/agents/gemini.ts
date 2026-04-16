@@ -6,6 +6,9 @@ import type {
   OnboardingAgentResponse
 } from "@/lib/agents/contracts";
 import {
+  normalizeDailyResponse,
+  normalizeDeepDiveResponse,
+  normalizeOnboardingResponse,
   validateDeepDiveResponse,
   validateDailyResponse,
   validateOnboardingResponse
@@ -102,7 +105,8 @@ function getJsonShape(agent: AgentKind) {
     "title": "추천 조합 이름",
     "items": ["상의/겉옷", "하의", "신발"],
     "reason": "왜 이 조합이 현재 옷장과 사진에 맞는지 1~2줄",
-    "try_on_prompt": "실착 이미지 생성을 위한 간결한 프롬프트 1줄"
+    "try_on_prompt": "실착 이미지 생성을 위한 간결한 프롬프트 1줄",
+    "source_item_ids": {"tops": "선택한 상의 id", "bottoms": "선택한 하의 id", "shoes": "선택한 신발 id"}
   },
   "today_action": "오늘 당장 할 수 있는 것 1가지",
   "day1_mission": "내일이 아니라 오늘 바로 시작할 수 있는 Day 1 미션 1줄"
@@ -161,6 +165,11 @@ function buildInstruction(
       payload.closet_profile
         ? `옷장 컨텍스트: 상의=${payload.closet_profile.tops || "없음"} / 하의=${payload.closet_profile.bottoms || "없음"} / 신발=${payload.closet_profile.shoes || "없음"} / 겉옷=${payload.closet_profile.outerwear || "없음"} / 피하고 싶은 것=${payload.closet_profile.avoid || "없음"}`
         : "옷장 컨텍스트: 없음",
+      payload.closet_items?.length
+        ? `옷장 아이템 id 목록: ${payload.closet_items
+            .map((item) => `${item.category}:${item.id}:${item.color || ""} ${item.name}`)
+            .join(" / ")}`
+        : "옷장 아이템 id 목록: 없음",
       payload.text_description
         ? `설명: ${payload.text_description}`
         : "설명: 이미지 없음",
@@ -192,6 +201,7 @@ function buildInstruction(
     '금지 표현: "왜 이렇게 입었어요", "이건 좀 아닌 것 같아요".',
     "브랜드나 가격으로 사용자를 평가하지 마세요.",
     "improvements는 반드시 3개여야 합니다.",
+    "모든 문장은 모바일 화면에서 바로 읽히도록 짧게 쓰세요. diagnosis/reason은 1문장, 각 action은 1문장만 허용합니다.",
     "today_action은 지금 가진 옷과 아이템으로 바로 할 수 있는 행동만 제안하세요.",
     "사용자가 구매 후보를 명시적으로 요청하지 않았으므로 쇼핑, 구매, 구입, 사세요 같은 제안을 하지 마세요.",
     "daily-agent일 때는 바로 전날 피드백에서 사용자가 무엇을 반영했는지 먼저 비교하고, 같은 지적을 반복하지 말고 오늘 달라진 점을 기준으로 말하세요.",
@@ -221,6 +231,17 @@ function buildInstruction(
 - shoes: ${payload.closet_profile?.shoes || "미입력"}
 - outerwear: ${payload.closet_profile?.outerwear || "미입력"}
 - avoid: ${payload.closet_profile?.avoid || "미입력"}`,
+    `등록된 옷장 아이템 id:
+${
+  payload.closet_items?.length
+    ? payload.closet_items
+        .map(
+          (item) =>
+            `- ${item.category} / id=${item.id} / ${item.color || ""} ${item.name} / size=${item.size || "미입력"} / wear=${item.wear_state || "미입력"}`
+        )
+        .join("\n")
+    : "- 없음"
+}`,
     `기존 피드백 이력:
 ${history}`,
     agent === "fit" || agent === "color" || agent === "occasion" || agent === "closet"
@@ -236,7 +257,7 @@ ${
         ? "상황별 코디 deep dive는 사용자의 motivation을 기준으로 소개팅, 출근, 주말 약속 같은 실제 상황에서 현재 추천 조합을 어떻게 조정할지 설명하세요. 새 구매는 유도하지 마세요."
         : "내 옷장 다른 조합 deep dive는 closet_profile에 있는 상의, 하의, 신발, 겉옷 안에서만 다른 조합을 제안하세요. 새 구매나 없는 아이템을 제안하지 마세요."
 }`
-      : "onboarding-agent는 recommended_outfit을 반드시 포함하세요. 추천 조합은 현재 옷장 컨텍스트를 먼저 사용하고 구매를 유도하지 마세요.",
+      : "onboarding-agent는 recommended_outfit을 반드시 포함하세요. 추천 조합은 현재 옷장 컨텍스트를 먼저 사용하고 구매를 유도하지 마세요. 등록된 옷장 아이템을 사용했다면 recommended_outfit.source_item_ids에 해당 id를 카테고리별로 넣으세요.",
     "recommended_outfit.try_on_prompt는 별도 실착 이미지 생성 API에 넘길 수 있게 짧고 구체적으로 작성하세요.",
     "응답은 JSON만 반환하세요. 코드펜스 없이 순수 JSON만 반환하세요.",
     `JSON 스키마:
@@ -378,7 +399,7 @@ export async function generateOnboardingFeedback(
     throw new Error("invalid_onboarding_response");
   }
 
-  return response as OnboardingAgentResponse;
+  return normalizeOnboardingResponse(response as OnboardingAgentResponse);
 }
 
 export async function generateDailyFeedback(
@@ -394,7 +415,7 @@ export async function generateDailyFeedback(
     throw new Error("invalid_daily_response");
   }
 
-  return response as DailyAgentResponse;
+  return normalizeDailyResponse(response as DailyAgentResponse);
 }
 
 export async function generateDeepDiveFeedback(
@@ -410,5 +431,5 @@ export async function generateDeepDiveFeedback(
     throw new Error("invalid_deep_dive_response");
   }
 
-  return response as DeepDiveResponse;
+  return normalizeDeepDiveResponse(response as DeepDiveResponse);
 }

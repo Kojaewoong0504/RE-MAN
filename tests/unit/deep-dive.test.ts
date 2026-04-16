@@ -188,6 +188,43 @@ describe("deep-dive contract", () => {
     expect(prompt).toContain(baseFeedback.recommended_outfit.title);
   });
 
+  it("normalizes verbose Gemini deep-dive responses before returning them", async () => {
+    const verboseText =
+      "이 문장은 모바일 결과 카드에서 너무 길어져 사용자가 핵심을 읽기 어렵기 때문에 짧게 정리되어야 합니다. 같은 설명이 계속 반복되어 카드 높이가 커집니다.";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    title: "너무 긴 제목이 계속 이어져서 결과 카드 제목 영역을 망가뜨리는 경우",
+                    diagnosis: verboseText,
+                    focus_points: [verboseText, verboseText, verboseText],
+                    recommendation: verboseText,
+                    action: verboseText
+                  })
+                }
+              ]
+            }
+          }
+        ]
+      })
+    });
+
+    vi.stubEnv("GOOGLE_API_KEY", "test-key");
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await generateDeepDiveFeedback(baseRequest, { maxRetries: 0 });
+
+    expect(result.title.length).toBeLessThanOrEqual(32);
+    expect(result.diagnosis.length).toBeLessThanOrEqual(96);
+    expect(result.focus_points.every((point) => point.length <= 72)).toBe(true);
+    expect(result.action.length).toBeLessThanOrEqual(72);
+  });
+
   it("rejects malformed Gemini deep-dive responses", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

@@ -16,6 +16,7 @@
   --color-accent-ink: #f9f2df;
   --shell-width: 480px;
   --bottom-cta-height: 96px;
+  --bottom-tab-height: 76px;
 }
 
 body {
@@ -49,7 +50,7 @@ a {
   width: 100%;
   max-width: var(--shell-width);
   margin: 0 auto;
-  padding: 24px 20px calc(var(--bottom-cta-height) + 68px);
+  padding: 20px 18px calc(var(--bottom-cta-height) + var(--bottom-tab-height) + 48px);
 }
 
 .poster-grid {
@@ -94,6 +95,11 @@ a {
   .app-back-button {
     @apply text-lg transition active:translate-y-px;
     color: var(--color-ink);
+  }
+
+  .app-back-button:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 4px;
   }
 
   .ui-section {
@@ -152,6 +158,14 @@ a {
     border-color: var(--color-line-strong);
   }
 
+  .ui-button:focus-visible,
+  .ui-button-secondary:focus-visible,
+  .ui-button-accent:focus-visible,
+  .ui-choice:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
   .ui-choice-selected {
     border-color: var(--color-ink);
     background: var(--color-ink);
@@ -167,5 +181,947 @@ a {
 
   .ui-input:focus {
     border-color: var(--color-ink);
+  }
+
+  .screen-hero {
+    @apply space-y-3 border-b pb-5;
+    border-color: var(--color-line);
+  }
+
+  .screen-title {
+    @apply text-[34px] font-black leading-[1.03] tracking-[-0.06em] text-ink;
+  }
+
+  .screen-copy {
+    @apply max-w-sm text-[15px] font-semibold leading-6 text-muted;
+  }
+
+  .work-surface {
+    @apply border bg-[var(--color-surface-raised)];
+    border-color: var(--color-line);
+  }
+
+  .work-surface-quiet {
+    @apply border bg-[var(--color-bg)];
+    border-color: var(--color-line);
+  }
+
+  .action-rail {
+    @apply divide-y border;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .action-row {
+    @apply flex min-h-14 items-center justify-between gap-4 px-4 py-3 text-left text-sm font-black transition active:translate-y-px;
+    color: var(--color-ink);
+  }
+
+  .action-row span:first-child {
+    @apply leading-5;
+  }
+
+  .action-row:hover {
+    background: rgba(21, 19, 15, 0.04);
+  }
+
+  .action-row:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  .metric-strip {
+    @apply grid border text-center;
+    border-color: var(--color-line);
+    background: var(--color-surface);
+  }
+
+  .metric-cell {
+    @apply border-r p-3 last:border-r-0;
+    border-color: var(--color-line);
+  }
+
+  .compact-list {
+    @apply divide-y border-y;
+    border-color: var(--color-line);
+  }
+
+  .compact-list-item {
+    @apply py-4;
+  }
+
+  .result-summary {
+    @apply border bg-[var(--color-surface-raised)] p-4;
+    border-color: var(--color-line);
+  }
+
+  .result-hero-card {
+    @apply space-y-5 border p-4;
+    border-color: var(--color-ink);
+    background: var(--color-surface-raised);
+  }
+
+  .result-photo-thumb {
+    @apply h-24 w-20 shrink-0 overflow-hidden border bg-[var(--color-surface)];
+    border-color: var(--color-line);
+  }
+
+  .result-outfit-block {
+    @apply border-t pt-4;
+    border-color: var(--color-line);
+  }
+
+  .result-item-strip {
+    @apply my-3 grid grid-cols-3 gap-2;
+  }
+
+  .result-item-strip span {
+    @apply flex min-h-14 items-center justify-center border px-2 text-center text-sm font-black leading-5 text-ink;
+    border-color: var(--color-line);
+    background: var(--color-bg);
+  }
+
+  .result-next-action {
+    @apply mt-4 border-t pt-4;
+    border-color: var(--color-line);
+  }
+
+  .result-next-action span {
+    @apply text-[10px] font-black uppercase tracking-[0.2em] text-muted;
+  }
+
+  .result-next-action p {
+    @apply mt-2 text-base font-black leading-6 text-ink;
+  }
+
+  .result-closet-basis {
+    @apply space-y-3;
+  }
+
+  .result-section-heading h2 {
+    @apply mt-2 text-[24px] font-black leading-none tracking-[-0.05em] text-ink;
+  }
+
+  .result-basis-grid {
+    @apply grid gap-3;
+  }
+
+  .result-basis-card {
+    @apply grid grid-cols-[1fr_auto] gap-3 border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .result-basis-card p {
+    @apply text-[10px] font-black uppercase tracking-[0.18em] text-muted;
+  }
+
+  .result-basis-card h3 {
+    @apply mt-2 text-lg font-black leading-5 tracking-[-0.04em] text-ink;
+  }
+
+  .result-basis-card > span {
+    @apply h-fit rounded-full border px-3 py-1 text-[10px] font-black;
+    border-color: var(--color-line);
+    background: var(--color-bg);
+  }
+
+  .result-basis-card small {
+    @apply col-span-2 text-sm font-bold leading-5 text-muted;
+  }
+
+  .result-basis-matched {
+    border-color: var(--color-ink);
+  }
+
+  .result-basis-empty {
+    @apply border border-dashed p-4 text-sm font-black leading-6 text-muted;
+    border-color: var(--color-line);
+  }
+
+  .result-action-dock {
+    @apply grid grid-cols-3 border text-center;
+    border-color: var(--color-ink);
+    background: var(--color-ink);
+  }
+
+  .result-action-dock a,
+  .result-action-dock button {
+    @apply min-h-14 border-r px-2 text-sm font-black text-[var(--color-bg)] transition active:translate-y-px last:border-r-0;
+    border-color: rgba(252, 248, 239, 0.25);
+  }
+
+  .result-action-dock a {
+    @apply flex items-center justify-center;
+  }
+
+  .result-tools {
+    @apply divide-y border;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .result-collapsible-panel {
+    @apply space-y-4 border-t p-4;
+    border-color: var(--color-line);
+    background: var(--color-bg);
+  }
+
+  .result-size-check {
+    @apply space-y-3 border-t pt-5;
+    border-color: var(--color-line);
+  }
+
+  .result-size-note {
+    @apply text-sm font-bold leading-6 text-muted;
+  }
+
+  .result-size-grid {
+    @apply grid gap-3;
+  }
+
+  .result-size-card {
+    @apply grid grid-cols-[1fr_auto] gap-3 border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .result-size-card p {
+    @apply text-[10px] font-black uppercase tracking-[0.18em] text-muted;
+  }
+
+  .result-size-card h3 {
+    @apply mt-2 text-[28px] font-black leading-none tracking-[-0.05em] text-ink;
+  }
+
+  .result-size-card > span {
+    @apply h-fit rounded-full border px-3 py-1 text-[10px] font-black;
+    border-color: var(--color-line);
+    background: var(--color-bg);
+  }
+
+  .result-size-card small {
+    @apply col-span-2 text-sm font-bold leading-5 text-muted;
+  }
+
+  .result-catalog-candidate {
+    @apply col-span-2 border-t pt-3;
+    border-color: var(--color-line);
+  }
+
+  .result-catalog-candidate strong {
+    @apply block text-sm font-black leading-5 text-ink;
+  }
+
+  .result-catalog-candidate span {
+    @apply mt-1 block text-xs font-bold leading-5 text-muted;
+  }
+
+  .result-size-empty {
+    @apply grid grid-cols-[1fr_auto] items-center gap-4 border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .result-size-empty p {
+    @apply text-sm font-black leading-6 text-ink;
+  }
+
+  .result-size-empty a {
+    @apply rounded-full border px-4 py-2 text-xs font-black;
+    border-color: var(--color-ink);
+    background: var(--color-bg);
+  }
+
+  #size-profile:target {
+    @apply border-black bg-[var(--color-surface-raised)] px-4 pb-5;
+    box-shadow: inset 4px 0 0 var(--color-ink);
+  }
+
+  .settings-closet-summary {
+    @apply grid grid-cols-[1fr_auto] items-center gap-4 border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .settings-closet-summary h3 {
+    @apply mt-2 text-2xl font-black leading-none tracking-[-0.05em] text-ink;
+  }
+
+  .settings-closet-summary span {
+    @apply mt-2 block text-sm font-bold leading-5 text-muted;
+  }
+
+  .settings-closet-summary a {
+    @apply rounded-full border px-4 py-2 text-sm font-black;
+    border-color: var(--color-ink);
+    background: var(--color-bg);
+  }
+
+  .upload-step-card {
+    @apply space-y-4 border-t pt-6;
+    border-color: var(--color-line);
+  }
+
+  .upload-closet-summary {
+    @apply grid grid-cols-[1fr_auto] items-center gap-4 border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .upload-closet-summary p {
+    @apply text-lg font-black leading-6 tracking-[-0.04em] text-ink;
+  }
+
+  .upload-closet-summary span {
+    @apply mt-1 block text-sm font-bold text-muted;
+  }
+
+  .upload-closet-summary button {
+    @apply rounded-full border px-4 py-2 text-sm font-black;
+    border-color: var(--color-ink);
+    background: var(--color-bg);
+  }
+
+  .upload-memory-card {
+    @apply space-y-4 border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .upload-memory-trigger {
+    @apply grid w-full grid-cols-[1fr_auto] items-center gap-4 text-left;
+  }
+
+  .upload-memory-card h2 {
+    @apply mt-2 text-2xl font-black leading-none tracking-[-0.05em] text-ink;
+  }
+
+  .upload-memory-trigger strong {
+    @apply mt-2 block text-2xl font-black leading-none tracking-[-0.05em] text-ink;
+  }
+
+  .upload-memory-trigger small {
+    @apply mt-2 block text-sm font-bold leading-5 text-muted;
+  }
+
+  .upload-memory-trigger > span:last-child {
+    @apply rounded-full border px-4 py-2 text-sm font-black;
+    border-color: var(--color-line);
+    background: var(--color-bg);
+  }
+
+  .upload-memory-card p:not(.poster-kicker) {
+    @apply text-sm font-bold leading-6 text-muted;
+  }
+
+  .upload-advanced-trigger {
+    @apply grid w-full grid-cols-[1fr_auto] items-center gap-4 text-left;
+  }
+
+  .upload-advanced-trigger strong {
+    @apply mt-2 block text-2xl font-black leading-none tracking-[-0.05em] text-ink;
+  }
+
+  .upload-advanced-trigger small {
+    @apply mt-2 block text-sm font-bold leading-5 text-muted;
+  }
+
+  .upload-advanced-trigger > span:last-child {
+    @apply rounded-full border px-4 py-2 text-sm font-black;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .upload-advanced-panel {
+    @apply space-y-5 border-t pt-5;
+    border-color: var(--color-line);
+  }
+
+  .result-feedback-memory {
+    @apply border-t pt-3 text-sm font-black leading-6 text-ink;
+    border-color: var(--color-line);
+  }
+
+  .home-hero {
+    @apply relative overflow-hidden border;
+    border-color: var(--color-line);
+    background: var(--color-ink);
+  }
+
+  .home-status {
+    @apply grid grid-cols-[1fr_auto] items-center gap-4 border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .home-status p:last-child {
+    @apply mt-2 text-lg font-black leading-6 tracking-[-0.04em] text-ink;
+  }
+
+  .home-status a {
+    @apply flex h-14 w-14 items-center justify-center rounded-full text-sm font-black;
+    background: var(--color-ink);
+    color: var(--color-bg);
+  }
+
+  .home-actions {
+    @apply grid gap-3;
+  }
+
+  .home-action-primary {
+    @apply flex min-h-16 items-center justify-between border px-4 text-lg font-black;
+    border-color: var(--color-ink);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  .home-quick-grid {
+    @apply grid grid-cols-3 gap-3;
+  }
+
+  .home-icon-card {
+    @apply flex min-h-28 flex-col justify-between border p-3;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .home-icon-card-disabled {
+    @apply opacity-55;
+  }
+
+  .home-icon-mark {
+    @apply flex h-9 w-9 items-center justify-center rounded-full text-xs font-black tracking-[-0.02em];
+    background: var(--color-ink);
+    color: var(--color-bg);
+  }
+
+  .home-icon-label {
+    @apply text-lg font-black leading-none tracking-[-0.04em] text-ink;
+  }
+
+  .home-icon-sub {
+    @apply text-xs font-bold text-muted;
+  }
+
+  .home-strip {
+    @apply grid grid-cols-[1fr_auto] items-center gap-4 border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface);
+  }
+
+  .home-strip p:last-child {
+    @apply mt-2 text-base font-black leading-6 text-ink;
+  }
+
+  .home-strip a {
+    @apply text-sm font-black underline underline-offset-4;
+  }
+
+  .profile-card {
+    @apply grid gap-6 border p-5;
+    border-color: var(--color-ink);
+    background: var(--color-surface-raised);
+  }
+
+  .profile-account {
+    @apply grid grid-cols-[auto_1fr] items-center gap-4 border-t pt-5;
+    border-color: var(--color-line);
+  }
+
+  .profile-avatar {
+    @apply flex h-16 w-16 items-center justify-center rounded-full border text-2xl font-black;
+    border-color: var(--color-ink);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  .profile-mini-grid {
+    @apply grid grid-cols-2 border;
+    border-color: var(--color-line);
+  }
+
+  .profile-mini-grid > div {
+    @apply min-h-24 border-b border-r p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface);
+  }
+
+  .profile-mini-grid > div:nth-child(even) {
+    @apply border-r-0;
+  }
+
+  .profile-mini-grid > div:nth-last-child(-n+2) {
+    @apply border-b-0;
+  }
+
+  .profile-mini-grid p:last-child {
+    @apply mt-3 text-xl font-black tracking-[-0.04em] text-ink;
+  }
+
+  .profile-action-grid {
+    @apply grid grid-cols-2 gap-3;
+  }
+
+  .profile-action-card {
+    @apply flex min-h-20 items-center justify-between border p-4 text-lg font-black tracking-[-0.04em];
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .closet-workspace {
+    @apply space-y-4;
+  }
+
+  .closet-toolbar {
+    @apply flex items-end justify-between gap-4;
+  }
+
+  .closet-toolbar h2,
+  .closet-modal-header h2 {
+    @apply mt-2 text-[30px] font-black leading-none tracking-[-0.06em] text-ink;
+  }
+
+  .closet-add-button {
+    @apply flex h-14 w-14 items-center justify-center rounded-full border text-3xl font-black leading-none;
+    border-color: var(--color-ink);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  .closet-cabinet {
+    @apply relative overflow-hidden border p-3;
+    border-color: var(--color-ink);
+    background:
+      linear-gradient(90deg, rgba(21, 19, 15, 0.08), transparent 14%, transparent 86%, rgba(21, 19, 15, 0.08)),
+      linear-gradient(180deg, #d8cdb7, #b7aa8f);
+    box-shadow: inset 0 0 0 6px rgba(21, 19, 15, 0.08);
+  }
+
+  .closet-cabinet::before,
+  .closet-cabinet::after {
+    content: "";
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    width: 14px;
+    border: 1px solid rgba(21, 19, 15, 0.25);
+    background: linear-gradient(180deg, rgba(249, 242, 223, 0.28), rgba(21, 19, 15, 0.08));
+    pointer-events: none;
+  }
+
+  .closet-cabinet::before {
+    left: 10px;
+  }
+
+  .closet-cabinet::after {
+    right: 10px;
+  }
+
+  .closet-cabinet-top {
+    @apply relative z-10 mb-3 flex items-center justify-between border px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em];
+    border-color: rgba(21, 19, 15, 0.35);
+    background: linear-gradient(180deg, #efe4cd, #c7b99b);
+    color: rgba(21, 19, 15, 0.75);
+  }
+
+  .closet-cabinet-body {
+    @apply relative z-10 grid gap-3 border p-3;
+    border-color: rgba(21, 19, 15, 0.35);
+    background:
+      linear-gradient(90deg, transparent calc(50% - 1px), rgba(21, 19, 15, 0.16) calc(50% - 1px), rgba(21, 19, 15, 0.16) calc(50% + 1px), transparent calc(50% + 1px)),
+      rgba(249, 242, 223, 0.48);
+  }
+
+  .closet-shelf {
+    @apply relative overflow-hidden border;
+    border-color: rgba(21, 19, 15, 0.26);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 26%),
+      rgba(249, 242, 223, 0.52);
+    box-shadow: inset 0 -8px 0 rgba(21, 19, 15, 0.06);
+  }
+
+  .closet-shelf-tops,
+  .closet-shelf-outerwear {
+    min-height: 184px;
+  }
+
+  .closet-shelf-bottoms,
+  .closet-shelf-shoes {
+    min-height: 150px;
+  }
+
+  .closet-shelf-closed {
+    min-height: 92px;
+    cursor: pointer;
+  }
+
+  .closet-shelf-bottoms {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 24%),
+      repeating-linear-gradient(180deg, rgba(21, 19, 15, 0.04), rgba(21, 19, 15, 0.04) 1px, transparent 1px, transparent 38px),
+      rgba(249, 242, 223, 0.54);
+  }
+
+  .closet-shelf-shoes {
+    background:
+      linear-gradient(90deg, transparent 33%, rgba(21, 19, 15, 0.09) 33%, rgba(21, 19, 15, 0.09) 34%, transparent 34%, transparent 66%, rgba(21, 19, 15, 0.09) 66%, rgba(21, 19, 15, 0.09) 67%, transparent 67%),
+      rgba(249, 242, 223, 0.56);
+  }
+
+  .closet-shelf-header {
+    @apply relative z-10 flex w-full items-center justify-between border-b px-4 py-3 text-left;
+    border-color: rgba(21, 19, 15, 0.18);
+    background: rgba(21, 19, 15, 0.045);
+  }
+
+  .closet-shelf-header div {
+    @apply flex items-baseline gap-3;
+  }
+
+  .closet-shelf-header p {
+    @apply text-sm font-black tracking-[-0.02em] text-ink;
+  }
+
+  .closet-shelf-header span {
+    @apply text-xs font-black text-muted;
+  }
+
+  .closet-shelf-toggle {
+    @apply rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em];
+    border-color: rgba(21, 19, 15, 0.35);
+    background: var(--color-bg);
+  }
+
+  .closet-closed-face {
+    @apply relative grid min-h-12 grid-cols-[1fr_auto] items-center gap-3 px-4 py-4 text-xs font-black;
+    color: rgba(21, 19, 15, 0.62);
+  }
+
+  .closet-closed-face::before {
+    content: "";
+    position: absolute;
+    inset: 8px 12px;
+    border: 1px solid rgba(21, 19, 15, 0.12);
+    background:
+      linear-gradient(90deg, transparent calc(50% - 1px), rgba(21, 19, 15, 0.12) calc(50% - 1px), rgba(21, 19, 15, 0.12) calc(50% + 1px), transparent calc(50% + 1px)),
+      rgba(249, 242, 223, 0.16);
+    pointer-events: none;
+  }
+
+  .closet-closed-face span {
+    @apply relative z-10;
+  }
+
+  .closet-hanger-rail {
+    @apply absolute left-5 right-5 top-[58px] h-[6px] rounded-full;
+    background: linear-gradient(90deg, rgba(21, 19, 15, 0.15), rgba(21, 19, 15, 0.58), rgba(21, 19, 15, 0.15));
+    box-shadow: 0 8px 14px rgba(21, 19, 15, 0.08);
+  }
+
+  .closet-rail {
+    @apply relative z-10 flex min-h-32 gap-3 overflow-x-auto px-4 pb-4 pt-7;
+  }
+
+  .closet-item-tile {
+    @apply relative grid w-24 shrink-0 gap-2 text-left;
+  }
+
+  .closet-shelf-tops .closet-item-tile::before,
+  .closet-shelf-outerwear .closet-item-tile::before {
+    content: "";
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    width: 1px;
+    height: 18px;
+    background: rgba(21, 19, 15, 0.42);
+  }
+
+  .closet-shelf-tops .closet-item-tile::after,
+  .closet-shelf-outerwear .closet-item-tile::after {
+    content: "";
+    position: absolute;
+    top: -19px;
+    left: calc(50% - 5px);
+    width: 10px;
+    height: 8px;
+    border: 1px solid rgba(21, 19, 15, 0.44);
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .closet-item-tile-selected .closet-item-photo {
+    border-color: var(--color-ink);
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+
+  .closet-item-photo {
+    @apply block aspect-[3/4] overflow-hidden border bg-[var(--color-bg)];
+    border-color: rgba(21, 19, 15, 0.26);
+    box-shadow: 0 6px 14px rgba(21, 19, 15, 0.08);
+  }
+
+  .closet-item-photo > span {
+    @apply flex h-full w-full items-center justify-center text-[10px] font-black uppercase text-muted;
+  }
+
+  .closet-item-name {
+    @apply line-clamp-2 text-xs font-black leading-4 text-ink;
+  }
+
+  .closet-empty-slot {
+    @apply flex min-h-24 min-w-28 items-center justify-center border border-dashed px-4 text-xs font-black text-muted;
+    border-color: rgba(21, 19, 15, 0.26);
+    background: rgba(249, 242, 223, 0.42);
+  }
+
+  .closet-detail-drawer {
+    @apply grid grid-cols-[1fr_auto] gap-4 border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .closet-detail-drawer h3 {
+    @apply mt-2 text-xl font-black leading-6 tracking-[-0.04em] text-ink;
+  }
+
+  .closet-detail-drawer p:last-child {
+    @apply mt-2 text-sm font-bold leading-5 text-muted;
+  }
+
+  .closet-empty-state {
+    @apply grid gap-3 border border-dashed p-5 text-center;
+    border-color: var(--color-line);
+  }
+
+  .closet-empty-state p {
+    @apply text-sm font-bold text-muted;
+  }
+
+  .closet-empty-state button {
+    @apply mx-auto w-fit text-sm font-black underline underline-offset-4;
+  }
+
+  .closet-modal-backdrop {
+    @apply fixed inset-0 z-40 flex items-end bg-black/45 p-3;
+  }
+
+  .closet-modal {
+    @apply max-h-[88svh] w-full overflow-y-auto border p-5 shadow-2xl;
+    border-color: var(--color-ink);
+    background: var(--color-bg);
+  }
+
+  .closet-modal-header {
+    @apply mb-5 flex items-start justify-between gap-4;
+  }
+
+  .closet-modal-close {
+    @apply flex h-10 w-10 items-center justify-center rounded-full border text-2xl font-black leading-none;
+    border-color: var(--color-line);
+    background: var(--color-surface);
+  }
+
+  .closet-photo-preview {
+    @apply aspect-[4/5] overflow-hidden border bg-[var(--color-surface-raised)];
+    border-color: var(--color-line);
+  }
+
+  .closet-photo-preview > div {
+    @apply flex h-full flex-col justify-end p-4;
+  }
+
+  .closet-photo-preview p {
+    @apply text-[24px] font-black leading-none tracking-[-0.05em] text-ink;
+  }
+
+  .closet-photo-preview span {
+    @apply mt-2 text-xs font-black text-muted;
+  }
+
+  .history-hero {
+    @apply grid gap-5 border p-5;
+    border-color: var(--color-ink);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  .history-pill {
+    @apply inline-flex w-fit border px-3 py-2 text-xs font-black uppercase tracking-[0.12em];
+    border-color: rgba(249, 242, 223, 0.45);
+    color: var(--color-accent-ink);
+  }
+
+  .history-count {
+    @apply flex items-center justify-between border px-4 py-3;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .history-count > p:last-child {
+    @apply text-3xl font-black leading-none text-ink;
+  }
+
+  .history-tabs {
+    @apply grid grid-cols-3 border p-1;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .history-tabs button {
+    @apply min-h-11 text-sm font-black text-muted;
+  }
+
+  .history-tabs .history-tab-active {
+    background: var(--color-ink);
+    color: var(--color-bg);
+  }
+
+  .history-card-list {
+    @apply grid gap-3;
+  }
+
+  .history-card {
+    @apply border;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .history-card-trigger {
+    @apply grid w-full grid-cols-[44px_1fr_auto] items-center gap-3 p-4 text-left;
+  }
+
+  .history-card-index {
+    @apply flex h-11 w-11 items-center justify-center rounded-full border text-sm font-black;
+    border-color: var(--color-ink);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  .history-card-trigger strong {
+    @apply mt-1 block text-xl font-black leading-6 tracking-[-0.05em] text-ink;
+  }
+
+  .history-card-trigger small {
+    @apply mt-2 block text-sm font-bold leading-5 text-muted;
+  }
+
+  .history-card-toggle {
+    @apply rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-muted;
+    border-color: var(--color-line);
+    background: var(--color-bg);
+  }
+
+  .history-card-detail {
+    @apply grid gap-4 border-t p-4;
+    border-color: var(--color-line);
+    background: var(--color-bg);
+  }
+
+  .history-card-detail p {
+    @apply text-sm font-bold leading-6 text-ink;
+  }
+
+  .history-card-detail a {
+    @apply mt-3 inline-flex text-sm font-black underline underline-offset-4;
+  }
+
+  .history-label {
+    @apply text-[10px] font-black uppercase tracking-[0.18em] text-muted;
+  }
+
+  .history-reaction-row {
+    @apply flex items-center justify-between gap-3 border-b pb-3;
+    border-color: var(--color-line);
+  }
+
+  .history-reaction-row span {
+    @apply text-[10px] font-black uppercase tracking-[0.18em] text-muted;
+  }
+
+  .history-reaction-row strong {
+    @apply text-right text-sm font-black leading-5 text-ink;
+  }
+
+  .history-basis {
+    @apply grid gap-3;
+  }
+
+  .history-basis > div {
+    @apply grid gap-2;
+  }
+
+  .history-basis span {
+    @apply flex items-center justify-between gap-3 border px-3 py-2 text-sm font-black text-ink;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .history-basis b {
+    @apply text-[10px] uppercase tracking-[0.16em] text-muted;
+  }
+
+  .empty-state {
+    @apply border-y py-8 text-center text-sm font-black text-muted;
+    border-color: var(--color-line);
+  }
+
+  .style-start-hero {
+    @apply relative min-h-[520px] overflow-hidden border;
+    border-color: var(--color-line);
+    background: var(--color-ink);
+  }
+
+  .hero-inline-cta {
+    @apply flex min-h-14 items-center justify-between border px-4 text-base font-black;
+    border-color: rgba(249, 242, 223, 0.5);
+    background: rgba(249, 242, 223, 0.12);
+    color: var(--color-bg);
+  }
+
+  .style-start-strip {
+    @apply grid grid-cols-3 border text-center;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .style-start-strip div {
+    @apply border-r p-4 last:border-r-0;
+    border-color: var(--color-line);
+  }
+
+  .style-start-strip p {
+    @apply text-[10px] font-black uppercase tracking-[0.2em] text-muted;
+  }
+
+  .style-start-strip span {
+    @apply mt-2 block text-lg font-black text-ink;
+  }
+
+  .bottom-tab-nav {
+    @apply fixed inset-x-0 bottom-0 z-30 flex justify-center border-t px-3 pb-3 pt-2 backdrop-blur-md;
+    min-height: var(--bottom-tab-height);
+    border-color: var(--color-line);
+    background: rgba(250, 246, 237, 0.94);
+  }
+
+  .bottom-tab-nav-inner {
+    @apply grid w-full max-w-[440px] grid-cols-5 gap-1;
+  }
+
+  .bottom-tab-item {
+    @apply flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-black tracking-[-0.01em] transition active:translate-y-px;
+    color: var(--color-muted);
+  }
+
+  .bottom-tab-item svg {
+    @apply transition;
+  }
+
+  .bottom-tab-item-active {
+    color: var(--color-ink);
+    background: rgba(21, 19, 15, 0.06);
   }
 }

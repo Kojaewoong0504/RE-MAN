@@ -92,6 +92,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ### 규칙
 - 허용 파일 타입: `image/jpeg`, `image/png`, `image/webp` 만
 - 최대 파일 크기: **10MB**
+- 브라우저 검증을 통과하지 않고 `/api/feedback`을 직접 호출해도 서버 계약에서 data URL MIME/크기와 텍스트 대체 입력 길이를 다시 검증한다
 - `/api/try-on` person/product image도 data URL 기준 같은 MIME과 10MB 제한을 적용
 - `/api/try-on` prompt는 500자 이하로 제한
 - 파일명 랜덤 생성 — 유저 입력 파일명 사용 금지
@@ -116,9 +117,12 @@ const filename = `${userId}/${crypto.randomUUID()}.jpg`
 ```
 
 ### Rate Limiting
-- 동일 userId당 API 호출: **분당 5회** 제한
+- `/api/feedback`은 동일 `user_id`가 있으면 사용자 기준, 없으면 IP 기준으로 **분당 5회** 제한한다
+- `/api/feedback` 초과 시 `429`와 `Retry-After`를 반환한다
 - `/api/try-on`은 이미지 생성 비용이 있으므로 실제 Vertex provider 활성화 전 인증 사용자 + 레이트리밋 + 사용량 제한이 필요
 - `/api/try-on`은 access token이 있는 인증 사용자만 호출 가능하며, 사용자 단위 rate limit을 둔다
+- `/api/try-on`은 실제 Vertex 생성이 가능한 상태에서 성공한 생성 1회당 크레딧 1개를 차감한다
+- provider 실패 시 예약/차감한 크레딧은 복구해야 한다
 - Vercel Edge Middleware 또는 Upstash Redis로 구현
 - 초과 시 응답: `429 Too Many Requests`
 - Supabase Storage 버킷은 `private` 유지, 공개 버킷 금지

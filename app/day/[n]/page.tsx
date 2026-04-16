@@ -26,10 +26,10 @@ type DayPageProps = {
 
 function getDefaultMission(day: number) {
   if (day === 1) {
-    return "오늘은 옷장 안에서 가장 깔끔한 조합 한 벌만 골라 직접 입어보세요.";
+    return "깔끔한 조합 한 벌만 입어보세요.";
   }
 
-  return "어제 피드백에서 가장 쉬운 한 가지만 반영해서 다시 올려보세요.";
+  return "쉬운 한 가지만 반영하세요.";
 }
 
 function getWeeklyWrapUpSummary(day: number) {
@@ -37,7 +37,7 @@ function getWeeklyWrapUpSummary(day: number) {
     return null;
   }
 
-  return "처음보다 어떤 변화가 가장 효과 있었는지 하나만 남기면, 다음 주에도 같은 방식으로 덜 흔들리고 옷을 고를 수 있습니다.";
+  return "가장 효과 있던 변화 하나만 남기세요.";
 }
 
 function getCompletionBaseline(
@@ -47,10 +47,10 @@ function getCompletionBaseline(
   const previousFocus = recentHistory.at(-1);
 
   if (previousFocus) {
-    return `${feedback.today_action} 이 기준만은 다음에도 그대로 가져가세요. 최근 흐름: ${previousFocus}`;
+    return `${feedback.today_action} 기준 유지. 최근: ${previousFocus}`;
   }
 
-  return `${feedback.today_action} 이 기준만은 다음에도 그대로 가져가세요.`;
+  return `${feedback.today_action} 기준 유지.`;
 }
 
 function RecentProgressList({ items }: { items: string[] }) {

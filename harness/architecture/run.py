@@ -10,6 +10,7 @@ IMPORT_RE = re.compile(r'from\s+["\']([^"\']+)["\']')
 ARCH_DOC = ROOT / "docs" / "engineering" / "architecture.md"
 FEEDBACK_ROUTE = ROOT / "app" / "api" / "feedback" / "route.ts"
 DAILY_ROUTE = ROOT / "app" / "api" / "daily" / "route.ts"
+TRY_ON_ROUTE = ROOT / "app" / "api" / "try-on" / "route.ts"
 TEMP_IMAGE_HELPER = ROOT / "lib" / "supabase" / "temp-image.ts"
 
 
@@ -57,7 +58,7 @@ def boundary_failures():
 def doc_contract_failures():
     failures = []
     doc_text = ARCH_DOC.read_text(encoding="utf-8")
-    required_routes = ["/api/feedback", "/api/daily", "/api/email"]
+    required_routes = ["/api/feedback", "/api/deep-dive", "/api/daily", "/api/try-on", "/api/email"]
 
     for route in required_routes:
         if route not in doc_text:
@@ -65,12 +66,45 @@ def doc_contract_failures():
 
     required_files = [
         ROOT / "app" / "api" / "feedback" / "route.ts",
+        ROOT / "app" / "api" / "deep-dive" / "route.ts",
         ROOT / "app" / "api" / "daily" / "route.ts",
+        TRY_ON_ROUTE,
         ROOT / "app" / "api" / "email" / "route.ts",
     ]
     for file_path in required_files:
         if not file_path.exists():
             failures.append(f"missing required route file {file_path.relative_to(ROOT)}")
+
+    return failures
+
+
+def try_on_contract_failures():
+    failures = []
+    if not TRY_ON_ROUTE.exists():
+        failures.append(f"missing required route file {TRY_ON_ROUTE.relative_to(ROOT)}")
+        return failures
+
+    frontend_try_on_dir = ROOT / "components" / "try-on"
+    if frontend_try_on_dir.exists():
+        failures.append(
+            "components/try-on must not exist in MVP front; try-on is backend-only until explicitly approved"
+        )
+
+    route_text = TRY_ON_ROUTE.read_text(encoding="utf-8")
+    route_needles = [
+        (
+            "getAuthenticatedSessionUser(",
+            "try-on route must require authenticated users before generation",
+        ),
+        ("checkRateLimit(", "try-on route must rate limit generation requests"),
+        ("TryOnProviderError", "try-on route must classify provider failures"),
+        ("TRY_ON_FALLBACK_MESSAGE", "try-on route must return safe user-facing fallback copy"),
+        ('error.code', "try-on route must return stable provider error codes"),
+    ]
+
+    for needle, message in route_needles:
+        if needle not in route_text:
+            failures.append(f"{TRY_ON_ROUTE.relative_to(ROOT)}: {message}")
 
     return failures
 
@@ -117,6 +151,7 @@ def main():
     failures = []
     failures.extend(boundary_failures())
     failures.extend(doc_contract_failures())
+    failures.extend(try_on_contract_failures())
     failures.extend(storage_contract_failures())
 
     if failures:

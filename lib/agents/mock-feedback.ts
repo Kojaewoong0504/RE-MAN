@@ -18,6 +18,20 @@ const tomorrowPreviewByDay: Record<number, string> = {
   7: "오늘이 마지막이니, 처음보다 무엇이 또렷해졌는지 정리해볼게요."
 };
 
+function getFirstClosetItemIdByCategory(payload: AgentRequest) {
+  return (["tops", "bottoms", "shoes", "outerwear"] as const).reduce<
+    NonNullable<OnboardingAgentResponse["recommended_outfit"]["source_item_ids"]>
+  >((acc, category) => {
+    const item = payload.closet_items?.find((closetItem) => closetItem.category === category);
+
+    if (item) {
+      acc[category] = item.id;
+    }
+
+    return acc;
+  }, {});
+}
+
 export function buildMockOnboardingFeedback(
   payload: AgentRequest
 ): OnboardingAgentResponse {
@@ -42,7 +56,8 @@ export function buildMockOnboardingFeedback(
       reason:
         `${goal}에는 새로 사기보다 지금 가진 옷 중 실루엣이 가장 단정한 조합을 먼저 고르는 편이 변화가 바로 보입니다.`,
       try_on_prompt:
-        "전신 정면 사진을 기준으로 무지 상의, 일자핏 바지, 톤이 맞는 신발을 자연스럽게 착용한 미리보기"
+        "전신 정면 사진을 기준으로 무지 상의, 일자핏 바지, 톤이 맞는 신발을 자연스럽게 착용한 미리보기",
+      source_item_ids: getFirstClosetItemIdByCategory(payload)
     },
     today_action:
       "지금 가진 옷 중 가장 깔끔한 상의와 바지를 한 번 다시 조합해서 거울로 비교해보세요.",

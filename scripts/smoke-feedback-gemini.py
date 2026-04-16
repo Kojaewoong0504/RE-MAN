@@ -64,6 +64,41 @@ def post_json(path: str, payload: dict) -> tuple[int, dict]:
         return error.code, data
 
 
+def build_expected_source_item_ids(payload: dict) -> dict[str, str]:
+    expected: dict[str, str] = {}
+
+    for item in payload.get("closet_items", []):
+        category = item.get("category")
+        item_id = item.get("id")
+
+        if category in {"tops", "bottoms", "shoes", "outerwear"} and isinstance(item_id, str):
+            expected[category] = item_id
+
+    return expected
+
+
+def validate_source_item_ids(data: dict, expected: dict[str, str]) -> list[str]:
+    recommended_outfit = data.get("recommended_outfit")
+
+    if not isinstance(recommended_outfit, dict):
+        return ["recommended_outfit is not an object"]
+
+    source_item_ids = recommended_outfit.get("source_item_ids")
+
+    if not isinstance(source_item_ids, dict):
+        return ["recommended_outfit.source_item_ids is missing or not an object"]
+
+    errors = []
+    for category, expected_id in expected.items():
+        actual_id = source_item_ids.get(category)
+        if actual_id != expected_id:
+            errors.append(
+                f"source_item_ids.{category} expected {expected_id}, got {actual_id!r}"
+            )
+
+    return errors
+
+
 def main() -> int:
     started = time.time()
     payload = {
@@ -76,10 +111,39 @@ def main() -> int:
             "confidence_level": "배우는 중",
         },
         "closet_profile": {
-            "tops": "무지 티셔츠, 후드티",
-            "bottoms": "청바지",
+            "tops": "네이비 셔츠",
+            "bottoms": "검정 슬랙스",
             "shoes": "흰색 스니커즈",
+            "outerwear": "차콜 자켓",
         },
+        "closet_items": [
+            {
+                "id": "smoke-top-1",
+                "category": "tops",
+                "name": "네이비 셔츠",
+                "color": "네이비",
+                "fit": "레귤러",
+                "size": "L",
+                "wear_state": "잘 맞음",
+            },
+            {
+                "id": "smoke-bottom-1",
+                "category": "bottoms",
+                "name": "검정 슬랙스",
+                "color": "검정",
+                "fit": "스트레이트",
+                "size": "32",
+                "wear_state": "잘 맞음",
+            },
+            {
+                "id": "smoke-shoes-1",
+                "category": "shoes",
+                "name": "흰색 스니커즈",
+                "color": "흰색",
+                "size": "270",
+                "wear_state": "보통",
+            },
+        ],
         "feedback_history": [],
     }
     status, data = post_json("/api/feedback", payload)
@@ -116,6 +180,30 @@ def main() -> int:
         )
         return 1
 
+    expected_source_item_ids = build_expected_source_item_ids(payload)
+    source_item_id_errors = validate_source_item_ids(data, expected_source_item_ids)
+    if source_item_id_errors:
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "status": status,
+                    "duration_ms": duration_ms,
+                    "error": "invalid source_item_ids",
+                    "details": source_item_id_errors,
+                    "expected_source_item_ids": expected_source_item_ids,
+                    "actual_source_item_ids": data.get("recommended_outfit", {}).get(
+                        "source_item_ids"
+                    )
+                    if isinstance(data.get("recommended_outfit"), dict)
+                    else None,
+                    "hint": "Gemini must return the registered closet item ids it used in recommended_outfit.source_item_ids.",
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 1
+
     print(
         json.dumps(
             {
@@ -123,6 +211,7 @@ def main() -> int:
                 "status": status,
                 "duration_ms": duration_ms,
                 "recommended_outfit": data["recommended_outfit"].get("title"),
+                "source_item_ids": data["recommended_outfit"].get("source_item_ids"),
             },
             ensure_ascii=False,
         )

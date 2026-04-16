@@ -16,6 +16,24 @@ export type TryOnResponse = {
   preview_image: string;
   message: string;
 };
+export type TryOnErrorCode =
+  | "missing_vertex_config"
+  | "vertex_http_error"
+  | "vertex_output_uri_only"
+  | "empty_vertex_response"
+  | "invalid_try_on_image";
+
+export class TryOnProviderError extends Error {
+  code: TryOnErrorCode;
+  statusHint: number;
+
+  constructor(code: TryOnErrorCode, message: string, statusHint = 502) {
+    super(message);
+    this.name = "TryOnProviderError";
+    this.code = code;
+    this.statusHint = statusHint;
+  }
+}
 
 const dataImagePattern = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/;
 
@@ -73,7 +91,7 @@ function parseDataImage(value: string): ParsedDataImage {
   const matched = value.match(dataImagePattern);
 
   if (!matched) {
-    throw new Error("invalid_try_on_image");
+    throw new TryOnProviderError("invalid_try_on_image", "invalid_try_on_image", 400);
   }
 
   return {
@@ -146,23 +164,22 @@ function getVertexAuthSource(): TryOnRuntimeStatus["auth_source"] {
 }
 
 export function getTryOnRuntimeStatus(): TryOnRuntimeStatus {
+  const provider = resolveTryOnProvider();
   const missingConfig = [];
 
-  if (!process.env.VERTEX_PROJECT_ID) {
+  if (provider === "vertex" && !process.env.VERTEX_PROJECT_ID) {
     missingConfig.push("VERTEX_PROJECT_ID");
   }
 
-  if (!process.env.VERTEX_LOCATION) {
+  if (provider === "vertex" && !process.env.VERTEX_LOCATION) {
     missingConfig.push("VERTEX_LOCATION");
   }
 
   const authSource = getVertexAuthSource();
 
-  if (authSource === "missing") {
+  if (provider === "vertex" && authSource === "missing") {
     missingConfig.push("VERTEX_ACCESS_TOKEN or gcloud auth");
   }
-
-  const provider = resolveTryOnProvider();
 
   return {
     provider,
@@ -181,7 +198,11 @@ function getVertexConfig() {
   const modelId = getVertexModelId();
 
   if (!projectId || !location || !accessToken) {
-    throw new Error("missing_vertex_try_on_config");
+    throw new TryOnProviderError(
+      "missing_vertex_config",
+      "missing_vertex_try_on_config",
+      503
+    );
   }
 
   return {
@@ -233,7 +254,11 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     const excerpt = body.replace(/\s+/g, " ").slice(0, 500);
-    throw new Error(`vertex_try_on_http_${response.status}:${excerpt || "empty_error_body"}`);
+    throw new TryOnProviderError(
+      "vertex_http_error",
+      `vertex_try_on_http_${response.status}:${excerpt || "empty_error_body"}`,
+      response.status === 401 || response.status === 403 ? 502 : 503
+    );
   }
 
   const data = (await response.json()) as VertexTryOnResponse;
@@ -242,10 +267,18 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
 
   if (!image?.bytesBase64Encoded) {
     if (image?.gcsUri) {
-      throw new Error("vertex_try_on_returned_gcs_uri_without_inline_bytes");
+      throw new TryOnProviderError(
+        "vertex_output_uri_only",
+        "vertex_try_on_returned_gcs_uri_without_inline_bytes",
+        502
+      );
     }
 
-    throw new Error("empty_vertex_try_on_response");
+    throw new TryOnProviderError(
+      "empty_vertex_response",
+      "empty_vertex_try_on_response",
+      502
+    );
   }
 
   return {

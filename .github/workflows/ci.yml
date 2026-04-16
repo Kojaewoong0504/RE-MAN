@@ -10,7 +10,7 @@ jobs:
   required-gates:
     name: required-gates
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
@@ -36,8 +36,8 @@ jobs:
       - name: Run gate checks
         run: python3 scripts/run-save-gate.py pre-push
 
-      - name: Upload harness reports on failure
-        if: failure()
+      - name: Upload harness reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: harness-reports
@@ -46,36 +46,19 @@ jobs:
             harness/learned_failures.json
           if-no-files-found: ignore
 
-  onboarding-e2e:
-    name: onboarding-e2e
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: required-gates
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
-
-      - name: Run onboarding e2e
-        run: npm run test:e2e
+          name: visual-deep-dive
+          path: output/playwright/deep-dive
+          if-no-files-found: ignore
 
       - name: Upload Playwright artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts
+          name: playwright-failure-artifacts
           path: |
             test-results
             playwright-report

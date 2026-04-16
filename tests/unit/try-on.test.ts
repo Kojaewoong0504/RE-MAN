@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   generateTryOnPreview,
+  getTryOnRuntimeStatus,
   resolveTryOnProvider,
+  TryOnProviderError,
   validateTryOnRequest
 } from "@/lib/agents/try-on";
 import {
@@ -78,6 +80,29 @@ describe("try-on provider contract", () => {
     expect(resolveTryOnProvider()).toBe("vertex");
   });
 
+  it("does not report Vertex config as missing while mock provider is active", () => {
+    vi.stubEnv("TRY_ON_PROVIDER", "mock");
+
+    expect(getTryOnRuntimeStatus()).toMatchObject({
+      provider: "mock",
+      real_generation_enabled: false,
+      missing_config: []
+    });
+  });
+
+  it("reports missing Vertex config only when Vertex provider is active", () => {
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+
+    expect(getTryOnRuntimeStatus()).toMatchObject({
+      provider: "vertex",
+      real_generation_enabled: false,
+      missing_config: expect.arrayContaining([
+        "VERTEX_PROJECT_ID",
+        "VERTEX_LOCATION"
+      ])
+    });
+  });
+
   it("returns the person image in mock mode", async () => {
     vi.stubEnv("TRY_ON_PROVIDER", "mock");
 
@@ -103,6 +128,17 @@ describe("try-on provider contract", () => {
         prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
       })
     ).rejects.toThrow("missing_vertex_try_on_config");
+
+    await expect(
+      generateTryOnPreview({
+        person_image: image,
+        product_image: image,
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).rejects.toMatchObject({
+      code: "missing_vertex_config",
+      statusHint: 503
+    });
   });
 
   it("calls Vertex Virtual Try-On when the provider is enabled", async () => {
@@ -151,5 +187,67 @@ describe("try-on provider contract", () => {
         storageUri: "gs://bucket/try-on"
       }
     });
+  });
+
+  it("classifies Vertex HTTP failures without losing the provider error code", async () => {
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => "upstream exploded"
+      })
+    );
+
+    await expect(
+      generateTryOnPreview({
+        person_image: image,
+        product_image: image,
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).rejects.toMatchObject({
+      code: "vertex_http_error",
+      statusHint: 503
+    } satisfies Partial<TryOnProviderError>);
+  });
+
+  it("classifies output URI only responses as unsupported for the current inline flow", async () => {
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              images: [
+                {
+                  mimeType: "image/png",
+                  gcsUri: "gs://bucket/output.png"
+                }
+              ]
+            }
+          ]
+        })
+      })
+    );
+
+    await expect(
+      generateTryOnPreview({
+        person_image: image,
+        product_image: image,
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).rejects.toMatchObject({
+      code: "vertex_output_uri_only",
+      statusHint: 502
+    } satisfies Partial<TryOnProviderError>);
   });
 });

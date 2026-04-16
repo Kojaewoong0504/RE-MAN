@@ -1,0 +1,46 @@
+import { describe, expect, it } from "vitest";
+import {
+  isValidTextDescription,
+  MAX_UPLOAD_BYTES,
+  normalizeTextDescription,
+  validateImageDataUrl,
+  validatePhotoFile
+} from "@/lib/upload/photo-input";
+
+describe("photo input validation", () => {
+  it("accepts supported image files under the size limit", () => {
+    expect(validatePhotoFile({ type: "image/png", size: 1024 })).toEqual({ ok: true });
+  });
+
+  it("rejects unsupported image types", () => {
+    expect(validatePhotoFile({ type: "image/gif", size: 1024 })).toMatchObject({
+      ok: false,
+      reason: "unsupported_type"
+    });
+  });
+
+  it("rejects oversized files", () => {
+    expect(validatePhotoFile({ type: "image/jpeg", size: MAX_UPLOAD_BYTES + 1 })).toMatchObject({
+      ok: false,
+      reason: "too_large"
+    });
+  });
+
+  it("requires a useful text fallback description", () => {
+    expect(normalizeTextDescription(" 검정   후드티와 청바지 ")).toBe("검정 후드티와 청바지");
+    expect(isValidTextDescription("짧음")).toBe(false);
+    expect(isValidTextDescription("검정 후드티와 청바지를 입었어요")).toBe(true);
+  });
+
+  it("validates image data URLs at the API boundary", () => {
+    expect(validateImageDataUrl("data:image/png;base64,abcd")).toEqual({ ok: true });
+    expect(validateImageDataUrl("data:image/gif;base64,abcd")).toMatchObject({
+      ok: false,
+      reason: "unsupported_type"
+    });
+    expect(validateImageDataUrl("not-a-data-url")).toMatchObject({
+      ok: false,
+      reason: "invalid_data_url"
+    });
+  });
+});

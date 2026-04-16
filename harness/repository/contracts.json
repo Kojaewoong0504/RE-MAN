@@ -9,12 +9,14 @@
   "checks": [
     {
       "id": "agents-defined",
-      "description": "AGENTS.md must define the two active agents.",
+      "description": "AGENTS.md must define the primary style-check agent and optional routine agent.",
       "file": "AGENTS.md",
       "patterns": [
         "`onboarding-agent`",
         "`daily-agent`",
-        "이 앱에는 2개의 에이전트가 존재한다."
+        "1개의 기본 에이전트와 1개의 선택형 루틴 에이전트",
+        "Style Check Session",
+        "Routine Mode"
       ]
     },
     {

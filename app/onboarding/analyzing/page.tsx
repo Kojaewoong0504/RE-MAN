@@ -12,6 +12,36 @@ import {
 } from "@/lib/onboarding/storage";
 
 const steps = ["핏을 분석하는 중...", "컬러 밸런스 확인 중...", "개선 포인트 정리 중..."];
+const RATE_LIMIT_MESSAGE =
+  "요청이 너무 빠르게 반복됐습니다. 잠시 후 다시 시도해 주세요.";
+type FeedbackErrorPayload = { fallback_message?: string; detail?: string; error?: string };
+
+function getRetryAfterSeconds(response: Response) {
+  const retryAfter = Number(response.headers.get("Retry-After"));
+  return Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : null;
+}
+
+function buildAnalysisErrorMessage(
+  response: Response,
+  data: FeedbackErrorPayload | null
+) {
+  if (response.status === 429 || data?.error === "rate_limited") {
+    const retryAfter = getRetryAfterSeconds(response);
+    return retryAfter
+      ? `${RATE_LIMIT_MESSAGE} 약 ${retryAfter}초 뒤 다시 시도할 수 있습니다.`
+      : RATE_LIMIT_MESSAGE;
+  }
+
+  const fallback =
+    data && "fallback_message" in data && typeof data.fallback_message === "string"
+      ? data.fallback_message
+      : "피드백을 가져오지 못했습니다. 다시 시도해 주세요.";
+  const detail = data && "detail" in data && typeof data.detail === "string" ? data.detail : "";
+
+  return process.env.NODE_ENV === "development" && detail
+    ? `${fallback} [dev detail: ${detail}]`
+    : fallback;
+}
 
 export default function AnalyzingPage() {
   const router = useRouter();
@@ -51,7 +81,7 @@ export default function AnalyzingPage() {
 
       const data = (await response.json().catch(() => null)) as
         | OnboardingAgentResponse
-        | { fallback_message?: string; detail?: string }
+        | { fallback_message?: string; detail?: string; error?: string }
         | null;
 
       if (!isMounted) {
@@ -59,16 +89,11 @@ export default function AnalyzingPage() {
       }
 
       if (!response.ok || !data || "diagnosis" in data === false) {
-        const fallback =
-          data && "fallback_message" in data && typeof data.fallback_message === "string"
-            ? data.fallback_message
-            : "피드백을 가져오지 못했습니다. 다시 시도해 주세요.";
-        const detail =
-          data && "detail" in data && typeof data.detail === "string" ? data.detail : "";
-        const visibleMessage =
-          process.env.NODE_ENV === "development" && detail
-            ? `${fallback} [dev detail: ${detail}]`
-            : fallback;
+        const errorPayload =
+          data && typeof data === "object" && !("diagnosis" in data)
+            ? (data as FeedbackErrorPayload)
+            : null;
+        const visibleMessage = buildAnalysisErrorMessage(response, errorPayload);
 
         patchOnboardingState({ feedback: undefined, fallback_message: visibleMessage });
         setErrorMessage(visibleMessage);

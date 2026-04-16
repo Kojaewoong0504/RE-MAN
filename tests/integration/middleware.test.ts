@@ -5,7 +5,7 @@ import { SESSION_COOKIE_NAMES } from "@/lib/auth/constants";
 
 describe("auth middleware", () => {
   it("redirects protected routes without session cookies", () => {
-    const request = new NextRequest("http://127.0.0.1:3001/profile");
+    const request = new NextRequest("http://127.0.0.1:3001/credits");
     const response = middleware(request);
     const location = response.headers.get("location");
 
@@ -13,12 +13,12 @@ describe("auth middleware", () => {
     expect(location).not.toBeNull();
     expect(new URL(location ?? "http://localhost").pathname).toBe("/login");
     expect(new URL(location ?? "http://localhost").searchParams.get("returnTo")).toBe(
-      "/profile"
+      "/credits"
     );
   });
 
   it("allows protected routes when an access token is present", () => {
-    const request = new NextRequest("http://127.0.0.1:3001/settings", {
+    const request = new NextRequest("http://127.0.0.1:3001/closet", {
       headers: {
         cookie: `${SESSION_COOKIE_NAMES.access}=access-token`
       }

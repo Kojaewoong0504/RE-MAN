@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BottomTabNav } from "@/components/common/BottomTabNav";
 import { FirebaseSessionBootstrap } from "@/components/common/FirebaseSessionBootstrap";
 import "./globals.css";
 
@@ -17,6 +18,7 @@ export default function RootLayout({
       <body>
         <FirebaseSessionBootstrap />
         {children}
+        <BottomTabNav />
       </body>
     </html>
   );

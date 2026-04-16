@@ -4,72 +4,140 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AccountAccessButton } from "@/components/common/AccountAccessButton";
-import { BottomCTA } from "@/components/common/BottomCTA";
-import { TryOnPreview } from "@/components/try-on/TryOnPreview";
-import type {
-  DeepDiveModule,
-  DeepDiveResponse,
-  OnboardingAgentResponse
-} from "@/lib/agents/contracts";
+import type { OnboardingAgentResponse } from "@/lib/agents/contracts";
+import { fetchAuthSession } from "@/lib/auth/client";
+import type { AuthUser } from "@/lib/auth/types";
 import {
-  buildOnboardingRequest,
+  saveOnboardingFeedbackToFirestore,
+  saveRecommendationFeedbackToFirestore,
+  syncSurveyToFirestore
+} from "@/lib/firebase/firestore";
+import {
+  buildHistoryFromState,
+  getRecommendationFeedbackLabel,
+  normalizeClosetItems,
   patchOnboardingState,
-  readOnboardingState
+  readOnboardingState,
+  syncHistoryFromState,
+  type RecommendationFeedbackReaction
 } from "@/lib/onboarding/storage";
+import {
+  buildClosetBasisMatches,
+  type ClosetBasisItem
+} from "@/lib/product/closet-basis";
+import {
+  buildProductCatalogCandidates,
+  type ProductCatalogCandidate
+} from "@/lib/product/catalog-candidates";
+import {
+  buildSizeCandidates,
+  type SizeCandidate
+} from "@/lib/product/size-candidates";
 
-const resultActions = [
-  {
-    id: "fit",
-    label: "핏 더 보기",
-    description: "기장, 실루엣, 상하의 비율을 따로 확인합니다."
-  },
-  {
-    id: "color",
-    label: "색 조합 보기",
-    description: "지금 조합의 색 균형과 덜 튀는 대안을 확인합니다."
-  },
-  {
-    id: "occasion",
-    label: "상황별 코디",
-    description: "소개팅, 출근, 주말 같은 목적에 맞춰 다시 봅니다."
-  },
-  {
-    id: "closet",
-    label: "내 옷장 다른 조합",
-    description: "입력한 상의, 하의, 신발 안에서 다른 조합을 찾습니다."
-  }
-] as const satisfies ReadonlyArray<{
-  id: DeepDiveModule;
+type AccountSaveStatus = "checking" | "signed-out" | "ready" | "saving" | "saved" | "error";
+type RecommendationFeedbackStatus = "idle" | "saving" | "saved" | "error";
+
+const recommendationReactionOptions: Array<{
+  reaction: RecommendationFeedbackReaction;
   label: string;
   description: string;
-}>;
+}> = [
+  {
+    reaction: "helpful",
+    label: "도움됨",
+    description: "더 추천"
+  },
+  {
+    reaction: "not_sure",
+    label: "애매함",
+    description: "보류"
+  },
+  {
+    reaction: "save_for_later",
+    label: "나중에 보기",
+    description: "저장"
+  }
+];
 
-const moduleKickers: Record<DeepDiveModule, string> = {
-  fit: "Fit Check",
-  color: "Color Check",
-  occasion: "Occasion Check",
-  closet: "Closet Remix"
-};
+function compactUiText(value: string, maxLength = 58) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength - 1)}…`;
+}
+
+function buildResultClosetBasis(
+  closetItems: ReturnType<typeof normalizeClosetItems>,
+  feedback: OnboardingAgentResponse
+) {
+  return buildClosetBasisMatches({
+    closetItems,
+    recommendedItems: feedback.recommended_outfit.items,
+    sourceItemIds: feedback.recommended_outfit.source_item_ids
+  });
+}
+
+function getRecommendedItemsTuple(feedback: OnboardingAgentResponse) {
+  const items = feedback.recommended_outfit.items;
+
+  if (items.length < 3) {
+    return null;
+  }
+
+  return [items[0], items[1], items[2]] as [string, string, string];
+}
 
 export default function ResultPage() {
   const router = useRouter();
   const [feedback, setFeedback] = useState<OnboardingAgentResponse | null>(null);
   const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
   const [personImage, setPersonImage] = useState<string | undefined>();
-  const [selectedResultAction, setSelectedResultAction] = useState<
-    (typeof resultActions)[number] | null
-  >(null);
-  const [deepDiveFeedback, setDeepDiveFeedback] = useState<DeepDiveResponse | null>(null);
-  const [deepDiveError, setDeepDiveError] = useState<string | null>(null);
-  const [isDeepDiveLoading, setIsDeepDiveLoading] = useState(false);
+  const [accountUser, setAccountUser] = useState<AuthUser | null>(null);
+  const [accountSaveStatus, setAccountSaveStatus] = useState<AccountSaveStatus>("checking");
+  const [selectedReaction, setSelectedReaction] =
+    useState<RecommendationFeedbackReaction | null>(null);
+  const [recommendationNote, setRecommendationNote] = useState("");
+  const [recommendationFeedbackStatus, setRecommendationFeedbackStatus] =
+    useState<RecommendationFeedbackStatus>("idle");
+  const [showImprovements, setShowImprovements] = useState(false);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [showAccountSave, setShowAccountSave] = useState(false);
+  const [closetBasis, setClosetBasis] = useState<ClosetBasisItem[]>([]);
+  const [sizeCandidates, setSizeCandidates] = useState<SizeCandidate[]>([]);
+  const [catalogCandidates, setCatalogCandidates] = useState<ProductCatalogCandidate[]>([]);
 
   useEffect(() => {
     const state = readOnboardingState();
+    setSelectedReaction(state.recommendation_feedback?.reaction ?? null);
+    setRecommendationNote(state.recommendation_feedback?.note ?? "");
 
     if (state.feedback) {
       setFeedback(state.feedback);
       setPersonImage(state.image);
+      setClosetBasis(
+        buildResultClosetBasis(
+          normalizeClosetItems(state.closet_items),
+          state.feedback
+        )
+      );
+      const recommendedItems = getRecommendedItemsTuple(state.feedback);
+
+      if (recommendedItems) {
+        const nextSizeCandidates = buildSizeCandidates({
+          sizeProfile: state.size_profile,
+          recommendedItems
+        });
+        setSizeCandidates(nextSizeCandidates);
+        setCatalogCandidates(
+          buildProductCatalogCandidates({
+            sizeCandidates: nextSizeCandidates,
+            styleGoal: state.survey.style_goal
+          })
+        );
+      }
       return;
     }
 
@@ -81,77 +149,133 @@ export default function ResultPage() {
     router.replace("/programs/style/onboarding/upload");
   }, [router]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadAccountState() {
+      const user = await fetchAuthSession();
+
+      if (!mounted) {
+        return;
+      }
+
+      setAccountUser(user);
+      setAccountSaveStatus(user ? "ready" : "signed-out");
+    }
+
+    void loadAccountState();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   function handleStartNewCheck() {
+    const state = readOnboardingState();
+    const preservedHistory =
+      (state.feedback_history?.length ?? 0) > 0
+        ? state.feedback_history
+        : buildHistoryFromState(state);
+
     patchOnboardingState({
       image: undefined,
       text_description: undefined,
       feedback: undefined,
       daily_feedbacks: {},
-      feedback_history: [],
+      deep_dive_feedbacks: {},
+      try_on_previews: {},
+      feedback_history: preservedHistory,
       fallback_message: undefined
     });
     router.push("/programs/style/onboarding/upload");
   }
 
-  async function handleResultAction(action: (typeof resultActions)[number]) {
-    setSelectedResultAction(action);
-    setDeepDiveError(null);
+  function getMatchLabel(status: ClosetBasisItem["matchStatus"]) {
+    if (status === "matched") {
+      return "직접 매칭";
+    }
 
-    if (!feedback) {
-      setDeepDiveFeedback(null);
+    if (status === "optional") {
+      return "추가 선택";
+    }
+
+    return "근거 후보";
+  }
+
+  async function handleSaveRecommendationFeedback() {
+    if (!feedback || !selectedReaction) {
       return;
     }
 
-    const state = readOnboardingState();
-    const basePayload = buildOnboardingRequest(state);
+    setRecommendationFeedbackStatus("saving");
 
-    if (!basePayload) {
-      setDeepDiveError(`${action.label}를 만들기 위한 사진 또는 텍스트 설명을 찾지 못했습니다.`);
-      setDeepDiveFeedback(null);
-      return;
-    }
-
-    setIsDeepDiveLoading(true);
-    setDeepDiveFeedback(null);
+    const nextFeedback = {
+      reaction: selectedReaction,
+      note: recommendationNote.trim() || undefined,
+      outfit_title: feedback.recommended_outfit.title,
+      created_at: new Date().toISOString()
+    };
+    syncHistoryFromState(
+      patchOnboardingState({
+        recommendation_feedback: nextFeedback
+      })
+    );
 
     try {
-      const response = await fetch("/api/deep-dive", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          ...basePayload,
-          module: action.id,
-          current_feedback: feedback
-        })
-      });
-      const data = (await response.json().catch(() => null)) as
-        | DeepDiveResponse
-        | { fallback_message?: string }
-        | null;
-
-      if (!response.ok || !data || "title" in data === false) {
-        setDeepDiveError(
-          data && "fallback_message" in data && typeof data.fallback_message === "string"
-            ? data.fallback_message
-            : `${action.label}를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.`
+      if (accountUser) {
+        const stateWithUser = syncHistoryFromState(
+          patchOnboardingState({
+            user_id: accountUser.uid,
+            email: accountUser.email ?? undefined,
+            recommendation_feedback: nextFeedback
+          })
         );
-        return;
+        await saveRecommendationFeedbackToFirestore(stateWithUser, nextFeedback);
       }
 
-      setDeepDiveFeedback(data);
-    } finally {
-      setIsDeepDiveLoading(false);
+      setRecommendationFeedbackStatus("saved");
+    } catch {
+      setRecommendationFeedbackStatus("error");
+    }
+  }
+
+  async function handleSaveResultToAccount() {
+    if (!feedback || !accountUser) {
+      return;
+    }
+
+    setAccountSaveStatus("saving");
+
+    try {
+      const nextState = syncHistoryFromState(
+        patchOnboardingState({
+          user_id: accountUser.uid,
+          email: accountUser.email ?? undefined
+        })
+      );
+
+      await syncSurveyToFirestore(nextState);
+      await saveOnboardingFeedbackToFirestore(nextState, feedback);
+      if (nextState.recommendation_feedback) {
+        await saveRecommendationFeedbackToFirestore(
+          nextState,
+          nextState.recommendation_feedback
+        );
+      }
+
+      setAccountSaveStatus("saved");
+    } catch {
+      setAccountSaveStatus("error");
     }
   }
 
   return (
-    <main className="app-shell space-y-7">
-      <div className="space-y-5 pt-4">
+    <main className="app-shell space-y-5">
+      <div className="space-y-4 pt-3">
         <div className="app-header">
           <div className="flex items-center gap-4">
             <button
+              aria-label="사진 업로드 화면으로 돌아가기"
               className="app-back-button"
               onClick={() => router.push("/programs/style/onboarding/upload")}
               type="button"
@@ -160,178 +284,305 @@ export default function ResultPage() {
             </button>
             <p className="app-brand">RE:MAN</p>
           </div>
-          <AccountAccessButton />
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2">
           <p className="poster-kicker">Style Check Result</p>
-          <h1 className="max-w-sm text-[40px] font-black leading-[1.03] tracking-[-0.05em] text-ink">
-            지금 사진에서 시작점을 잡았습니다
-          </h1>
-          <p className="max-w-sm text-[17px] font-medium leading-7 text-muted">
-            진단은 길게 설명하지 않습니다. 오늘 바꿀 한 가지와 바로 입어볼 조합을 먼저
-            보여줍니다.
-          </p>
+          <h1 className="screen-title">오늘 바꿀 조합만 먼저 봅니다</h1>
         </div>
       </div>
+
       {feedback ? (
-        <div className="space-y-7">
-          <section className="overflow-hidden border border-black/15 bg-[#f7f0e3]">
-            {personImage ? (
-              <Image
-                alt="분석 기준 전신 사진"
-                className="aspect-[4/5] w-full object-cover"
-                height={900}
-                priority
-                src={personImage}
-                unoptimized
-                width={720}
-              />
+        <div className="space-y-5">
+          <section className="result-hero-card">
+            <div className="flex gap-4">
+              <div className="result-photo-thumb">
+                {personImage ? (
+                  <Image
+                    alt="분석 기준 전신 사진"
+                    className="h-full w-full object-cover"
+                    height={240}
+                    priority
+                    src={personImage}
+                    unoptimized
+                    width={200}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center px-2 text-center text-[11px] font-black leading-4 text-muted">
+                    텍스트 기준
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="poster-kicker">Diagnosis</p>
+                <p className="text-[21px] font-black leading-[1.18] tracking-[-0.04em] text-ink">
+                  {compactUiText(feedback.diagnosis)}
+                </p>
+              </div>
+            </div>
+            <div className="result-outfit-block">
+              <p className="poster-kicker">추천 조합</p>
+              <h2 className="mt-2 text-[30px] font-black leading-[1.02] tracking-[-0.06em] text-ink">
+                {feedback.recommended_outfit.title}
+              </h2>
+              <div className="result-item-strip">
+                {feedback.recommended_outfit.items.map((item) => (
+                  <span key={item}>{item}</span>
+                ))}
+              </div>
+              <p className="text-[14px] font-semibold leading-6 text-muted">
+                {compactUiText(feedback.recommended_outfit.reason)}
+              </p>
+              <div className="result-next-action">
+                <span>오늘 할 일</span>
+                <p>{compactUiText(feedback.today_action, 50)}</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="result-closet-basis">
+            <div className="result-section-heading">
+              <p className="poster-kicker">Closet Basis</p>
+              <h2>내 옷장 근거</h2>
+            </div>
+            {closetBasis.length > 0 ? (
+              <div className="result-basis-grid">
+                {closetBasis.map((item) => (
+                  <article
+                    className={`result-basis-card result-basis-${item.matchStatus}`}
+                    key={`${item.category}-${item.itemName}`}
+                  >
+                    <div>
+                      <p>{item.label}</p>
+                      <h3>{compactUiText(item.itemName, 24)}</h3>
+                    </div>
+                    <span>{getMatchLabel(item.matchStatus)}</span>
+                    <small>
+                      {[item.size, item.wearState].filter(Boolean).join(" · ") || item.role}
+                    </small>
+                  </article>
+                ))}
+              </div>
             ) : (
-              <div className="flex min-h-72 items-center justify-center px-8 text-center text-sm font-black leading-6 text-muted">
-                텍스트 설명 기반 결과입니다. 실착 생성은 전신 사진이 있을 때 사용할 수 있습니다.
+              <div className="result-basis-empty">
+                옷장 사진을 등록하면 다음 추천부터 근거가 보입니다.
               </div>
             )}
           </section>
 
-          <section className="space-y-4 border-t border-black/15 pt-6">
-            <p className="poster-kicker">Diagnosis</p>
-            <p className="text-[25px] font-black leading-[1.18] tracking-[-0.04em] text-ink">
-              {feedback.diagnosis}
-            </p>
+          <section className="result-size-check">
+            <div className="result-section-heading">
+              <p className="poster-kicker">Size Check</p>
+              <h2>사이즈 체크 후보</h2>
+            </div>
+            {sizeCandidates.length > 0 ? (
+              <>
+              <p className="result-size-note">
+                사용자가 입력한 평소 사이즈 기준입니다.
+              </p>
+              <div className="result-size-grid">
+                {sizeCandidates.map((candidate) => {
+                  const catalog = catalogCandidates.find(
+                    (item) => item.category === candidate.category
+                  );
+
+                  return (
+                    <article className="result-size-card" key={candidate.category}>
+                      <div>
+                        <p>{candidate.label}</p>
+                        <h3>{candidate.size}</h3>
+                      </div>
+                      <span>{compactUiText(candidate.referenceItem, 16)}</span>
+                      <small>{compactUiText(candidate.checkPoint, 48)}</small>
+                      {catalog ? (
+                        <div className="result-catalog-candidate">
+                          <strong>{catalog.title}</strong>
+                          <span>{catalog.fit} · 내부 기준 후보</span>
+                        </div>
+                      ) : null}
+                    </article>
+                  );
+                })}
+              </div>
+              </>
+            ) : (
+              <div className="result-size-empty">
+                <p>사이즈 정보를 추가하면 후보를 좁힐 수 있습니다.</p>
+                <Link href="/settings#size-profile">사이즈 추가하기</Link>
+              </div>
+            )}
           </section>
 
-          <section className="space-y-4 border-t border-black/15 pt-6">
-            <div className="space-y-1">
-              <p className="poster-kicker">Change Points</p>
-              <h2 className="text-[28px] font-black leading-tight tracking-[-0.05em] text-ink">
-                오늘은 세 가지만 보면 됩니다
-              </h2>
-            </div>
-            <div className="grid gap-4">
-              {feedback.improvements.map((item, index) => (
-                <div key={item} className="grid grid-cols-[44px_1fr] gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black text-sm font-black text-[#fcf8ef]">
-                    {index + 1}
+          <section className="result-action-dock" aria-label="다음 행동">
+            <button onClick={handleStartNewCheck} type="button">
+              새 체크
+            </button>
+            <Link href="/closet">옷장</Link>
+            <Link href="/history">기록</Link>
+          </section>
+
+          <section className="result-tools">
+            <button
+              aria-expanded={showImprovements}
+              className="action-row w-full"
+              onClick={() => setShowImprovements((current) => !current)}
+              type="button"
+            >
+              <span>바꿀 점 3개 보기</span>
+              <span>{showImprovements ? "접기" : "→"}</span>
+            </button>
+            {showImprovements ? (
+              <div className="compact-list">
+                {feedback.improvements.map((item, index) => (
+                  <div key={item} className="compact-list-item grid grid-cols-[32px_1fr] gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-xs font-black text-[#fcf8ef]">
+                      {index + 1}
+                    </div>
+                    <p className="text-[15px] font-semibold leading-6 text-ink">
+                      {compactUiText(item, 52)}
+                    </p>
                   </div>
-                  <p className="border-b border-black/10 pb-4 text-[16px] font-semibold leading-7 text-ink">
-                    {item}
-                  </p>
+                ))}
+              </div>
+            ) : null}
+
+            <button
+              aria-expanded={showFeedbackForm}
+              className="action-row w-full"
+              onClick={() => setShowFeedbackForm((current) => !current)}
+              type="button"
+            >
+              <span>추천 반응 남기기</span>
+              <span>{showFeedbackForm ? "접기" : "→"}</span>
+            </button>
+            {showFeedbackForm ? (
+              <div className="result-collapsible-panel">
+                <div className="space-y-1">
+                  <p className="poster-kicker">Your Feedback</p>
+                  <h2 className="text-[24px] font-black leading-tight tracking-[-0.04em] text-ink">
+                    이 추천이 도움이 됐나요?
+                  </h2>
                 </div>
-              ))}
-            </div>
-          </section>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {recommendationReactionOptions.map((option) => {
+                    const selected = selectedReaction === option.reaction;
 
-          <section className="ui-panel-muted space-y-4">
-            <p className="poster-kicker">Recommended Outfit</p>
-            <div className="space-y-3">
-              <h2 className="text-[31px] font-black leading-[1.05] tracking-[-0.06em] text-ink">
-                {feedback.recommended_outfit.title}
-              </h2>
-              <p className="text-[17px] font-black leading-7 text-ink">
-                {feedback.recommended_outfit.items.join(" + ")}
-              </p>
-              <p className="text-[15px] font-semibold leading-7 text-muted">
-                {feedback.recommended_outfit.reason}
-              </p>
-            </div>
-          </section>
+                    return (
+                      <button
+                        key={option.reaction}
+                        aria-pressed={selected}
+                        className={`ui-choice p-3 text-left ${selected ? "ui-choice-selected" : ""}`}
+                        onClick={() => {
+                          setSelectedReaction(option.reaction);
+                          setRecommendationFeedbackStatus("idle");
+                        }}
+                        type="button"
+                      >
+                        <span className="block text-sm font-black">{option.label}</span>
+                        <span className="mt-1 block text-xs font-semibold leading-5 opacity-75">
+                          {option.description}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <label className="space-y-2">
+                  <span className="text-sm font-black text-ink">짧은 메모</span>
+                  <textarea
+                    className="min-h-20 w-full border border-black/20 bg-white p-4 text-sm font-medium text-ink outline-none focus:border-black"
+                    maxLength={120}
+                    onChange={(event) => {
+                      setRecommendationNote(event.target.value);
+                      setRecommendationFeedbackStatus("idle");
+                    }}
+                    placeholder="예: 셔츠 조합은 좋은데 신발은 애매했어요."
+                    value={recommendationNote}
+                  />
+                </label>
+                <button
+                  className="ui-button-secondary justify-between py-4 disabled:opacity-60"
+                  disabled={!selectedReaction || recommendationFeedbackStatus === "saving"}
+                  onClick={() => void handleSaveRecommendationFeedback()}
+                  type="button"
+                >
+                  <span>
+                    {recommendationFeedbackStatus === "saving"
+                      ? "반응 저장 중..."
+                      : recommendationFeedbackStatus === "saved" && selectedReaction
+                        ? `${getRecommendationFeedbackLabel(selectedReaction)} 저장됨`
+                        : "추천 반응 저장"}
+                  </span>
+                  <span>→</span>
+                </button>
+                {recommendationFeedbackStatus === "error" ? (
+                  <p className="text-sm font-bold leading-6 text-red-700">
+                    계정 동기화 실패.
+                  </p>
+                ) : null}
+                {recommendationFeedbackStatus === "saved" ? (
+                  <p className="result-feedback-memory">
+                    다음 스타일 체크에 이 반응을 함께 반영합니다.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
-          <section className="ui-panel-accent space-y-3">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--color-accent-ink)]/70">
-              Next Action
-            </p>
-            <h2 className="text-[26px] font-black leading-tight tracking-[-0.05em]">
-              지금 바꿀 것은 하나만
-            </h2>
-            <p className="text-[16px] font-black leading-7">{feedback.today_action}</p>
-          </section>
-
-          <TryOnPreview
-            personImage={personImage}
-            prompt={feedback.recommended_outfit.try_on_prompt}
-            recommendation={feedback.recommended_outfit}
-          />
-
-          <section className="ui-section">
-            <div className="space-y-2">
-              <p className="poster-kicker">Next Checks</p>
-              <h2 className="text-[30px] font-black leading-[1.05] tracking-[-0.05em] text-ink">
-                더 보고 싶은 것만 고르세요
-              </h2>
-              <p className="max-w-md text-[15px] font-semibold leading-7 text-muted">
-                루틴을 따라가지 않아도 됩니다. 필요한 체크만 골라 이어가고, 원하면 새
-                사진으로 다시 시작할 수 있습니다.
-              </p>
-            </div>
-            <div className="grid gap-3">
-              {resultActions.map((action) => {
-                const selected = selectedResultAction?.id === action.id;
-
-                return (
-                  <button
-                    key={action.id}
-                    aria-pressed={selected}
-                    className={`ui-choice ${selected ? "ui-choice-selected" : ""}`}
-                    onClick={() => void handleResultAction(action)}
-                    type="button"
-                  >
-                    <span className="block text-base font-black">{action.label}</span>
-                    <span className="mt-2 block text-sm font-semibold leading-6 opacity-75">
-                      {action.description}
-                    </span>
-                  </button>
-                );
-              })}
+            {accountSaveStatus === "signed-out" ? (
+              <Link
+                className="action-row"
+                href="/login?returnTo=/programs/style/onboarding/result"
+              >
+                <span>로그인하고 결과 저장</span>
+                <span>→</span>
+              </Link>
+            ) : (
               <button
-                className="ui-button-secondary justify-between py-4 text-left"
-                onClick={handleStartNewCheck}
+                aria-expanded={showAccountSave}
+                className="action-row w-full"
+                onClick={() => setShowAccountSave((current) => !current)}
                 type="button"
               >
-                <span>새 스타일 체크 시작하기</span>
-                <span>→</span>
+                <span>계정 저장 열기</span>
+                <span>{showAccountSave ? "접기" : "→"}</span>
               </button>
-            </div>
-            {isDeepDiveLoading ? (
-              <div className="ui-panel-muted">
-                <p className="text-sm font-bold leading-6 text-ink">
-                  {selectedResultAction?.label ?? "추가 체크"}를 따로 읽고 있습니다.
-                </p>
-              </div>
-            ) : null}
-            {deepDiveFeedback ? (
-              <div className="ui-panel-muted space-y-4">
-                <div className="space-y-2">
-                  <p className="poster-kicker">
-                    {selectedResultAction ? moduleKickers[selectedResultAction.id] : "Deep Dive"}
-                  </p>
-                  <h3 className="text-[25px] font-black leading-tight tracking-[-0.04em] text-ink">
-                    {deepDiveFeedback.title}
-                  </h3>
-                  <p className="text-sm font-bold leading-6 text-muted">
-                    {deepDiveFeedback.diagnosis}
-                  </p>
+            )}
+            {showAccountSave && accountSaveStatus !== "signed-out" ? (
+              <div className="result-collapsible-panel">
+                <div className="space-y-1">
+                  <p className="poster-kicker">Account Save</p>
+                  <h2 className="text-[24px] font-black leading-tight tracking-[-0.04em] text-ink">
+                    결과를 계정에 저장합니다
+                  </h2>
                 </div>
-                <div className="grid gap-3">
-                  {deepDiveFeedback.focus_points.map((point) => (
-                    <p key={point} className="border-t border-black/10 pt-3 text-sm font-semibold leading-6 text-ink">
-                      {point}
-                    </p>
-                  ))}
-                </div>
-                <p className="text-sm font-bold leading-6 text-muted">
-                  {deepDiveFeedback.recommendation}
-                </p>
-                <p className="border-t border-black/10 pt-3 text-sm font-black leading-6 text-ink">
-                  {deepDiveFeedback.action}
-                </p>
-              </div>
-            ) : null}
-            {deepDiveError ? (
-              <div className="ui-panel-muted">
-                <p className="text-sm font-bold leading-6 text-red-700">{deepDiveError}</p>
+                <button
+                  className="ui-button-secondary justify-between py-4 disabled:opacity-60"
+                  disabled={
+                    accountSaveStatus === "checking" ||
+                    accountSaveStatus === "saving" ||
+                    accountSaveStatus === "saved"
+                  }
+                  onClick={() => void handleSaveResultToAccount()}
+                  type="button"
+                >
+                  <span>
+                    {accountSaveStatus === "checking"
+                      ? "계정 확인 중..."
+                      : accountSaveStatus === "saving"
+                        ? "계정에 저장 중..."
+                        : accountSaveStatus === "saved"
+                          ? "계정 저장 완료"
+                          : "계정에 결과 저장"}
+                  </span>
+                  <span>{accountSaveStatus === "saved" ? "✓" : "→"}</span>
+                </button>
+                {accountSaveStatus === "error" ? (
+                  <p className="text-sm font-bold leading-6 text-red-700">
+                    계정 저장 실패.
+                  </p>
+                ) : null}
               </div>
             ) : null}
           </section>
+
         </div>
       ) : (
         <div className="ui-panel">
@@ -340,15 +591,6 @@ export default function ResultPage() {
           </p>
         </div>
       )}
-      <div className="space-y-3 pb-24">
-        <Link
-          className="block text-center text-sm font-black text-muted underline underline-offset-4"
-          href="/programs/style/day/1"
-        >
-          원하면 루틴 모드로 이어가기
-        </Link>
-        <BottomCTA href="/" label="결과 저장하고 홈으로" />
-      </div>
     </main>
   );
 }

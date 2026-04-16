@@ -25,8 +25,8 @@ export function ComingSoonProgramPage({
           <p className="mt-3 text-lg leading-7 text-ink">{whyItMatters}</p>
         </div>
         <div className="poster-panel grid gap-4 text-sm text-stone-700">
-          <p>지금은 스타일 프로그램이 먼저 열려 있습니다</p>
-          <p>이 프로그램은 허브 구조를 유지한 채 다음 확장 대상으로 준비 중입니다</p>
+          <p>지금은 스타일 먼저.</p>
+          <p>다음 확장 준비 중.</p>
         </div>
       </div>
       <div className="space-y-3 pb-24">

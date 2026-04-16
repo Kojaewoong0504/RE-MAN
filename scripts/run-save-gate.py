@@ -49,6 +49,8 @@ def command_specs(mode: str):
             [
                 ("integration-tests", "npm run test:integration --silent"),
                 ("gc", "python3 harness/gc/run.py"),
+                ("e2e-onboarding", "npm run test:e2e -- --project=chromium tests/e2e/onboarding.spec.ts"),
+                ("visual-deep-dive", "npm run visual:deep-dive --silent"),
                 ("build", "npm run build --silent"),
             ]
         )

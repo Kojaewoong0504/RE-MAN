@@ -4,10 +4,21 @@ import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "fireb
 import type {
   ClosetProfile,
   DailyAgentResponse,
+  DeepDiveModule,
+  DeepDiveResponse,
   OnboardingAgentResponse
 } from "@/lib/agents/contracts";
 import { getFirebaseFirestoreInstance, hasFirebaseClientConfig } from "@/lib/firebase/client";
-import { buildHistoryFromState, type OnboardingState } from "@/lib/onboarding/storage";
+import {
+  buildHistoryFromState,
+  normalizeRecommendationFeedback,
+  normalizeSizeProfile,
+  normalizeClosetItems,
+  type ClosetItem,
+  type OnboardingState,
+  type RecommendationFeedback,
+  type SizeProfile
+} from "@/lib/onboarding/storage";
 import type { SurveyInput } from "@/lib/agents/contracts";
 
 export type UserProfileDocument = {
@@ -18,6 +29,8 @@ export type UserProfileDocument = {
   preferredProgram?: string | null;
   survey?: Partial<SurveyInput> | null;
   closet_profile?: Partial<ClosetProfile> | null;
+  closet_items?: ClosetItem[] | null;
+  size_profile?: SizeProfile | null;
 };
 
 function getFirestore() {
@@ -45,7 +58,9 @@ export async function syncSurveyToFirestore(state: OnboardingState) {
       createdAt: serverTimestamp(),
       email: state.email ?? null,
       survey: state.survey,
-      closet_profile: state.closet_profile ?? null
+      closet_profile: state.closet_profile ?? null,
+      closet_items: normalizeClosetItems(state.closet_items),
+      size_profile: normalizeSizeProfile(state.size_profile)
     },
     { merge: true }
   );
@@ -127,6 +142,52 @@ export async function saveDailyFeedbackToFirestore(
   });
 }
 
+export async function saveDeepDiveFeedbackToFirestore(
+  state: OnboardingState,
+  module: DeepDiveModule,
+  feedback: DeepDiveResponse
+) {
+  if (!state.user_id) {
+    return;
+  }
+
+  const db = getFirestore();
+
+  if (!db) {
+    return;
+  }
+
+  await setDoc(doc(db, "users", state.user_id, "deepDives", module), {
+    module,
+    createdAt: serverTimestamp(),
+    title: feedback.title,
+    diagnosis: feedback.diagnosis,
+    focus_points: feedback.focus_points,
+    recommendation: feedback.recommendation,
+    action: feedback.action
+  });
+}
+
+export async function saveRecommendationFeedbackToFirestore(
+  state: OnboardingState,
+  feedback: RecommendationFeedback
+) {
+  if (!state.user_id) {
+    return;
+  }
+
+  const db = getFirestore();
+
+  if (!db) {
+    return;
+  }
+
+  await setDoc(doc(db, "users", state.user_id, "recommendationFeedbacks", "style-check"), {
+    ...feedback,
+    updatedAt: serverTimestamp()
+  });
+}
+
 export async function runFirebaseSmokeWrite(userId: string) {
   const db = getFirestore();
 
@@ -169,8 +230,8 @@ export async function updateCurrentUserProfile(
   userId: string,
   profile: Pick<
     UserProfileDocument,
-    "displayName" | "bio" | "preferredProgram" | "survey" | "closet_profile"
-  >
+    "displayName" | "bio" | "preferredProgram" | "survey" | "closet_profile" | "closet_items"
+  > & { size_profile?: SizeProfile }
 ) {
   const db = getFirestore();
 
@@ -186,7 +247,9 @@ export async function updateCurrentUserProfile(
       bio: profile.bio ?? null,
       preferredProgram: profile.preferredProgram ?? null,
       ...(profile.survey ? { survey: profile.survey } : {}),
-      ...(profile.closet_profile ? { closet_profile: profile.closet_profile } : {})
+      ...(profile.closet_profile ? { closet_profile: profile.closet_profile } : {}),
+      closet_items: normalizeClosetItems(profile.closet_items),
+      size_profile: normalizeSizeProfile(profile.size_profile)
     },
     { merge: true }
   );
@@ -234,7 +297,8 @@ function parseRecommendedOutfit(data: Record<string, unknown>) {
         string
       ],
       reason: "기존 저장 데이터에 추천 조합이 없어 기본 조합으로 복원했습니다.",
-      try_on_prompt: "전신 정면 사진을 기준으로 깔끔한 상의, 바지, 신발 조합을 자연스럽게 착용한 미리보기"
+      try_on_prompt: "전신 정면 사진을 기준으로 깔끔한 상의, 바지, 신발 조합을 자연스럽게 착용한 미리보기",
+      source_item_ids: undefined
     };
   }
 
@@ -257,15 +321,37 @@ function parseRecommendedOutfit(data: Record<string, unknown>) {
         string
       ],
       reason: "기존 저장 데이터의 추천 조합 형식이 맞지 않아 기본 조합으로 복원했습니다.",
-      try_on_prompt: "전신 정면 사진을 기준으로 깔끔한 상의, 바지, 신발 조합을 자연스럽게 착용한 미리보기"
+      try_on_prompt: "전신 정면 사진을 기준으로 깔끔한 상의, 바지, 신발 조합을 자연스럽게 착용한 미리보기",
+      source_item_ids: undefined
     };
   }
+
+  const sourceItemIds =
+    recommendation.source_item_ids &&
+    typeof recommendation.source_item_ids === "object" &&
+    !Array.isArray(recommendation.source_item_ids)
+      ? (recommendation.source_item_ids as Record<string, unknown>)
+      : null;
 
   return {
     title: recommendation.title,
     items: [items[0], items[1], items[2]] as [string, string, string],
     reason: recommendation.reason,
-    try_on_prompt: recommendation.try_on_prompt
+    try_on_prompt: recommendation.try_on_prompt,
+    source_item_ids: sourceItemIds
+      ? (["tops", "bottoms", "shoes", "outerwear"] as const).reduce<Record<string, string>>(
+          (acc, category) => {
+            const itemId = sourceItemIds[category];
+
+            if (typeof itemId === "string" && itemId.trim()) {
+              acc[category] = itemId.trim();
+            }
+
+            return acc;
+          },
+          {}
+        )
+      : undefined
   };
 }
 
@@ -322,6 +408,42 @@ function parseFeedbackDoc(day: number, data: Record<string, unknown>) {
   };
 }
 
+function isDeepDiveModule(value: string): value is DeepDiveModule {
+  return value === "fit" || value === "color" || value === "occasion" || value === "closet";
+}
+
+function parseDeepDiveDoc(module: string, data: Record<string, unknown>) {
+  const focusPoints = Array.isArray(data.focus_points)
+    ? data.focus_points.filter((item): item is string => typeof item === "string")
+    : [];
+
+  if (
+    !isDeepDiveModule(module) ||
+    typeof data.title !== "string" ||
+    typeof data.diagnosis !== "string" ||
+    focusPoints.length !== 3 ||
+    typeof data.recommendation !== "string" ||
+    typeof data.action !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    module,
+    feedback: {
+      title: data.title,
+      diagnosis: data.diagnosis,
+      focus_points: [focusPoints[0], focusPoints[1], focusPoints[2]] as [
+        string,
+        string,
+        string
+      ],
+      recommendation: data.recommendation,
+      action: data.action
+    } satisfies DeepDiveResponse
+  };
+}
+
 export async function readStyleProgramStateFromFirestore(userId: string) {
   const db = getFirestore();
 
@@ -334,12 +456,22 @@ export async function readStyleProgramStateFromFirestore(userId: string) {
     ? (userSnapshot.data() as UserProfileDocument)
     : null;
   const feedbackSnapshot = await getDocs(collection(db, "users", userId, "feedbacks"));
+  const deepDiveSnapshot = await getDocs(collection(db, "users", userId, "deepDives"));
+  const recommendationFeedbackSnapshot = await getDoc(
+    doc(db, "users", userId, "recommendationFeedbacks", "style-check")
+  );
   const state: OnboardingState = {
     user_id: userId,
     email: userProfile?.email ?? undefined,
     survey: parseSurvey(userProfile),
     closet_profile: parseClosetProfile(userProfile),
-    daily_feedbacks: {}
+    closet_items: normalizeClosetItems(userProfile?.closet_items),
+    size_profile: normalizeSizeProfile(userProfile?.size_profile),
+    daily_feedbacks: {},
+    deep_dive_feedbacks: {},
+    recommendation_feedback: recommendationFeedbackSnapshot.exists()
+      ? normalizeRecommendationFeedback(recommendationFeedbackSnapshot.data())
+      : undefined
   };
 
   feedbackSnapshot.docs.forEach((feedbackDoc) => {
@@ -363,6 +495,19 @@ export async function readStyleProgramStateFromFirestore(userId: string) {
     state.daily_feedbacks = {
       ...(state.daily_feedbacks ?? {}),
       [String(parsed.day)]: parsed.feedback as DailyAgentResponse
+    };
+  });
+
+  deepDiveSnapshot.docs.forEach((deepDiveDoc) => {
+    const parsed = parseDeepDiveDoc(deepDiveDoc.id, deepDiveDoc.data());
+
+    if (!parsed) {
+      return;
+    }
+
+    state.deep_dive_feedbacks = {
+      ...(state.deep_dive_feedbacks ?? {}),
+      [parsed.module]: parsed.feedback
     };
   });
 

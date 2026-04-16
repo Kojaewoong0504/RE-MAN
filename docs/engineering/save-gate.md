@@ -74,7 +74,9 @@ pre-push에서는 여기에 아래가 추가된다.
 
 7. `npm run test:integration`
 8. `python3 harness/gc/run.py`
-9. `npm run build`
+9. `npm run test:e2e -- --project=chromium tests/e2e/onboarding.spec.ts`
+10. `npm run visual:deep-dive`
+11. `npm run build`
 
 하나라도 실패하면 gate는 실패다.
 
@@ -90,25 +92,47 @@ pre-push에서는 여기에 아래가 추가된다.
 따라서 아래를 엄격히 구분한다.
 
 - `npm run test:e2e`: `AI_PROVIDER=mock` 기반 사용자 흐름 검증
-- `npm run smoke:feedback:gemini`: 로컬 서버의 실제 Gemini 사진 분석 smoke 검증
+- `npm run smoke:feedback:gemini`: 로컬 서버의 실제 Gemini 사진 분석 smoke 검증. 등록된 옷장 아이템을 보낸 경우 `recommended_outfit.source_item_ids`가 해당 id를 반환해야 한다.
 - `npm run smoke:feedback:browser`: 실제 브라우저 업로드 경로에서 Gemini 사진 분석 smoke 검증
 
 에이전트는 실제 Gemini 사진 분석이 된다고 보고하기 전에 반드시 아래 조건을 만족해야 한다.
 
 1. `npm run dev`가 3001 포트에서 실행 중이어야 한다.
 2. `.env.local`에 `AI_PROVIDER=gemini`, `GOOGLE_API_KEY`, `GEMINI_REQUEST_TIMEOUT_MS=30000`, `GEMINI_MAX_RETRIES=0`이 있어야 한다.
-3. `npm run smoke:feedback:gemini`가 200 응답과 필수 필드를 확인해야 한다.
+3. `npm run smoke:feedback:gemini`가 200 응답, 필수 필드, `recommended_outfit.source_item_ids`를 확인해야 한다.
 4. "브라우저 업로드 플로우가 된다"고 보고하려면 `npm run smoke:feedback:browser`도 200 응답을 확인해야 한다.
 
 이 smoke를 실행하지 않은 경우 최종 보고에서 "실제 Gemini smoke 미실행"이라고 명시한다.
 
+## Visual Evidence Rule
+
+UI/UX 변경은 테스트 통과만으로 완료 보고하지 않는다.
+핵심 경로가 화면에서 어떻게 보이는지 브라우저 스크린샷 또는 trace 산출물로 남긴다.
+
+- deep-dive 결과 화면 변경 시 `npm run visual:deep-dive`를 실행한다.
+- 홈, 스타일 시작, 업로드, 결과, 옷장, 기록, 기록 상세, 내 정보, 설정처럼 주요 화면 배치가 바뀌면 `npm run visual:app`을 실행한다.
+- `visual:app` 산출물은 `output/playwright/app-visual-smoke/`에 저장한다.
+- `visual:deep-dive` 산출물은 `output/playwright/result-minimal/`에 저장한다.
+- 이 smoke는 desktop, mobile viewport를 모두 캡처하고 개발자용 provider 라벨이 사용자 화면에 노출되지 않는지 확인한다.
+- `output/`은 git에 포함하지 않고, 완료 보고에는 산출물 경로를 명시한다.
+- 이 검증을 실행하지 못한 경우 최종 보고에서 "시각 검증 미실행"이라고 명시한다.
+- `npm run visual:app`, `npm run visual:deep-dive`, Playwright E2E처럼 3001 포트의 브라우저 서버를 쓰는 검증은 병렬 실행하지 않는다. 포트 충돌은 기능 실패가 아니라 하네스 실행 순서 실패로 분리 보고한다.
+
+## CI Rule
+
+GitHub Actions의 required check는 로컬 pre-push gate와 같은 `python3 scripts/run-save-gate.py pre-push`를 실행한다.
+CI에서 별도 e2e job을 중복으로 두지 않는다.
+
+- `harness/reports`는 항상 artifact로 업로드한다.
+- `output/playwright/app-visual-smoke`와 `output/playwright/result-minimal`은 항상 visual evidence artifact로 업로드한다.
+- Playwright failure artifact는 실패 시에만 업로드한다.
+
 ## Future v1
 
-앱 코드가 생기면 아래를 pre-push 또는 CI gate로 확장한다.
+앱 코드가 더 커지면 아래를 pre-push 또는 CI gate로 확장한다.
 
 1. 단위 테스트
 2. 통합 테스트
-3. e2e 테스트
-4. dead code 탐지 고도화
-5. garbage collection 검사 고도화
-6. self-repair orchestration 연결
+3. dead code 탐지 고도화
+4. garbage collection 검사 고도화
+5. self-repair orchestration 연결
