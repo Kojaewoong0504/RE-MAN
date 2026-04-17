@@ -58,7 +58,19 @@ def boundary_failures():
 def doc_contract_failures():
     failures = []
     doc_text = ARCH_DOC.read_text(encoding="utf-8")
-    required_routes = ["/api/feedback", "/api/deep-dive", "/api/daily", "/api/try-on", "/api/email"]
+    required_routes = [
+        "/api/auth/login",
+        "/api/auth/logout",
+        "/api/auth/refresh",
+        "/api/auth/session",
+        "/api/credits",
+        "/api/credits/transactions",
+        "/api/feedback",
+        "/api/deep-dive",
+        "/api/daily",
+        "/api/try-on",
+        "/api/email",
+    ]
 
     for route in required_routes:
         if route not in doc_text:
@@ -70,6 +82,12 @@ def doc_contract_failures():
         ROOT / "app" / "api" / "daily" / "route.ts",
         TRY_ON_ROUTE,
         ROOT / "app" / "api" / "email" / "route.ts",
+        ROOT / "app" / "api" / "auth" / "login" / "route.ts",
+        ROOT / "app" / "api" / "auth" / "logout" / "route.ts",
+        ROOT / "app" / "api" / "auth" / "refresh" / "route.ts",
+        ROOT / "app" / "api" / "auth" / "session" / "route.ts",
+        ROOT / "app" / "api" / "credits" / "route.ts",
+        ROOT / "app" / "api" / "credits" / "transactions" / "route.ts",
     ]
     for file_path in required_files:
         if not file_path.exists():

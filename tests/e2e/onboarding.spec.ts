@@ -26,6 +26,9 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByLabel("핏").fill("레귤러");
   await page.getByLabel("사이즈").fill("L");
   await page.getByLabel("착용감").selectOption("잘 맞음");
+  await page.getByLabel("빈도").selectOption("자주 입음");
+  await page.getByLabel("계절").selectOption("사계절");
+  await page.getByLabel("상태").selectOption("깨끗함");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
@@ -54,11 +57,14 @@ const recommendedOutfit = {
   try_on_prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
 };
 
-async function addTryOnSession(page: import("@playwright/test").Page) {
+async function addTryOnSession(
+  page: import("@playwright/test").Page,
+  uid = "e2e-try-on-user"
+) {
   process.env.AUTH_JWT_SECRET = "e2e-auth-secret";
   const { accessToken } = await issueSessionTokens(
     {
-      uid: "e2e-try-on-user",
+      uid,
       email: "try-on@example.com",
       name: "Try On User",
       picture: null,
@@ -81,6 +87,7 @@ async function addTryOnSession(page: import("@playwright/test").Page) {
 }
 
 test("onboarding flow captures input and renders feedback", async ({ page }) => {
+  await addTryOnSession(page, "e2e-feedback-flow-user");
   await page.goto("/");
 
   await expect(
@@ -89,6 +96,7 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
 
   await page.getByRole("link", { name: "스타일 체크 시작 →" }).click();
   await expect(page).toHaveURL(/\/programs\/style$/);
+  await expect(page.getByText("체크 3회")).toBeVisible();
   await page.getByRole("link", { name: "스타일 프로그램 시작하기" }).click();
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/survey$/);
   await expect(
@@ -134,13 +142,31 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
 
   const onboardingResponse = await onboardingResponsePromise;
   expect(onboardingResponse.ok()).toBeTruthy();
+  expect(onboardingResponse.request().headers()["idempotency-key"]).toMatch(
+    /^style-feedback:/
+  );
   const onboardingPayload = onboardingResponse.request().postDataJSON();
   expect(typeof onboardingPayload.image).toBe("string");
   expect(onboardingPayload.image.startsWith("data:image/jpeg;base64,")).toBeTruthy();
   expect(onboardingPayload.closet_profile.tops).toContain("흰색 무지 티셔츠");
   expect(onboardingPayload.closet_profile.tops).toContain("[L]");
   expect(onboardingPayload.closet_profile.tops).toContain("{잘 맞음}");
+  expect(onboardingPayload.closet_profile.tops).toContain("빈도:자주 입음");
+  expect(onboardingPayload.closet_profile.tops).toContain("계절:사계절");
+  expect(onboardingPayload.closet_profile.tops).toContain("상태:깨끗함");
+  expect(onboardingPayload.closet_items[0].wear_frequency).toBe("자주 입음");
+  expect(onboardingPayload.closet_items[0].season).toBe("사계절");
+  expect(onboardingPayload.closet_items[0].condition).toBe("깨끗함");
   expect(onboardingPayload.closet_items[0]).not.toHaveProperty("photo_data_url");
+  expect(onboardingPayload.closet_strategy).toMatchObject({
+    core_item_ids: expect.arrayContaining([onboardingPayload.closet_items[0].id]),
+    items: expect.arrayContaining([
+      expect.objectContaining({
+        id: onboardingPayload.closet_items[0].id,
+        role: "core"
+      })
+    ])
+  });
   expect(onboardingPayload.survey.style_goal).toBe("전체적인 스타일 리셋");
   expect(onboardingPayload.survey.confidence_level).toBe("배우는 중");
 
@@ -148,9 +174,10 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(
     page.getByRole("heading", { name: "오늘 바꿀 조합만 먼저 봅니다" })
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "내 옷장 근거" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "이 옷장에서 고른 이유" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "흰색 무지 티셔츠" })).toBeVisible();
   await expect(page.getByText(/직접 매칭|근거 후보/).first()).toBeVisible();
+  await expect(page.getByText(/추천에 직접 사용|가장 가까운 옷/).first()).toBeVisible();
   const resultActionDock = page.getByLabel("다음 행동");
   await expect(resultActionDock.getByRole("link", { name: "옷장" })).toBeVisible();
   await expect(resultActionDock.getByRole("link", { name: "기록" })).toBeVisible();
@@ -162,6 +189,7 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(
     page.getByRole("heading", { name: "지금 가진 옷으로 만드는 깔끔한 기본 조합" })
   ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
   await page.getByRole("button", { name: /바꿀 점 3개 보기/ }).click();
   await expect(page.getByText("바지 핏을 조금 더 곧게 잡으면")).toBeVisible();
   await page.getByRole("button", { name: /추천 반응 남기기/ }).click();
@@ -195,6 +223,7 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
 });
 
 test("upload step rejects unsupported photos and requires useful text fallback", async ({ page }) => {
+  await addTryOnSession(page);
   await page.goto("/programs/style/onboarding/survey");
   await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
   await page.getByRole("button", { name: "소개팅 / 이성 만남" }).click();
@@ -246,6 +275,7 @@ test("result action hub can start a new style check", async ({ page }) => {
     );
   }, { outfit: recommendedOutfit, uploadedImage });
 
+  await addTryOnSession(page);
   await page.goto("/programs/style/onboarding/result");
   await page.getByRole("button", { name: "새 체크" }).click();
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/upload$/);
@@ -256,7 +286,6 @@ test("result action hub can start a new style check", async ({ page }) => {
 test("saved result hides non-MVP generation actions", async ({ page }) => {
   let deepDiveRequests = 0;
   let tryOnRequests = 0;
-  let creditRequests = 0;
 
   await page.route("**/api/deep-dive", async (route) => {
     deepDiveRequests += 1;
@@ -264,10 +293,6 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
   });
   await page.route("**/api/try-on", async (route) => {
     tryOnRequests += 1;
-    await route.abort();
-  });
-  await page.route("**/api/credits", async (route) => {
-    creditRequests += 1;
     await route.abort();
   });
   await page.addInitScript((outfit) => {
@@ -286,6 +311,18 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
           bottoms: "청바지",
           shoes: "흰색 스니커즈"
         },
+        closet_items: [
+          {
+            id: "size-top",
+            category: "tops",
+            name: "옥스포드 셔츠",
+            color: "네이비",
+            size: "L",
+            wear_state: "잘 맞음",
+            condition: "깨끗함",
+            photo_data_url: "data:image/png;base64,test"
+          }
+        ],
         size_profile: {
           top_size: "L",
           bottom_size: "32",
@@ -303,6 +340,7 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
     );
   }, recommendedOutfit);
 
+  await addTryOnSession(page);
   await page.goto("/programs/style/onboarding/result");
   await expect(
     page.getByRole("heading", { name: "오늘 바꿀 조합만 먼저 봅니다" })
@@ -312,13 +350,21 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
   await expect(page.getByRole("button", { name: /핏 더 보기/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /레퍼런스\/실착 보기/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /크레딧 확인/ })).toHaveCount(0);
+  await page.getByRole("button", { name: /조합 느낌 보기/ }).click();
+  await expect(page.getByRole("heading", { name: "이 조합을 보는 방법" })).toBeVisible();
+  await expect(page.getByText("크레딧 차감 없음")).toBeVisible();
+  await expect(page.getByText("Vertex 실착 생성은 나중에 엽니다.")).toBeVisible();
+  await expect(page.getByText("체크 3회")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
+  await page.getByRole("button", { name: /사이즈 후보 보기/ }).click();
   await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toBeVisible();
-  await expect(page.getByText("사용자가 입력한 평소 사이즈 기준입니다.")).toBeVisible();
+  await expect(page.getByText("평소 사이즈 기준입니다.")).toBeVisible();
+  await expect(page.getByText("내 옷장 기준")).toBeVisible();
+  await expect(page.getByText(/네이비 옥스포드 셔츠 · L · 잘 맞음 · 깨끗함/)).toBeVisible();
   await expect(page.getByText("내부 기준 후보").first()).toBeVisible();
   await expect(page.getByRole("link", { name: /구매/ })).toHaveCount(0);
   expect(deepDiveRequests).toBe(0);
   expect(tryOnRequests).toBe(0);
-  expect(creditRequests).toBe(0);
 });
 
 test("result explains how to unlock size candidates when size profile is missing", async ({ page }) => {
@@ -352,6 +398,8 @@ test("result explains how to unlock size candidates when size profile is missing
   await addTryOnSession(page);
   await page.goto("/programs/style/onboarding/result");
 
+  await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
+  await page.getByRole("button", { name: /사이즈 후보 보기/ }).click();
   await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toBeVisible();
   await expect(page.getByText("사이즈 정보를 추가하면 후보를 좁힐 수 있습니다.")).toBeVisible();
   const sizeSettingsLink = page.getByRole("link", { name: "사이즈 추가하기" });
@@ -367,6 +415,7 @@ test("result explains how to unlock size candidates when size profile is missing
 });
 
 test("onboarding shows fallback when storage upload fails", async ({ page }) => {
+  await addTryOnSession(page, "e2e-storage-failure-user");
   await page.route("**/api/feedback", async (route) => {
     const headers = {
       ...route.request().headers(),
@@ -394,6 +443,7 @@ test("onboarding shows fallback when storage upload fails", async ({ page }) => 
 });
 
 test("onboarding shows a specific message when feedback is rate limited", async ({ page }) => {
+  await addTryOnSession(page);
   await page.route("**/api/feedback", async (route) => {
     await route.fulfill({
       status: 429,
@@ -421,6 +471,39 @@ test("onboarding shows a specific message when feedback is rate limited", async 
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/analyzing$/);
   await expect(page.getByText("요청이 너무 빠르게 반복됐습니다.")).toBeVisible();
   await expect(page.getByText("약 42초 뒤 다시 시도할 수 있습니다.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "텍스트 설명 다시 입력하기" })).toBeVisible();
+});
+
+test("onboarding shows a specific message when credits are insufficient", async ({ page }) => {
+  await addTryOnSession(page, "e2e-insufficient-credits-user");
+  await page.route("**/api/feedback", async (route) => {
+    await route.fulfill({
+      status: 402,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        error: "insufficient_credits",
+        message: "스타일 체크에 필요한 크레딧이 부족합니다.",
+        credits_remaining: 0,
+        credits_required: 1
+      })
+    });
+  });
+
+  await page.goto("/programs/style/onboarding/survey");
+  await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
+  await page.getByRole("button", { name: "소개팅 / 이성 만남" }).click();
+  await page.getByRole("button", { name: "15~30만원" }).click();
+  await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
+
+  await page.locator("#photo-upload").setInputFiles(tinyPng);
+  await fillUploadContext(page);
+  await page.getByRole("button", { name: "AI 분석 시작하기" }).click();
+
+  await expect(page).toHaveURL(/\/programs\/style\/onboarding\/analyzing$/);
+  await expect(page.getByText("스타일 체크에 필요한 크레딧이 부족합니다.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /구매/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "텍스트 설명 다시 입력하기" })).toBeVisible();
 });
 
@@ -589,6 +672,36 @@ test("program hub opens coming soon program placeholder", async ({ page }) => {
   await expect(page.getByRole("link", { name: "스타일 프로그램 먼저 시작하기" })).toBeVisible();
 });
 
+test("authenticated app navigation keeps credit visible without repeated session checks", async ({ page }) => {
+  await addTryOnSession(page, "e2e-session-budget-user");
+
+  const sessionRequests: string[] = [];
+
+  page.on("request", (request) => {
+    if (request.url().includes("/api/auth/session")) {
+      sessionRequests.push(request.url());
+    }
+  });
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "관리 홈" })).toBeVisible();
+  await expect(page.getByText("체크 3회")).toBeVisible();
+
+  await page.getByLabel("주요 메뉴").getByRole("link", { name: "스타일" }).click();
+  await expect(page).toHaveURL(/\/programs\/style$/);
+  await expect(page.getByText("체크 3회")).toBeVisible();
+
+  await page.getByLabel("주요 메뉴").getByRole("link", { name: "옷장" }).click();
+  await expect(page).toHaveURL(/\/closet$/);
+  await expect(page.getByText("체크 3회")).toBeVisible();
+
+  await page.getByLabel("주요 메뉴").getByRole("link", { name: "기록" }).click();
+  await expect(page).toHaveURL(/\/history$/);
+  await expect(page.getByText("체크 3회")).toBeVisible();
+
+  expect(sessionRequests.length).toBeLessThanOrEqual(2);
+});
+
 test("protected profile redirects to login when no session is present", async ({ page }) => {
   await page.goto("/profile");
   await expect(page).toHaveURL(/\/login\?returnTo=%2Fprofile$/);
@@ -667,7 +780,17 @@ test("closet page saves items into the next style check context", async ({ page 
   await page.getByLabel("핏").fill("레귤러");
   await page.getByLabel("사이즈").fill("L");
   await page.getByLabel("착용감").selectOption("잘 맞음");
+  await page.getByLabel("빈도").selectOption("자주 입음");
+  await page.getByLabel("계절").selectOption("봄/가을");
+  await page.getByLabel("상태").selectOption("깨끗함");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
+  await page.getByRole("button", { name: "수정" }).click();
+  await expect(page.getByRole("heading", { name: "옷 수정" })).toBeVisible();
+  await page.getByLabel("빈도").selectOption("가끔 입음");
+  await page.getByLabel("계절").selectOption("여름");
+  await page.getByLabel("상태").selectOption("수선 필요");
+  await page.getByRole("button", { name: /변경 저장/ }).click();
+  await expect(page.getByText("레귤러 · L · 잘 맞음 · 가끔 입음 · 여름 · 수선 필요")).toBeVisible();
 
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
@@ -691,6 +814,15 @@ test("closet page saves items into the next style check context", async ({ page 
   expect(savedState.closet_profile.tops).toContain("하늘색 옥스포드 셔츠");
   expect(savedState.closet_profile.tops).toContain("[L]");
   expect(savedState.closet_profile.tops).toContain("{잘 맞음}");
+  expect(savedState.closet_profile.tops).toContain("빈도:가끔 입음");
+  expect(savedState.closet_profile.tops).toContain("계절:여름");
+  expect(savedState.closet_profile.tops).toContain("상태:수선 필요");
+  expect(savedState.closet_profile.tops).not.toContain("빈도:자주 입음");
+  expect(savedState.closet_profile.tops).not.toContain("계절:봄/가을");
+  expect(savedState.closet_profile.tops).not.toContain("상태:깨끗함");
+  expect(savedState.closet_items[0].wear_frequency).toBe("가끔 입음");
+  expect(savedState.closet_items[0].season).toBe("여름");
+  expect(savedState.closet_items[0].condition).toBe("수선 필요");
   expect(savedState.closet_profile.bottoms).toContain("네이비 치노");
   expect(savedState.closet_profile.avoid).toBe("");
 });
@@ -809,6 +941,10 @@ test("profile shows saved style check context for signed-in users", async ({ pag
   await expect(page.getByText("Try On User")).toBeVisible();
   await expect(page.getByText("try-on@example.com")).toBeVisible();
   await expect(page.getByText("Google")).toBeVisible();
+  await expect(page.getByText("체크 3회")).toBeVisible();
+  await expect(page.getByRole("region", { name: "크레딧 기록" })).toBeVisible();
+  await expect(page.getByText("시작 크레딧")).toBeVisible();
+  await expect(page.getByText("+3")).toBeVisible();
   await expect(page.getByText("스타일", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("저장됨")).toBeVisible();
   await expect(page.getByText("최근 스타일 체크 진단")).toHaveCount(0);
@@ -827,12 +963,86 @@ test("profile shows saved style check context for signed-in users", async ({ pag
   await expect(page.getByText("핏 체크")).toBeVisible();
   await expect(page.getByText("Records")).toBeVisible();
   await page.getByRole("button", { name: /기본 조합/ }).click();
-  await expect(page.getByText("추천 근거")).toBeVisible();
+  await expect(page.getByRole("region", { name: "저장한 반응" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "다음 행동" })).toBeVisible();
+  await expect(page.getByText("추천에 쓴 옷")).toBeVisible();
   await expect(page.getByText("네이비 셔츠")).toBeVisible();
   await expect(page.getByText("검정 슬랙스")).toBeVisible();
   await expect(page.getByText("흰색 스니커즈")).toBeVisible();
-  await page.getByRole("link", { name: /최근 결과 보기/ }).click();
+  await expect(page.getByText("사용").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "비슷하게 다시 체크" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /최근 결과 보기/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /새 사진으로 다시 체크/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /옷장 관리/ })).toHaveCount(0);
+  await page.getByRole("link", { name: "결과 보기" }).click();
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/result$/);
+});
+
+test("history can restart a similar style check while preserving context", async ({ page }) => {
+  const uploadedImage = `data:image/png;base64,${tinyPng.buffer.toString("base64")}`;
+
+  await page.addInitScript(({ outfit, uploadedImage }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        user_id: "e2e-history-repeat-user",
+        email: "try-on@example.com",
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원",
+          style_goal: "전체적인 스타일 리셋",
+          confidence_level: "배우는 중"
+        },
+        closet_items: [
+          {
+            id: "repeat-top",
+            category: "tops",
+            name: "네이비 셔츠",
+            size: "L",
+            wear_state: "잘 맞음",
+            photo_data_url: uploadedImage
+          }
+        ],
+        image: uploadedImage,
+        feedback: {
+          diagnosis: "이전 체크 진단",
+          improvements: ["핏", "색", "신발"],
+          recommended_outfit: {
+            ...outfit,
+            source_item_ids: {
+              tops: "repeat-top"
+            }
+          },
+          today_action: "셔츠를 입은 버전과 비교하세요.",
+          day1_mission: "옷장 조합을 확인해보세요."
+        },
+        recommendation_feedback: {
+          reaction: "helpful",
+          note: "셔츠 방향 유지",
+          outfit_title: outfit.title,
+          created_at: "2026-04-16T00:00:00.000Z"
+        }
+      })
+    );
+  }, { outfit: recommendedOutfit, uploadedImage });
+
+  await addTryOnSession(page, "e2e-history-repeat-user");
+  await page.goto("/history");
+  await page.getByRole("button", { name: /기본 조합/ }).click();
+  await page.getByRole("button", { name: "비슷하게 다시 체크" }).click();
+
+  await expect(page).toHaveURL(/\/programs\/style\/onboarding\/upload$/);
+  await expect(page.getByRole("heading", { name: "사진이 기준입니다" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /이전 반응 반영/ })).toBeVisible();
+
+  const resetState = await page.evaluate(() => JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}"));
+
+  expect(resetState.image).toBeUndefined();
+  expect(resetState.feedback).toBeUndefined();
+  expect(resetState.closet_items[0].id).toBe("repeat-top");
+  expect(resetState.recommendation_feedback.note).toBe("셔츠 방향 유지");
+  expect(resetState.feedback_history[0].summary).toContain("이전 체크 진단");
 });
 
 test("profile can start a fresh photo check without losing closet context", async ({ page }) => {
@@ -863,6 +1073,12 @@ test("profile can start a fresh photo check without losing closet context", asyn
           recommended_outfit: outfit,
           today_action: "오늘은 상의 길이를 비교해보세요.",
           day1_mission: "옷장 조합을 확인해보세요."
+        },
+        recommendation_feedback: {
+          reaction: "helpful",
+          note: "셔츠 방향이 좋음",
+          outfit_title: "이전 추천",
+          created_at: "2026-04-15T00:00:00.000Z"
         },
         deep_dive_feedbacks: {
           fit: {
@@ -918,6 +1134,11 @@ test("profile can start a fresh photo check without losing closet context", asyn
   const feedbackPayload = feedbackResponse.request().postDataJSON();
 
   expect(feedbackPayload.feedback_history[0].summary).toContain("이전 스타일 체크 진단");
+  expect(feedbackPayload.preference_profile).toMatchObject({
+    liked_direction: "이전 추천 방향 선호",
+    note: "셔츠 방향이 좋음",
+    last_reaction: "helpful"
+  });
 });
 
 test("settings saves style profile into the next analysis context", async ({ page }) => {
@@ -966,7 +1187,7 @@ test("settings saves style profile into the next analysis context", async ({ pag
     );
   }, { uploadedImage: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
 
-  await addTryOnSession(page);
+  await addTryOnSession(page, "e2e-settings-feedback-user");
   await page.goto("/settings");
 
   await expect(

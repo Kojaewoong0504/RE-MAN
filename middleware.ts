@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE_NAMES } from "@/lib/auth/constants";
 
-const PROTECTED_PREFIXES = ["/profile", "/settings", "/closet", "/history", "/credits"];
+const PROTECTED_PREFIXES = [
+  "/profile",
+  "/settings",
+  "/closet",
+  "/history",
+  "/credits",
+  "/programs/style/onboarding"
+];
 
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -29,6 +36,7 @@ export const config = {
     "/settings/:path*",
     "/closet/:path*",
     "/history/:path*",
-    "/credits/:path*"
+    "/credits/:path*",
+    "/programs/style/onboarding/:path*"
   ]
 };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildClosetStrategy,
   buildClosetProfileFromItems,
   buildOnboardingRequest,
   buildHistoryFromState,
@@ -180,6 +181,9 @@ describe("closet item modeling", () => {
         fit: "레귤러",
         size: "L",
         wear_state: "잘 맞음",
+        wear_frequency: "자주 입음",
+        season: "사계절",
+        condition: "깨끗함",
         notes: "자주 입음"
       },
       {
@@ -204,6 +208,9 @@ describe("closet item modeling", () => {
     expect(profile.tops).toContain("레귤러");
     expect(profile.tops).toContain("[L]");
     expect(profile.tops).toContain("{잘 맞음}");
+    expect(profile.tops).toContain("빈도:자주 입음");
+    expect(profile.tops).toContain("계절:사계절");
+    expect(profile.tops).toContain("상태:깨끗함");
     expect(profile.bottoms).toContain("검정 슬랙스");
     expect(profile.avoid).toBe("너무 튀는 색");
   });
@@ -227,7 +234,10 @@ describe("closet item modeling", () => {
           photo_data_url: "data:image/jpeg;base64,closet",
           color: "네이비",
           size: "L",
-          wear_state: "잘 맞음"
+          wear_state: "잘 맞음",
+          wear_frequency: "자주 입음",
+          season: "봄/가을",
+          condition: "깨끗함"
         }
       ]
     });
@@ -235,10 +245,53 @@ describe("closet item modeling", () => {
     expect(request?.closet_profile?.tops).toContain("네이비 셔츠");
     expect(request?.closet_profile?.tops).toContain("[L]");
     expect(request?.closet_items?.[0]?.id).toBe("top-1");
+    expect(request?.closet_items?.[0]?.wear_frequency).toBe("자주 입음");
+    expect(request?.closet_items?.[0]?.season).toBe("봄/가을");
+    expect(request?.closet_items?.[0]?.condition).toBe("깨끗함");
     expect(request?.closet_items?.[0]).not.toHaveProperty("photo_data_url");
+    expect(request?.closet_strategy).toMatchObject({
+      core_item_ids: ["top-1"],
+      caution_item_ids: [],
+      optional_item_ids: []
+    });
     expect(request?.closet_profile?.tops).not.toContain("후드티");
     expect(request?.closet_profile?.avoid).toBe("꽉 끼는 옷");
     expect(request?.feedback_history[0].summary).toBe("이전 진단");
+  });
+
+  it("classifies closet strategy so agents can prefer reliable items", () => {
+    const strategy = buildClosetStrategy([
+      {
+        id: "top-core",
+        category: "tops",
+        name: "흰색 티셔츠",
+        wear_frequency: "자주 입음",
+        season: "사계절",
+        condition: "깨끗함"
+      },
+      {
+        id: "bottom-caution",
+        category: "bottoms",
+        name: "검정 슬랙스",
+        wear_state: "허리가 조금 큼",
+        condition: "수선 필요",
+        notes: "수선 필요"
+      },
+      {
+        id: "shoes-optional",
+        category: "shoes",
+        name: "흰색 스니커즈"
+      }
+    ]);
+
+    expect(strategy).toMatchObject({
+      core_item_ids: ["top-core"],
+      caution_item_ids: ["bottom-caution"],
+      optional_item_ids: ["shoes-optional"]
+    });
+    expect(strategy?.items.find((item) => item.id === "bottom-caution")?.role).toBe(
+      "use_with_care"
+    );
   });
 });
 
@@ -324,11 +377,12 @@ describe("recommendation feedback", () => {
   });
 
   it("adds user reaction into the next agent feedback history", () => {
-    const history = buildHistoryFromState({
+    const state: OnboardingState = {
       survey: baseSurvey,
+      image: "data:image/png;base64,next",
       feedback: {
         diagnosis: "기본 조합은 좋지만 색 대비가 약합니다",
-        improvements: ["a", "b", "c"],
+        improvements: ["a", "b", "c"] as [string, string, string],
         recommended_outfit: baseRecommendedOutfit,
         today_action: "오늘 액션",
         day1_mission: "다음 초점"
@@ -339,10 +393,39 @@ describe("recommendation feedback", () => {
         outfit_title: baseRecommendedOutfit.title,
         created_at: "2026-04-15T00:00:00.000Z"
       }
+    };
+    const history = buildHistoryFromState(state);
+    const request = buildOnboardingRequest({
+      ...state,
+      feedback_history: history
     });
 
     expect(history[0].summary).toContain("내 반응: 나중에 다시 보기");
     expect(history[0].summary).toContain("신발은 나중에");
+    expect(request?.preference_profile).toMatchObject({
+      liked_direction: "기본 조합 방향은 후보로 보류",
+      note: "신발은 나중에 다시 보고 싶음",
+      last_reaction: "save_for_later"
+    });
+  });
+
+  it("maps uncertain recommendation reactions into avoid direction for the next agent request", () => {
+    const request = buildOnboardingRequest({
+      survey: baseSurvey,
+      image: "data:image/png;base64,next",
+      recommendation_feedback: {
+        reaction: "not_sure",
+        note: "신발이 너무 튀었음",
+        outfit_title: "강한 컬러 조합",
+        created_at: "2026-04-15T00:00:00.000Z"
+      }
+    });
+
+    expect(request?.preference_profile).toEqual({
+      avoid_direction: "강한 컬러 조합 방향은 애매함",
+      note: "신발이 너무 튀었음",
+      last_reaction: "not_sure"
+    });
   });
 });
 

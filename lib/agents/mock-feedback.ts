@@ -22,7 +22,19 @@ function getFirstClosetItemIdByCategory(payload: AgentRequest) {
   return (["tops", "bottoms", "shoes", "outerwear"] as const).reduce<
     NonNullable<OnboardingAgentResponse["recommended_outfit"]["source_item_ids"]>
   >((acc, category) => {
-    const item = payload.closet_items?.find((closetItem) => closetItem.category === category);
+    const strategyItem =
+      payload.closet_strategy?.items.find(
+        (item) => item.category === category && item.role === "core"
+      ) ??
+      payload.closet_strategy?.items.find(
+        (item) => item.category === category && item.role === "optional"
+      ) ??
+      payload.closet_strategy?.items.find((item) => item.category === category);
+    const item =
+      (strategyItem
+        ? payload.closet_items?.find((closetItem) => closetItem.id === strategyItem.id)
+        : undefined) ??
+      payload.closet_items?.find((closetItem) => closetItem.category === category);
 
     if (item) {
       acc[category] = item.id;
@@ -38,6 +50,16 @@ export function buildMockOnboardingFeedback(
   const style = payload.survey.current_style;
   const goal = payload.survey.style_goal || "전체적인 스타일 개선";
   const confidence = payload.survey.confidence_level || "미입력";
+  const preference = payload.preference_profile;
+  const preferenceReason = preference?.avoid_direction
+    ? ` 이전 반응에서 애매하다고 남긴 ${preference.avoid_direction}은 반복하지 않는 쪽이 좋습니다.`
+    : preference?.liked_direction
+      ? ` 이전에 좋다고 남긴 ${preference.liked_direction}은 유지해도 괜찮습니다.`
+      : "";
+  const coreCount = payload.closet_strategy?.core_item_ids.length ?? 0;
+  const closetReason = coreCount
+    ? ` 옷장 메모에서 기본템으로 분류된 ${coreCount}개를 먼저 기준으로 잡았습니다.`
+    : "";
 
   return {
     diagnosis: `${style} 중심의 코디라 편한 인상은 있지만, ${goal} 목표와 현재 자신감(${confidence})을 기준으로 보면 실루엣과 레이어가 아직 약합니다.`,
@@ -54,7 +76,7 @@ export function buildMockOnboardingFeedback(
         payload.closet_profile?.shoes || "상의나 바지와 톤이 맞는 신발"
       ],
       reason:
-        `${goal}에는 새로 사기보다 지금 가진 옷 중 실루엣이 가장 단정한 조합을 먼저 고르는 편이 변화가 바로 보입니다.`,
+        `${goal}에는 새로 사기보다 지금 가진 옷 중 실루엣이 가장 단정한 조합을 먼저 고르는 편이 변화가 바로 보입니다.${closetReason}${preferenceReason}`,
       try_on_prompt:
         "전신 정면 사진을 기준으로 무지 상의, 일자핏 바지, 톤이 맞는 신발을 자연스럽게 착용한 미리보기",
       source_item_ids: getFirstClosetItemIdByCategory(payload)

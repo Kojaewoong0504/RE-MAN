@@ -89,3 +89,18 @@
 - 연결한 하네스:
   - `harness/architecture/run.py`
   - `tests/e2e/onboarding.spec.ts`
+
+### Next Artifact Parallel Gate Failure
+
+- 실패 설명: `npm run test:e2e`와 `npm run build`를 동시에 실행하면 `.next` 산출물 충돌로 `PageNotFoundError: /_document` 같은 거짓 실패가 발생할 수 있다.
+- 직접 원인: 문서에는 병렬 금지 규칙이 있었지만 실행 명령 자체가 병렬 실행을 막지 못했다.
+- 재발 가능성: 높음. 에이전트는 빠른 검증을 위해 독립적으로 보이는 명령을 병렬 실행하기 쉽다.
+- 추가한 규칙:
+  - `npm run build`, `npm run test:e2e`, `npm run visual:app`, `npm run visual:deep-dive`는 병렬 실행하지 않는다.
+  - 위 명령은 `scripts/with-next-artifact-lock.py`를 통해 동시 실행을 차단한다.
+  - lock 실패는 앱 기능 실패가 아니라 하네스 실행 위반으로 분리 보고한다.
+- 연결한 하네스:
+  - `package.json` script wrapper
+  - `scripts/with-next-artifact-lock.py`
+  - `AGENTS.md`
+  - `docs/engineering/save-gate.md`

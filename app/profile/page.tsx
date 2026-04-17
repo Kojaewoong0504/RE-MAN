@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CreditLedger } from "@/components/credits/CreditLedger";
+import { CreditStatus } from "@/components/credits/CreditStatus";
 import { destroyServerSession, fetchAuthSession } from "@/lib/auth/client";
 import { readCurrentUserProfile } from "@/lib/firebase/firestore";
 import { signOutFirebaseSession } from "@/lib/firebase/session";
@@ -113,12 +115,9 @@ export default function ProfilePage() {
           </Link>
           <p className="app-brand">RE:MAN</p>
         </div>
-        <Link
-          className="text-sm font-black uppercase tracking-[0.12em] text-ink underline underline-offset-4"
-          href="/settings"
-        >
-          설정
-        </Link>
+        <div className="app-header-actions">
+          <CreditStatus variant="badge" />
+        </div>
       </div>
 
       <section className="profile-card mt-5">
@@ -165,6 +164,10 @@ export default function ProfilePage() {
           <p className="text-sm font-bold leading-6 text-red-700">{loadError}</p>
         </section>
       ) : null}
+
+      <div className="mt-5">
+        <CreditLedger />
+      </div>
 
       <section className="mt-7 space-y-3">
         <div className="section-heading">

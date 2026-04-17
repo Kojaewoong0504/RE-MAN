@@ -16,6 +16,7 @@
 - [core-beliefs.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/core-beliefs.md)
 - [product-sense.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/product-sense.md)
 - [mvp-priorities.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/mvp-priorities.md)
+- [mvp-critical-path.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/mvp-critical-path.md)
 - [mvp-implementation-audit.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/mvp-implementation-audit.md)
 - [credits.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/credits.md)
 - [size-product-recommendations.md](/Users/gojaewoong/Desktop/ko/nerd/docs/product/size-product-recommendations.md)
@@ -37,6 +38,7 @@
 - [security.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/security.md)
 - [reliability.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/reliability.md)
 - [save-gate.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/save-gate.md)
+- [verification-matrix.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/verification-matrix.md)
 - [required-checks.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/required-checks.md)
 - [hook-verification.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/hook-verification.md)
 - [codex-orchestrator.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/codex-orchestrator.md)
@@ -47,8 +49,15 @@
 
 - [design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/design/design.md)
 
+### Superpowers
+
+- [2026-04-17-style-mvp-reliability-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-style-mvp-reliability-design.md)
+- [2026-04-17-style-mvp-reliability.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-style-mvp-reliability.md)
+
 ### Incidents
 
 - [README.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/README.md)
+- [2026-04-07-content-rules-448463445ed5371e.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/2026-04-07-content-rules-448463445ed5371e.md)
+- [2026-04-16-next-artifact-parallel-gate.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/2026-04-16-next-artifact-parallel-gate.md)
 
 구조 기준과 이동 히스토리는 [docs/STRUCTURE_PLAN.md](/Users/gojaewoong/Desktop/ko/nerd/docs/STRUCTURE_PLAN.md)를 따른다.

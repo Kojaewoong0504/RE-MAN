@@ -30,6 +30,16 @@ function getTryOnErrorMessage(error: TryOnProviderError) {
   return TRY_ON_FALLBACK_MESSAGE;
 }
 
+function getIdempotencyKey(request: Request) {
+  const value = request.headers.get("Idempotency-Key")?.trim();
+
+  if (!value) {
+    return null;
+  }
+
+  return value.slice(0, 160);
+}
+
 export function GET() {
   return NextResponse.json(getTryOnRuntimeStatus());
 }
@@ -43,6 +53,8 @@ export async function POST(request: Request) {
 
   let reservedCredits = false;
   let userId: string | null = null;
+  let creditReferenceId = crypto.randomUUID();
+  const idempotencyKey = getIdempotencyKey(request);
 
   try {
     const user = await getAuthenticatedSessionUser();
@@ -67,8 +79,13 @@ export async function POST(request: Request) {
     const runtimeStatus = getTryOnRuntimeStatus();
 
     if (runtimeStatus.real_generation_enabled) {
-      reserveCredits(user.uid, TRY_ON_CREDIT_COST);
-      reservedCredits = true;
+      const reservation = reserveCredits(user.uid, TRY_ON_CREDIT_COST, {
+        reason: "try_on_generation",
+        referenceId: creditReferenceId,
+        idempotencyKey
+      });
+      reservedCredits = !reservation.idempotent_replay;
+      creditReferenceId = reservation.replayed_reference_id ?? creditReferenceId;
     }
 
     const preview = await generateTryOnPreview({
@@ -81,7 +98,9 @@ export async function POST(request: Request) {
       {
         ...preview,
         credits_remaining: credits.balance,
-        credits_charged: reservedCredits ? TRY_ON_CREDIT_COST : 0
+        credits_charged: reservedCredits ? TRY_ON_CREDIT_COST : 0,
+        idempotent_replay: runtimeStatus.real_generation_enabled && !reservedCredits,
+        credit_reference_id: runtimeStatus.real_generation_enabled ? creditReferenceId : null
       },
       {
         headers: {
@@ -107,7 +126,11 @@ export async function POST(request: Request) {
     }
 
     if (reservedCredits && userId) {
-      refundCredits(userId, TRY_ON_CREDIT_COST);
+      refundCredits(userId, TRY_ON_CREDIT_COST, {
+        reason: "try_on_failed_refund",
+        referenceId: creditReferenceId,
+        idempotencyKey
+      });
     }
 
     if (error instanceof TryOnProviderError) {

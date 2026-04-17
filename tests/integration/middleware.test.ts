@@ -17,6 +17,30 @@ describe("auth middleware", () => {
     );
   });
 
+  it("redirects core style onboarding without session cookies", () => {
+    const request = new NextRequest("http://127.0.0.1:3001/programs/style/onboarding/upload");
+    const response = middleware(request);
+    const location = response.headers.get("location");
+
+    expect(response.status).toBe(307);
+    expect(location).not.toBeNull();
+    expect(new URL(location ?? "http://localhost").pathname).toBe("/login");
+    expect(new URL(location ?? "http://localhost").searchParams.get("returnTo")).toBe(
+      "/programs/style/onboarding/upload"
+    );
+  });
+
+  it("allows core style onboarding when an access token is present", () => {
+    const request = new NextRequest("http://127.0.0.1:3001/programs/style/onboarding/survey", {
+      headers: {
+        cookie: `${SESSION_COOKIE_NAMES.access}=access-token`
+      }
+    });
+    const response = middleware(request);
+
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
   it("allows protected routes when an access token is present", () => {
     const request = new NextRequest("http://127.0.0.1:3001/closet", {
       headers: {

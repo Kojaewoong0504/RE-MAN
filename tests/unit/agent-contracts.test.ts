@@ -35,9 +35,61 @@ describe("agent response contracts", () => {
     expect(
       validateAgentRequest({
         ...baseRequest,
-        text_description: "검정 후드티와 청바지를 입었어요"
+        text_description: "검정 후드티와 청바지를 입었어요",
+        preference_profile: {
+          liked_direction: "셔츠 조합 선호",
+          note: "단정한 방향이 좋음",
+          last_reaction: "helpful"
+        },
+        closet_strategy: {
+          core_item_ids: ["top-1"],
+          caution_item_ids: ["bottom-1"],
+          optional_item_ids: [],
+          items: [
+            {
+              id: "top-1",
+              category: "tops",
+              role: "core",
+              reason: "잘 맞음"
+            },
+            {
+              id: "bottom-1",
+              category: "bottoms",
+              role: "use_with_care",
+              reason: "밑단 수선 필요"
+            }
+          ]
+        }
       })
     ).toBe(true);
+    expect(
+      validateAgentRequest({
+        ...baseRequest,
+        text_description: "검정 후드티와 청바지를 입었어요",
+        preference_profile: {
+          last_reaction: "invalid"
+        }
+      })
+    ).toBe(false);
+    expect(
+      validateAgentRequest({
+        ...baseRequest,
+        text_description: "검정 후드티와 청바지를 입었어요",
+        closet_strategy: {
+          core_item_ids: ["top-1"],
+          caution_item_ids: [],
+          optional_item_ids: [],
+          items: [
+            {
+              id: "top-1",
+              category: "tops",
+              role: "unknown",
+              reason: "잘 맞음"
+            }
+          ]
+        }
+      })
+    ).toBe(false);
   });
 
   it("keeps valid onboarding responses valid after UI length normalization", () => {

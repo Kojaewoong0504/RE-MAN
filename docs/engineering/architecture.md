@@ -36,6 +36,12 @@
   │   └── /programs/style/... ← 스타일 onboarding / result / day flow
   │
   └── /app/api (서버사이드 API Routes)
+      ├── POST /api/auth/login     ← Firebase Google ID token 검증 후 서버 세션 발급
+      ├── POST /api/auth/refresh   ← refresh token rotation
+      ├── POST /api/auth/logout    ← 세션 cookie 제거
+      ├── GET /api/auth/session    ← 현재 access session 확인
+      ├── GET /api/credits         ← 크레딧 잔액 + 원장 검산
+      ├── GET /api/credits/transactions ← 최근 크레딧 거래 원장
       ├── POST /api/feedback      ← onboarding-agent 호출
       ├── POST /api/deep-dive     ← 선택형 deep dive 호출 (`fit`, `color`, `occasion`, `closet`)
       ├── POST /api/daily         ← daily-agent 호출
@@ -91,6 +97,11 @@
       "name": "흰색 무지 티셔츠",
       "color": "흰색",
       "fit": "레귤러",
+      "size": "L",
+      "wear_state": "잘 맞음",
+      "wear_frequency": "자주 입음",
+      "season": "사계절",
+      "condition": "깨끗함",
       "notes": "자주 입음"
     }
   ]

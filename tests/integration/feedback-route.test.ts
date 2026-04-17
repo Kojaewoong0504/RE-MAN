@@ -1,4 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { SESSION_COOKIE_NAMES } from "@/lib/auth/constants";
+import {
+  getCreditTransactions,
+  grantPaidCreditsForTests,
+  resetCreditsForTests,
+  setSubscriptionForTests
+} from "@/lib/credits/server";
 import { resetRateLimitsForTests } from "@/lib/security/rate-limit";
 
 vi.mock("server-only", () => ({}));
@@ -15,6 +22,39 @@ const validFeedbackPayload = {
   feedback_history: []
 };
 
+const authUser = {
+  uid: "feedback-route-user",
+  email: "feedback-route@example.com",
+  name: "Feedback Route User",
+  picture: null,
+  provider: "google" as const
+};
+
+async function loadRouteWithCookies(cookieValues: Map<string, string>) {
+  vi.resetModules();
+  vi.doMock("next/headers", () => ({
+    cookies: () => ({
+      get: (name: string) => {
+        const value = cookieValues.get(name);
+        return value ? { value } : undefined;
+      }
+    })
+  }));
+
+  return import("@/app/api/feedback/route");
+}
+
+async function buildAuthCookies(user = authUser) {
+  const { issueSessionTokens } = await import("@/lib/auth/server");
+  const { accessToken } = await issueSessionTokens(
+    user,
+    `${user.uid}-family`,
+    `${user.uid}-token`
+  );
+
+  return new Map([[SESSION_COOKIE_NAMES.access, accessToken]]);
+}
+
 function buildRequest(payload: unknown, headers?: HeadersInit) {
   return new Request("http://127.0.0.1:3001/api/feedback", {
     method: "POST",
@@ -30,12 +70,22 @@ describe("feedback API route", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
+    resetCreditsForTests();
     resetRateLimitsForTests();
     process.env.AI_PROVIDER = "mock";
+    process.env.AUTH_JWT_SECRET = "feedback-route-test-secret";
+  });
+
+  it("rejects feedback requests without a login session", async () => {
+    const { POST } = await loadRouteWithCookies(new Map());
+    const response = await POST(buildRequest(validFeedbackPayload));
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({ error: "missing_access_token" });
   });
 
   it("rejects malformed image requests before agent work", async () => {
-    const { POST } = await import("@/app/api/feedback/route");
+    const { POST } = await loadRouteWithCookies(await buildAuthCookies());
     const response = await POST(
       buildRequest({
         ...validFeedbackPayload,
@@ -48,7 +98,7 @@ describe("feedback API route", () => {
   });
 
   it("returns source item ids when registered closet items are used", async () => {
-    const { POST } = await import("@/app/api/feedback/route");
+    const { POST } = await loadRouteWithCookies(await buildAuthCookies());
     const response = await POST(
       buildRequest({
         ...validFeedbackPayload,
@@ -84,10 +134,108 @@ describe("feedback API route", () => {
       bottoms: "route-bottom-1",
       shoes: "route-shoes-1"
     });
+    expect(body).toMatchObject({
+      credits_charged: 1,
+      credits_remaining: 2,
+      subscription_active: false
+    });
+    expect(body.credit_reference_id).toEqual(expect.any(String));
+    expect(getCreditTransactions(authUser.uid)[0]).toMatchObject({
+      type: "debit",
+      delta: -1,
+      reason: "style_feedback",
+      reference_id: body.credit_reference_id,
+      balance_after: 2
+    });
   });
 
-  it("rate limits unauthenticated feedback requests by client IP", async () => {
-    const { POST } = await import("@/app/api/feedback/route");
+  it("does not charge twice when the same feedback request is replayed", async () => {
+    const user = {
+      ...authUser,
+      uid: "feedback-idempotent-user"
+    };
+    const { POST } = await loadRouteWithCookies(await buildAuthCookies(user));
+    const headers = { "Idempotency-Key": "feedback-request-1" };
+
+    const first = await POST(buildRequest(validFeedbackPayload, headers));
+    const firstBody = await first.json();
+    const second = await POST(buildRequest(validFeedbackPayload, headers));
+    const secondBody = await second.json();
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(firstBody).toMatchObject({
+      credits_charged: 1,
+      credits_remaining: 2,
+      idempotent_replay: false
+    });
+    expect(secondBody).toMatchObject({
+      credits_charged: 0,
+      credits_remaining: 2,
+      idempotent_replay: true,
+      credit_reference_id: firstBody.credit_reference_id
+    });
+    expect(
+      getCreditTransactions(user.uid).filter((transaction) => transaction.type === "debit")
+    ).toHaveLength(1);
+  });
+
+  it("allows subscribed users without consuming credits", async () => {
+    const user = {
+      ...authUser,
+      uid: "feedback-subscriber"
+    };
+    setSubscriptionForTests(user.uid, true);
+
+    const { POST } = await loadRouteWithCookies(await buildAuthCookies(user));
+    const response = await POST(buildRequest(validFeedbackPayload));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      credits_charged: 0,
+      credits_remaining: 3,
+      subscription_active: true
+    });
+    expect(getCreditTransactions(user.uid)[0]).toMatchObject({
+      type: "subscription_usage",
+      delta: 0,
+      reason: "style_feedback",
+      reference_id: body.credit_reference_id
+    });
+  });
+
+  it("allows paid credit users after event credits are exhausted", async () => {
+    const user = {
+      ...authUser,
+      uid: "feedback-paid-credit-user"
+    };
+    grantPaidCreditsForTests(user.uid, 1);
+
+    const { POST } = await loadRouteWithCookies(await buildAuthCookies(user));
+
+    for (let index = 0; index < 4; index += 1) {
+      const response = await POST(buildRequest(validFeedbackPayload));
+      expect(response.status).toBe(200);
+    }
+
+    const blocked = await POST(buildRequest(validFeedbackPayload));
+
+    expect(blocked.status).toBe(402);
+    await expect(blocked.json()).resolves.toMatchObject({
+      error: "insufficient_credits",
+      credits_remaining: 0,
+      credits_required: 1
+    });
+  });
+
+  it("rate limits signed feedback requests by user id", async () => {
+    const user = {
+      ...authUser,
+      uid: "feedback-rate-limited-user"
+    };
+    setSubscriptionForTests(user.uid, true);
+    const { POST } = await loadRouteWithCookies(await buildAuthCookies(user));
     const headers = { "x-forwarded-for": "203.0.113.10" };
 
     for (let index = 0; index < 5; index += 1) {
@@ -102,46 +250,5 @@ describe("feedback API route", () => {
     expect(blocked.status).toBe(429);
     expect(body).toMatchObject({ error: "rate_limited" });
     expect(blocked.headers.get("Retry-After")).not.toBeNull();
-  });
-
-  it("rate limits signed feedback requests by user id instead of IP", async () => {
-    const { POST } = await import("@/app/api/feedback/route");
-    const headers = { "x-forwarded-for": "203.0.113.11" };
-
-    for (let index = 0; index < 5; index += 1) {
-      const response = await POST(
-        buildRequest(
-          {
-            ...validFeedbackPayload,
-            user_id: "user-a"
-          },
-          headers
-        )
-      );
-
-      expect(response.status).toBe(200);
-    }
-
-    const userBlocked = await POST(
-      buildRequest(
-        {
-          ...validFeedbackPayload,
-          user_id: "user-a"
-        },
-        headers
-      )
-    );
-    const otherUserAllowed = await POST(
-      buildRequest(
-        {
-          ...validFeedbackPayload,
-          user_id: "user-b"
-        },
-        headers
-      )
-    );
-
-    expect(userBlocked.status).toBe(429);
-    expect(otherUserAllowed.status).toBe(200);
   });
 });

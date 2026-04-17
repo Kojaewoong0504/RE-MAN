@@ -25,56 +25,77 @@ const pages = [
   {
     id: "home",
     path: "/",
-    visibleText: "관리 홈"
+    visibleText: "관리 홈",
+    expectedText: "체크 3회"
   },
   {
     id: "style",
     path: "/programs/style",
-    visibleText: "사진 올리고 조합 받기"
+    visibleText: "사진 올리고 조합 받기",
+    expectedText: "체크 3회"
   },
   {
     id: "upload",
     path: "/programs/style/onboarding/upload",
-    visibleText: "사진이 기준입니다"
+    visibleText: "사진이 기준입니다",
+    expectedText: "체크 3회"
+  },
+  {
+    id: "analyzing-credits",
+    path: "/programs/style/onboarding/analyzing",
+    visibleText: "스타일 체크에 필요한 크레딧이 부족합니다.",
+    expectedText: "텍스트 설명 다시 입력하기",
+    hiddenText: "구매하기",
+    feedbackError: {
+      status: 402,
+      body: {
+        error: "insufficient_credits",
+        message: "스타일 체크에 필요한 크레딧이 부족합니다.",
+        credits_remaining: 0,
+        credits_required: 1
+      }
+    }
   },
   {
     id: "result",
     path: "/programs/style/onboarding/result",
     visibleText: "오늘 바꿀 조합만 먼저 봅니다",
-    expectedText: "사이즈 체크 후보",
-    hiddenText: "구매하기"
+    expectedTexts: ["이 옷장에서 고른 이유", "사이즈 후보 보기", "체크 3회"],
+    hiddenTexts: ["사이즈 체크 후보", "구매하기"],
   },
   {
     id: "closet",
     path: "/closet",
     visibleText: "옷장 저장",
-    expectedText: "3",
+    expectedTexts: ["3", "체크 3회"],
     hiddenText: "옷장을 불러오는 중"
   },
   {
     id: "history",
     path: "/history",
     visibleText: "기록",
+    expectedText: "체크 3회",
     hiddenText: "불러오는 중"
   },
   {
     id: "history-detail",
     path: "/history",
     visibleText: "기록",
-    expectedTexts: ["추천 근거", "네이비 셔츠"],
+    expectedTexts: ["추천에 쓴 옷", "네이비 셔츠", "비슷하게 다시 체크", "체크 3회"],
     hiddenText: "불러오는 중",
     expandFirstHistoryCard: true
   },
   {
     id: "profile",
     path: "/profile",
-    visibleText: "내 정보"
+    visibleText: "내 정보",
+    expectedTexts: ["체크 3회", "크레딧 기록", "시작 크레딧"]
   },
   {
     id: "settings",
     path: "/settings#size-profile",
     visibleText: "평소 사이즈를 기준으로 남깁니다",
-    expectedTexts: ["옷장 관리", "정보 저장"],
+    expectedTexts: ["옷장 관리", "정보 저장", "체크 3회"],
     hiddenTexts: ["옷 추가", "불러오는 중", "정보 불러오는 중"]
   }
 ];
@@ -270,12 +291,24 @@ async function capturePage(browser, scenario, pageSpec) {
   const artifact = `${outputDir}/${scenario.id}-${pageSpec.id}.png`;
 
   try {
+    if (pageSpec.feedbackError) {
+      await page.route("**/api/feedback", async (route) => {
+        await route.fulfill({
+          status: pageSpec.feedbackError.status,
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(pageSpec.feedbackError.body)
+        });
+      });
+    }
+
     await page.goto(`${baseUrl}${pageSpec.path}`);
     await expect(page.getByText(pageSpec.visibleText).first()).toBeVisible();
     if (pageSpec.expandFirstHistoryCard) {
       await page.locator(".history-card-trigger").first().click();
       await page
-        .getByText("추천 근거")
+        .getByText("추천에 쓴 옷")
         .first()
         .evaluate((element) => element.scrollIntoView({ block: "center" }));
     }
@@ -287,7 +320,7 @@ async function capturePage(browser, scenario, pageSpec) {
     }
     await expect(page.getByText("계정 기록 로드 실패").first()).toHaveCount(0);
     await expect(page.getByText(/^provider:/).first()).toHaveCount(0);
-    await page.screenshot({ fullPage: true, path: artifact });
+    await page.screenshot({ fullPage: false, path: artifact });
 
     return {
       id: pageSpec.id,

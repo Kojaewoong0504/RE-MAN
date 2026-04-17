@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CreditStatus } from "@/components/credits/CreditStatus";
 import { fetchAuthSession } from "@/lib/auth/client";
 import { readStyleProgramStateFromFirestore } from "@/lib/firebase/firestore";
 import {
+  buildHistoryFromState,
   getRecommendationFeedbackLabel,
   getStyleFeedbackTimeline,
   mergePersistedProgramState,
+  patchOnboardingState,
   readOnboardingState,
   writeOnboardingState,
   type OnboardingState,
@@ -172,6 +175,18 @@ function buildCards(view: HistoryView, timeline: StyleFeedbackTimelineItem[]) {
   return buildDayCards(timeline);
 }
 
+function getBasisStatusLabel(status: ClosetBasisItem["matchStatus"]) {
+  if (status === "matched") {
+    return "사용";
+  }
+
+  if (status === "optional") {
+    return "추가";
+  }
+
+  return "후보";
+}
+
 export default function HistoryPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -180,6 +195,26 @@ export default function HistoryPage() {
   const [timeline, setTimeline] = useState<StyleFeedbackTimelineItem[]>([]);
   const [view, setView] = useState<HistoryView>("day");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  function handleStartSimilarCheck() {
+    const state = readOnboardingState();
+    const preservedHistory =
+      (state.feedback_history?.length ?? 0) > 0
+        ? state.feedback_history
+        : buildHistoryFromState(state);
+
+    patchOnboardingState({
+      image: undefined,
+      text_description: undefined,
+      feedback: undefined,
+      daily_feedbacks: {},
+      deep_dive_feedbacks: {},
+      try_on_previews: {},
+      feedback_history: preservedHistory,
+      fallback_message: undefined
+    });
+    router.push("/programs/style/onboarding/upload");
+  }
 
   useEffect(() => {
     let active = true;
@@ -246,12 +281,9 @@ export default function HistoryPage() {
             </Link>
             <p className="app-brand">RE:MAN</p>
           </div>
-          <Link
-            className="text-sm font-black uppercase tracking-[0.12em] text-ink underline underline-offset-4"
-            href="/closet"
-          >
-            Closet
-          </Link>
+          <div className="app-header-actions">
+            <CreditStatus variant="badge" />
+          </div>
         </div>
 
         <section className="screen-hero">
@@ -320,34 +352,54 @@ export default function HistoryPage() {
                     </button>
                     {isExpanded ? (
                       <div className="history-card-detail">
-                        {card.reaction ? (
-                          <div className="history-reaction-row">
+                        <div className="history-detail-grid">
+                          <section aria-label="저장한 반응" className="history-detail-panel">
                             <span>내 반응</span>
                             <strong>
-                              {compactUiText(
-                                card.reactionNote ? `${card.reaction} · ${card.reactionNote}` : card.reaction,
-                                34
-                              )}
+                              {card.reaction
+                                ? compactUiText(
+                                    card.reactionNote
+                                      ? `${card.reaction} · ${card.reactionNote}`
+                                      : card.reaction,
+                                    34
+                                  )
+                                : "없음"}
                             </strong>
-                          </div>
-                        ) : null}
+                          </section>
+                          <section aria-label="다음 행동" className="history-detail-panel">
+                            <span>다음 행동</span>
+                            <strong>{compactUiText(card.action ?? "다시 체크", 34)}</strong>
+                          </section>
+                        </div>
                         {card.basis?.length ? (
                           <div className="history-basis">
-                            <p className="poster-kicker">추천 근거</p>
-                            <div>
+                            <div className="history-section-head">
+                              <p className="poster-kicker">추천에 쓴 옷</p>
+                              <small>{card.basis.length}개</small>
+                            </div>
+                            <div className="history-basis-grid">
                               {card.basis.slice(0, 3).map((basis) => (
-                                <span key={`${card.id}-${basis.category}`}>
-                                  <b>{basis.label}</b>
-                                  {basis.itemName}
-                                  {basis.size ? ` · ${basis.size}` : ""}
-                                </span>
+                                <div className="history-basis-chip" key={`${card.id}-${basis.category}`}>
+                                  <span>
+                                    <b>{basis.label}</b>
+                                    <em>{getBasisStatusLabel(basis.matchStatus)}</em>
+                                  </span>
+                                  <strong>{basis.itemName}</strong>
+                                  {basis.size ? <small>{basis.size}</small> : null}
+                                </div>
                               ))}
                             </div>
                           </div>
                         ) : null}
-                        <p>{compactUiText(card.action ?? card.summary, 84)}</p>
+                        <button
+                          className="history-repeat-button"
+                          onClick={handleStartSimilarCheck}
+                          type="button"
+                        >
+                          비슷하게 다시 체크
+                        </button>
                         {card.href ? (
-                          <Link href={card.href}>결과 보기</Link>
+                          <Link className="history-result-link" href={card.href}>결과 보기</Link>
                         ) : null}
                       </div>
                     ) : null}
@@ -361,17 +413,7 @@ export default function HistoryPage() {
         </section>
       </div>
 
-      <div className="grid gap-3 pb-10">
-        <Link className="ui-button-accent h-14 w-full text-base" href="/programs/style/onboarding/result">
-          최근 결과 보기
-        </Link>
-        <Link className="ui-button-secondary h-14 w-full text-base" href="/programs/style/onboarding/upload?reset=photo">
-          새 사진으로 다시 체크
-        </Link>
-        <Link className="ui-button-secondary h-14 w-full text-base" href="/closet">
-          옷장 관리
-        </Link>
-      </div>
+      <div className="pb-10" />
     </main>
   );
 }

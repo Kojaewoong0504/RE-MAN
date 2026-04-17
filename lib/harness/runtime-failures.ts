@@ -34,6 +34,7 @@ type RuntimeLearnedFailure = {
 const REPORTS_DIR = join(process.cwd(), "harness", "reports");
 const INCIDENTS_PATH = join(REPORTS_DIR, "runtime-incidents.json");
 const LEARNED_PATH = join(REPORTS_DIR, "runtime-learned-failures.json");
+const MAX_RUNTIME_INCIDENTS = 50;
 
 function normalizeErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "unknown_runtime_failure";
@@ -104,16 +105,19 @@ export async function recordStorageRuntimeFailure(input: {
   const now = new Date().toISOString();
 
   const incidents = await readJson<RuntimeIncident[]>(INCIDENTS_PATH, []);
-  incidents.push({
-    timestamp: now,
-    route: input.route,
-    category: "storage",
-    stage,
-    signature_hash: signatureHash,
-    message,
-    user_id: input.userId ?? null,
-    remediation_hint: remediationHint
-  });
+  const nextIncidents = [
+    ...incidents,
+    {
+      timestamp: now,
+      route: input.route,
+      category: "storage",
+      stage,
+      signature_hash: signatureHash,
+      message,
+      user_id: input.userId ?? null,
+      remediation_hint: remediationHint
+    }
+  ].slice(-MAX_RUNTIME_INCIDENTS);
 
   const learned = await readJson<Record<string, RuntimeLearnedFailure>>(LEARNED_PATH, {});
   const current = learned[signatureHash];
@@ -133,5 +137,8 @@ export async function recordStorageRuntimeFailure(input: {
     promotion_candidate: occurrenceCount >= 2
   };
 
-  await Promise.all([writeJson(INCIDENTS_PATH, incidents), writeJson(LEARNED_PATH, learned)]);
+  await Promise.all([
+    writeJson(INCIDENTS_PATH, nextIncidents),
+    writeJson(LEARNED_PATH, learned)
+  ]);
 }

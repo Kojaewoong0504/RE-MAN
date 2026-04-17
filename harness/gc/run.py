@@ -11,11 +11,27 @@ SCAN_DIRS = [ROOT / "app", ROOT / "components", ROOT / "lib"]
 IMPORT_RE = re.compile(r'from\s+["\'](@/[^"\']+|\.{1,2}/[^"\']+)["\']')
 FORBIDDEN_PATTERNS = ["console.log", "TODO", "FIXME", "HACK"]
 DOC_ROUTE_EXPECTATIONS = {
+    "/api/auth/login": ROOT / "app" / "api" / "auth" / "login" / "route.ts",
+    "/api/auth/logout": ROOT / "app" / "api" / "auth" / "logout" / "route.ts",
+    "/api/auth/refresh": ROOT / "app" / "api" / "auth" / "refresh" / "route.ts",
+    "/api/auth/session": ROOT / "app" / "api" / "auth" / "session" / "route.ts",
+    "/api/credits": ROOT / "app" / "api" / "credits" / "route.ts",
+    "/api/credits/transactions": ROOT
+    / "app"
+    / "api"
+    / "credits"
+    / "transactions"
+    / "route.ts",
     "/api/feedback": ROOT / "app" / "api" / "feedback" / "route.ts",
+    "/api/deep-dive": ROOT / "app" / "api" / "deep-dive" / "route.ts",
     "/api/daily": ROOT / "app" / "api" / "daily" / "route.ts",
+    "/api/try-on": ROOT / "app" / "api" / "try-on" / "route.ts",
     "/api/email": ROOT / "app" / "api" / "email" / "route.ts",
 }
 STALE_FLAG_PATTERNS = ["FEATURE_FLAG", "TEMP_FLAG", "LEGACY_FLAG"]
+REPORT_SIZE_LIMITS = {
+    ROOT / "harness" / "reports" / "runtime-incidents.json": 64 * 1024,
+}
 
 
 def print_result(ok: bool, message: str):
@@ -93,6 +109,37 @@ def find_doc_drift():
     return failures
 
 
+def find_report_bloat():
+    failures = []
+
+    for path, size_limit in REPORT_SIZE_LIMITS.items():
+        if not path.exists():
+            continue
+
+        size = path.stat().st_size
+        if size > size_limit:
+            failures.append(
+                f"report bloat: {path.relative_to(ROOT)} is {size} bytes, limit {size_limit}"
+            )
+
+    return failures
+
+
+def find_docs_index_drift():
+    failures = []
+    docs_index = ROOT / "docs" / "index.md"
+    index_text = docs_index.read_text(encoding="utf-8")
+
+    for path in (ROOT / "docs").rglob("*.md"):
+        if path == docs_index:
+            continue
+        relative = path.relative_to(ROOT)
+        if str(relative) not in index_text:
+            failures.append(f"doc index drift: {relative} is missing from docs/index.md")
+
+    return failures
+
+
 def find_candidate_duplicates():
     duplicates = []
     text_to_files = {}
@@ -142,6 +189,8 @@ def main():
     failures.extend(find_unreferenced_files())
     failures.extend(find_forbidden_patterns())
     failures.extend(find_doc_drift())
+    failures.extend(find_docs_index_drift())
+    failures.extend(find_report_bloat())
     candidates.extend(find_candidate_duplicates())
     candidates.extend(find_stale_flag_candidates())
     write_candidates(candidates)

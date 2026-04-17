@@ -18,6 +18,7 @@ playwright-report/
 test-results/
 .playwright-cli/
 output/
+.superpowers/
 dist/
 build/
 tsconfig.tsbuildinfo

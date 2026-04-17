@@ -48,7 +48,7 @@
 - garbage collection 검사
 - e2e 테스트
 
-현재 앱 코드가 없으므로 이 단계는 예약만 해 둔다.
+현재 앱 코드가 있으므로 이 단계는 pre-push와 CI에서 실행 가능한 필수 검증으로 유지한다.
 
 ## Failure Output
 
@@ -85,6 +85,8 @@ pre-push에서는 여기에 아래가 추가된다.
 - `npm run test:e2e`와 `npm run build`는 병렬 실행하지 않는다.
 - 둘 다 `.next` 산출물을 사용하므로 병렬 실행 시 `PageNotFoundError: /_document` 같은 거짓 실패가 발생할 수 있다.
 - 이 경우 코드 실패로 보고하지 말고, 실행 방식을 수정한 뒤 build를 단독으로 재실행한다.
+- `npm run build`, `npm run test:e2e`, `npm run visual:app`, `npm run visual:deep-dive`는 `scripts/with-next-artifact-lock.py`를 통해 같은 저장소에서 동시 실행을 차단한다.
+- 에이전트가 `multi_tool` 또는 백그라운드 세션으로 위 명령들을 병렬 실행해 lock 실패가 발생하면, 이는 앱 실패가 아니라 하네스 실행 위반이다. lock 실패를 숨기지 말고 순차 실행으로 재검증한다.
 
 ## Provider Smoke Rule
 
@@ -110,7 +112,7 @@ UI/UX 변경은 테스트 통과만으로 완료 보고하지 않는다.
 핵심 경로가 화면에서 어떻게 보이는지 브라우저 스크린샷 또는 trace 산출물로 남긴다.
 
 - deep-dive 결과 화면 변경 시 `npm run visual:deep-dive`를 실행한다.
-- 홈, 스타일 시작, 업로드, 결과, 옷장, 기록, 기록 상세, 내 정보, 설정처럼 주요 화면 배치가 바뀌면 `npm run visual:app`을 실행한다.
+- 홈, 스타일 시작, 업로드, 분석 오류, 결과, 옷장, 기록, 기록 상세, 내 정보, 설정처럼 주요 화면 배치가 바뀌면 `npm run visual:app`을 실행한다.
 - `visual:app` 산출물은 `output/playwright/app-visual-smoke/`에 저장한다.
 - `visual:deep-dive` 산출물은 `output/playwright/result-minimal/`에 저장한다.
 - 이 smoke는 desktop, mobile viewport를 모두 캡처하고 개발자용 provider 라벨이 사용자 화면에 노출되지 않는지 확인한다.

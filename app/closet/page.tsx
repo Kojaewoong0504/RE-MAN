@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ClosetInventoryEditor } from "@/components/closet/ClosetInventoryEditor";
+import { CreditStatus } from "@/components/credits/CreditStatus";
 import { fetchAuthSession } from "@/lib/auth/client";
 import {
   readCurrentUserProfile,
@@ -167,12 +168,9 @@ export default function ClosetPage() {
             </Link>
             <p className="app-brand">RE:MAN</p>
           </div>
-          <Link
-            className="text-sm font-black uppercase tracking-[0.12em] text-ink underline underline-offset-4"
-            href="/settings"
-          >
-            Settings
-          </Link>
+          <div className="app-header-actions">
+            <CreditStatus variant="badge" />
+          </div>
         </div>
 
         <section className="space-y-4 poster-rule">

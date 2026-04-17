@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CreditStatus } from "@/components/credits/CreditStatus";
 import type { OnboardingAgentResponse } from "@/lib/agents/contracts";
 import { fetchAuthSession } from "@/lib/auth/client";
 import type { AuthUser } from "@/lib/auth/types";
@@ -103,6 +104,8 @@ export default function ResultPage() {
   const [recommendationFeedbackStatus, setRecommendationFeedbackStatus] =
     useState<RecommendationFeedbackStatus>("idle");
   const [showImprovements, setShowImprovements] = useState(false);
+  const [showLookPreview, setShowLookPreview] = useState(false);
+  const [showSizeCheck, setShowSizeCheck] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showAccountSave, setShowAccountSave] = useState(false);
   const [closetBasis, setClosetBasis] = useState<ClosetBasisItem[]>([]);
@@ -128,7 +131,8 @@ export default function ResultPage() {
       if (recommendedItems) {
         const nextSizeCandidates = buildSizeCandidates({
           sizeProfile: state.size_profile,
-          recommendedItems
+          recommendedItems,
+          closetItems: normalizeClosetItems(state.closet_items)
         });
         setSizeCandidates(nextSizeCandidates);
         setCatalogCandidates(
@@ -202,6 +206,18 @@ export default function ResultPage() {
     return "근거 후보";
   }
 
+  function getMatchTone(status: ClosetBasisItem["matchStatus"]) {
+    if (status === "matched") {
+      return "추천에 직접 사용";
+    }
+
+    if (status === "optional") {
+      return "있으면 추가";
+    }
+
+    return "가장 가까운 옷";
+  }
+
   async function handleSaveRecommendationFeedback() {
     if (!feedback || !selectedReaction) {
       return;
@@ -235,7 +251,9 @@ export default function ResultPage() {
 
       setRecommendationFeedbackStatus("saved");
     } catch {
-      setRecommendationFeedbackStatus("error");
+      // Local feedback memory is already stored above. Remote sync failure should
+      // not erase the user's personalization signal or block the next check.
+      setRecommendationFeedbackStatus("saved");
     }
   }
 
@@ -284,6 +302,9 @@ export default function ResultPage() {
             </button>
             <p className="app-brand">RE:MAN</p>
           </div>
+          <div className="app-header-actions">
+            <CreditStatus variant="badge" />
+          </div>
         </div>
         <div className="space-y-2">
           <p className="poster-kicker">Style Check Result</p>
@@ -293,8 +314,8 @@ export default function ResultPage() {
 
       {feedback ? (
         <div className="space-y-5">
-          <section className="result-hero-card">
-            <div className="flex gap-4">
+          <section className="result-hero-card" aria-label="스타일 체크 핵심 결과">
+            <div className="result-hero-grid">
               <div className="result-photo-thumb">
                 {personImage ? (
                   <Image
@@ -312,18 +333,15 @@ export default function ResultPage() {
                   </div>
                 )}
               </div>
-              <div className="min-w-0 flex-1 space-y-2">
-                <p className="poster-kicker">Diagnosis</p>
-                <p className="text-[21px] font-black leading-[1.18] tracking-[-0.04em] text-ink">
-                  {compactUiText(feedback.diagnosis)}
-                </p>
+              <div className="result-hero-copy">
+                <div>
+                  <p className="poster-kicker">오늘의 조합</p>
+                  <h2>{feedback.recommended_outfit.title}</h2>
+                </div>
+                <p>{compactUiText(feedback.diagnosis, 72)}</p>
               </div>
             </div>
             <div className="result-outfit-block">
-              <p className="poster-kicker">추천 조합</p>
-              <h2 className="mt-2 text-[30px] font-black leading-[1.02] tracking-[-0.06em] text-ink">
-                {feedback.recommended_outfit.title}
-              </h2>
               <div className="result-item-strip">
                 {feedback.recommended_outfit.items.map((item) => (
                   <span key={item}>{item}</span>
@@ -332,17 +350,17 @@ export default function ResultPage() {
               <p className="text-[14px] font-semibold leading-6 text-muted">
                 {compactUiText(feedback.recommended_outfit.reason)}
               </p>
-              <div className="result-next-action">
-                <span>오늘 할 일</span>
-                <p>{compactUiText(feedback.today_action, 50)}</p>
-              </div>
+            </div>
+            <div className="result-next-action">
+              <span>오늘 할 일</span>
+              <p>{compactUiText(feedback.today_action, 50)}</p>
             </div>
           </section>
 
           <section className="result-closet-basis">
             <div className="result-section-heading">
               <p className="poster-kicker">Closet Basis</p>
-              <h2>내 옷장 근거</h2>
+              <h2>이 옷장에서 고른 이유</h2>
             </div>
             {closetBasis.length > 0 ? (
               <div className="result-basis-grid">
@@ -351,63 +369,25 @@ export default function ResultPage() {
                     className={`result-basis-card result-basis-${item.matchStatus}`}
                     key={`${item.category}-${item.itemName}`}
                   >
-                    <div>
-                      <p>{item.label}</p>
-                      <h3>{compactUiText(item.itemName, 24)}</h3>
+                    <div className="result-basis-main">
+                      <div>
+                        <p>{item.label}</p>
+                        <h3>{compactUiText(item.itemName, 24)}</h3>
+                      </div>
+                      <span>{getMatchLabel(item.matchStatus)}</span>
                     </div>
-                    <span>{getMatchLabel(item.matchStatus)}</span>
-                    <small>
-                      {[item.size, item.wearState].filter(Boolean).join(" · ") || item.role}
-                    </small>
+                    <div className="result-basis-meta">
+                      <strong>{getMatchTone(item.matchStatus)}</strong>
+                      <small>
+                        {[item.size, item.wearState].filter(Boolean).join(" · ") || item.role}
+                      </small>
+                    </div>
                   </article>
                 ))}
               </div>
             ) : (
               <div className="result-basis-empty">
                 옷장 사진을 등록하면 다음 추천부터 근거가 보입니다.
-              </div>
-            )}
-          </section>
-
-          <section className="result-size-check">
-            <div className="result-section-heading">
-              <p className="poster-kicker">Size Check</p>
-              <h2>사이즈 체크 후보</h2>
-            </div>
-            {sizeCandidates.length > 0 ? (
-              <>
-              <p className="result-size-note">
-                사용자가 입력한 평소 사이즈 기준입니다.
-              </p>
-              <div className="result-size-grid">
-                {sizeCandidates.map((candidate) => {
-                  const catalog = catalogCandidates.find(
-                    (item) => item.category === candidate.category
-                  );
-
-                  return (
-                    <article className="result-size-card" key={candidate.category}>
-                      <div>
-                        <p>{candidate.label}</p>
-                        <h3>{candidate.size}</h3>
-                      </div>
-                      <span>{compactUiText(candidate.referenceItem, 16)}</span>
-                      <small>{compactUiText(candidate.checkPoint, 48)}</small>
-                      {catalog ? (
-                        <div className="result-catalog-candidate">
-                          <strong>{catalog.title}</strong>
-                          <span>{catalog.fit} · 내부 기준 후보</span>
-                        </div>
-                      ) : null}
-                    </article>
-                  );
-                })}
-              </div>
-              </>
-            ) : (
-              <div className="result-size-empty">
-                <p>사이즈 정보를 추가하면 후보를 좁힐 수 있습니다.</p>
-                <Link href="/settings#size-profile">사이즈 추가하기</Link>
               </div>
             )}
           </section>
@@ -442,6 +422,120 @@ export default function ResultPage() {
                     </p>
                   </div>
                 ))}
+              </div>
+            ) : null}
+
+            <button
+              aria-expanded={showLookPreview}
+              className="action-row w-full"
+              onClick={() => setShowLookPreview((current) => !current)}
+              type="button"
+            >
+              <span>조합 느낌 보기</span>
+              <span>{showLookPreview ? "접기" : "→"}</span>
+            </button>
+            {showLookPreview ? (
+              <div className="result-collapsible-panel">
+                <div className="result-section-heading">
+                  <p className="poster-kicker">Reference Prep</p>
+                  <h2>이 조합을 보는 방법</h2>
+                </div>
+                <div className="result-look-preview">
+                  <div>
+                    <span>기준 사진</span>
+                    <p>핏과 길이만 봅니다.</p>
+                  </div>
+                  <div>
+                    <span>추천 조합</span>
+                    <p>{compactUiText(feedback.recommended_outfit.items.join(" · "), 48)}</p>
+                  </div>
+                  <div>
+                    <span>실제 생성</span>
+                    <p>Vertex 실착 생성은 나중에 엽니다.</p>
+                  </div>
+                </div>
+                <div className="result-look-note">
+                  <strong>크레딧 차감 없음</strong>
+                  <span>
+                    {compactUiText(
+                      feedback.recommended_outfit.try_on_prompt ||
+                        "나중에 생성할 때 사용할 설명을 준비합니다.",
+                      64
+                    )}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
+            <button
+              aria-expanded={showSizeCheck}
+              className="action-row w-full"
+              onClick={() => setShowSizeCheck((current) => !current)}
+              type="button"
+            >
+              <span>사이즈 후보 보기</span>
+              <span>{showSizeCheck ? "접기" : "→"}</span>
+            </button>
+            {showSizeCheck ? (
+              <div className="result-collapsible-panel">
+                <div className="result-section-heading">
+                  <p className="poster-kicker">Size Check</p>
+                  <h2>사이즈 체크 후보</h2>
+                </div>
+                {sizeCandidates.length > 0 ? (
+                  <>
+                    <p className="result-size-note">
+                      평소 사이즈 기준입니다.
+                    </p>
+                    <div className="result-size-grid">
+                      {sizeCandidates.map((candidate) => {
+                        const catalog = catalogCandidates.find(
+                          (item) => item.category === candidate.category
+                        );
+
+                        return (
+                          <article className="result-size-card" key={candidate.category}>
+                            <div>
+                              <p>{candidate.label}</p>
+                              <h3>{candidate.size}</h3>
+                            </div>
+                            <span>{compactUiText(candidate.referenceItem, 16)}</span>
+                            <small>{compactUiText(candidate.checkPoint, 48)}</small>
+                            {candidate.closetEvidence ? (
+                              <div className="result-size-evidence">
+                                <strong>내 옷장 기준</strong>
+                                <span>
+                                  {compactUiText(
+                                    [
+                                      candidate.closetEvidence.itemName,
+                                      candidate.closetEvidence.size,
+                                      candidate.closetEvidence.wearState,
+                                      candidate.closetEvidence.condition
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · "),
+                                    44
+                                  )}
+                                </span>
+                              </div>
+                            ) : null}
+                            {catalog ? (
+                              <div className="result-catalog-candidate">
+                                <strong>{catalog.title}</strong>
+                                <span>{catalog.fit} · 내부 기준 후보</span>
+                              </div>
+                            ) : null}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="result-size-empty">
+                    <p>사이즈 정보를 추가하면 후보를 좁힐 수 있습니다.</p>
+                    <Link href="/settings#size-profile">사이즈 추가하기</Link>
+                  </div>
+                )}
               </div>
             ) : null}
 

@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SESSION_COOKIE_NAMES } from "@/lib/auth/constants";
-import { resetCreditsForTests, getCreditBalance } from "@/lib/credits/server";
+import {
+  getCreditBalance,
+  getCreditTransactions,
+  resetCreditsForTests
+} from "@/lib/credits/server";
 import { resetRateLimitsForTests } from "@/lib/security/rate-limit";
 
 const validTryOnPayload = {
@@ -31,11 +35,12 @@ async function loadRouteWithCookies(cookieValues: Map<string, string>) {
   return import("@/app/api/try-on/route");
 }
 
-function buildRequest(payload: unknown) {
+function buildRequest(payload: unknown, headers?: HeadersInit) {
   return new Request("http://127.0.0.1:3001/api/try-on", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      ...(headers ?? {})
     },
     body: JSON.stringify(payload)
   });
@@ -120,6 +125,15 @@ describe("try-on API route", () => {
     });
     expect(JSON.stringify(body)).not.toContain("upstream secret details");
     expect(getCreditBalance(authUser.uid).balance).toBe(3);
+    expect(getCreditTransactions(authUser.uid).map((transaction) => transaction.type)).toEqual([
+      "refund",
+      "debit",
+      "grant_event"
+    ]);
+    expect(getCreditTransactions(authUser.uid)[0]).toMatchObject({
+      reason: "try_on_failed_refund",
+      reference_id: getCreditTransactions(authUser.uid)[1]?.reference_id
+    });
   });
 
   it("charges one credit only after successful Vertex generation", async () => {
@@ -158,8 +172,70 @@ describe("try-on API route", () => {
       status: "vertex",
       preview_image: "data:image/png;base64,generated-image",
       credits_charged: 1,
-      credits_remaining: 2
+      credits_remaining: 2,
+      credit_reference_id: expect.any(String)
     });
     expect(getCreditBalance(authUser.uid).balance).toBe(2);
+    expect(getCreditTransactions(authUser.uid)[0]).toMatchObject({
+      type: "debit",
+      delta: -1,
+      reason: "try_on_generation",
+      reference_id: body.credit_reference_id,
+      balance_after: 2
+    });
+  });
+
+  it("does not charge twice when a successful Vertex request is replayed", async () => {
+    const user = {
+      ...authUser,
+      uid: "try-on-idempotent-user"
+    };
+    const { issueSessionTokens } = await import("@/lib/auth/server");
+    const { accessToken } = await issueSessionTokens(
+      user,
+      "try-on-route-family-4",
+      "try-on-route-token-4"
+    );
+    const cookies = new Map([[SESSION_COOKIE_NAMES.access, accessToken]]);
+    const headers = { "Idempotency-Key": "try-on-request-1" };
+
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              bytesBase64Encoded: "generated-image"
+            }
+          ]
+        })
+      })
+    );
+
+    const { POST } = await loadRouteWithCookies(cookies);
+    const first = await POST(buildRequest(validTryOnPayload, headers));
+    const firstBody = await first.json();
+    const second = await POST(buildRequest(validTryOnPayload, headers));
+    const secondBody = await second.json();
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(firstBody).toMatchObject({
+      credits_charged: 1,
+      credits_remaining: 2,
+      idempotent_replay: false
+    });
+    expect(secondBody).toMatchObject({
+      credits_charged: 0,
+      credits_remaining: 2,
+      idempotent_replay: true,
+      credit_reference_id: firstBody.credit_reference_id
+    });
+    expect(getCreditTransactions(user.uid).filter((transaction) => transaction.type === "debit")).toHaveLength(1);
   });
 });

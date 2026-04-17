@@ -39,4 +39,31 @@ describe("size candidate recommendations", () => {
       expect.objectContaining({ category: "bottoms", size: "32" })
     ]);
   });
+
+  it("attaches closet evidence when a registered item matches the candidate size", () => {
+    const candidates = buildSizeCandidates({
+      sizeProfile: {
+        top_size: "L"
+      },
+      recommendedItems: ["셔츠", "슬랙스", "스니커즈"],
+      closetItems: [
+        {
+          id: "top-1",
+          category: "tops",
+          name: "옥스포드 셔츠",
+          color: "네이비",
+          size: "L",
+          wear_state: "잘 맞음",
+          condition: "깨끗함"
+        }
+      ]
+    });
+
+    expect(candidates[0].closetEvidence).toEqual({
+      itemName: "네이비 옥스포드 셔츠",
+      size: "L",
+      wearState: "잘 맞음",
+      condition: "깨끗함"
+    });
+  });
 });

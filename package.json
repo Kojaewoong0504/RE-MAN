@@ -4,15 +4,15 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 3001",
-    "build": "next build",
+    "build": "python3 scripts/with-next-artifact-lock.py build -- next build",
     "start": "next start --hostname 127.0.0.1 --port 3001",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "test:e2e": "playwright test",
-    "visual:app": "node scripts/visual-app-smoke.mjs",
-    "visual:deep-dive": "node scripts/visual-deep-dive-smoke.mjs",
+    "test:e2e": "python3 scripts/with-next-artifact-lock.py e2e -- playwright test",
+    "visual:app": "python3 scripts/with-next-artifact-lock.py visual-app -- node scripts/visual-app-smoke.mjs",
+    "visual:deep-dive": "python3 scripts/with-next-artifact-lock.py visual-deep-dive -- node scripts/visual-deep-dive-smoke.mjs",
     "smoke:feedback:gemini": "python3 scripts/smoke-feedback-gemini.py",
     "smoke:feedback:browser": "node scripts/smoke-feedback-browser-gemini.mjs",
     "check:architecture": "python3 harness/architecture/run.py",
@@ -20,7 +20,8 @@
     "check:app": "python3 harness/application/run.py",
     "check:content": "python3 harness/application/content_rules.py",
     "check:gc": "python3 harness/gc/run.py",
-    "check": "python3 harness/repository/run.py && python3 harness/application/run.py && python3 harness/application/content_rules.py && python3 harness/architecture/run.py && python3 harness/gc/run.py && tsc --noEmit && next lint && next build"
+    "check:mvp": "python3 harness/mvp/run.py",
+    "check": "python3 harness/repository/run.py && python3 harness/application/run.py && python3 harness/application/content_rules.py && python3 harness/architecture/run.py && python3 harness/gc/run.py && npm run check:mvp && tsc --noEmit && next lint && next build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.102.0",

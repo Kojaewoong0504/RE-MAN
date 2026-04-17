@@ -40,7 +40,8 @@ public URL: 금지
 ### 하네스 고정 규칙
 - `app/api/feedback/route.ts`, `app/api/daily/route.ts` 는 직접 Storage를 다루지 않고 `withTemporaryStoredImage(...)` 경유
 - 삭제는 `lib/supabase/temp-image.ts` 의 `finally` 블록에서 수행
-- upload/delete 장애는 `harness/reports/runtime-incidents.json` 과 `runtime-learned-failures.json` 에 누적
+- upload/delete 장애는 `harness/reports/runtime-incidents.json` 과 `runtime-learned-failures.json` 에 기록
+- `runtime-incidents.json`은 테스트 반복으로 무한 팽창하지 않도록 최근 50개만 보관하고, 반복 횟수와 승격 후보는 `runtime-learned-failures.json`에 누적
 
 ---
 
@@ -116,13 +117,23 @@ function validateUpload(file: File) {
 const filename = `${userId}/${crypto.randomUUID()}.jpg`
 ```
 
-### Rate Limiting
-- `/api/feedback`은 동일 `user_id`가 있으면 사용자 기준, 없으면 IP 기준으로 **분당 5회** 제한한다
+### Rate Limiting and Entitlement
+- `/programs/style/onboarding/*`는 로그인 세션 없이는 접근하지 못한다
+- `/api/feedback`은 access token이 있는 인증 사용자만 호출 가능하다
+- `/api/feedback`은 사용자 기준으로 **분당 5회** 제한한다
+- `/api/feedback`은 활성 구독이 있으면 크레딧을 차감하지 않고, 구독이 없으면 이벤트/유료 크레딧 1개를 차감한다
+- `/api/feedback` 실패 시 예약/차감한 크레딧은 복구해야 한다
+- `/api/feedback` 차감과 환불은 같은 `reference_id`로 원장에 남겨야 한다
+- `/api/feedback`은 `Idempotency-Key`가 같은 성공 요청을 재전송해도 새 차감을 만들면 안 된다
 - `/api/feedback` 초과 시 `429`와 `Retry-After`를 반환한다
 - `/api/try-on`은 이미지 생성 비용이 있으므로 실제 Vertex provider 활성화 전 인증 사용자 + 레이트리밋 + 사용량 제한이 필요
 - `/api/try-on`은 access token이 있는 인증 사용자만 호출 가능하며, 사용자 단위 rate limit을 둔다
 - `/api/try-on`은 실제 Vertex 생성이 가능한 상태에서 성공한 생성 1회당 크레딧 1개를 차감한다
+- `/api/try-on`은 `Idempotency-Key`가 같은 성공 요청을 재전송해도 새 차감을 만들면 안 된다
 - provider 실패 시 예약/차감한 크레딧은 복구해야 한다
+- `/api/credits/transactions`는 인증 사용자 본인의 크레딧 원장만 반환한다
+- `/api/credits`는 원장 합계와 계정 잔액이 일치할 때만 잔액을 반환한다
+- BM 전환 전제: 크레딧 지급/차감/환불/구독 사용/구독 상태 변경은 모두 원장 이벤트로 기록되어야 하며, 단순 잔액 필드만으로 돈 관련 상태를 판단하면 안 된다
 - Vercel Edge Middleware 또는 Upstash Redis로 구현
 - 초과 시 응답: `429 Too Many Requests`
 - Supabase Storage 버킷은 `private` 유지, 공개 버킷 금지
@@ -136,7 +147,8 @@ const filename = `${userId}/${crypto.randomUUID()}.jpg`
 
 ### 규칙
 - 보호 페이지는 서버 세션 cookie 없이 접근 금지
-- 프로필/설정 접근은 `httpOnly` access 또는 refresh cookie가 있어야 한다
+- 프로필/설정/옷장/기록/스타일 온보딩 접근은 `httpOnly` access 또는 refresh cookie가 있어야 한다
+- 핵심 AI API는 클라이언트 `user_id`를 신뢰하지 않고 서버 세션의 uid를 최종 사용자 id로 사용한다
 - Firestore는 `request.auth.uid == userId` 규칙을 계속 유지한다
 
 ### Firestore 보안 규칙

@@ -29,7 +29,26 @@ export type AgentClosetItem = {
   fit?: string;
   size?: string;
   wear_state?: string;
+  wear_frequency?: string;
+  season?: string;
+  condition?: string;
   notes?: string;
+};
+
+export type ClosetStrategyRole = "core" | "use_with_care" | "optional";
+
+export type ClosetStrategyItem = {
+  id: string;
+  category: AgentClosetItemCategory;
+  role: ClosetStrategyRole;
+  reason: string;
+};
+
+export type ClosetStrategy = {
+  core_item_ids: string[];
+  caution_item_ids: string[];
+  optional_item_ids: string[];
+  items: ClosetStrategyItem[];
 };
 
 export type FeedbackHistoryItem = {
@@ -39,6 +58,13 @@ export type FeedbackHistoryItem = {
   next_focus?: string;
 };
 
+export type PreferenceProfile = {
+  liked_direction?: string;
+  avoid_direction?: string;
+  note?: string;
+  last_reaction?: "helpful" | "not_sure" | "save_for_later";
+};
+
 export type AgentRequest = {
   user_id?: string;
   image?: string;
@@ -46,7 +72,9 @@ export type AgentRequest = {
   survey: SurveyInput;
   closet_profile?: ClosetProfile;
   closet_items?: AgentClosetItem[];
+  closet_strategy?: ClosetStrategy;
   feedback_history: FeedbackHistoryItem[];
+  preference_profile?: PreferenceProfile;
 };
 
 export type OutfitRecommendation = {
@@ -164,6 +192,74 @@ function validateClosetItems(value: unknown): value is AgentClosetItem[] {
   });
 }
 
+function validateClosetStrategy(value: unknown): value is ClosetStrategy {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const strategy = value as Record<string, unknown>;
+  const idGroups = [
+    strategy.core_item_ids,
+    strategy.caution_item_ids,
+    strategy.optional_item_ids
+  ];
+
+  const hasValidIdGroups = idGroups.every(
+    (group) =>
+      Array.isArray(group) && group.every((itemId) => typeof itemId === "string" && itemId.trim())
+  );
+
+  const hasValidItems =
+    Array.isArray(strategy.items) &&
+    strategy.items.every((item) => {
+      if (!item || typeof item !== "object") {
+        return false;
+      }
+
+      const record = item as Record<string, unknown>;
+      return (
+        isNonEmptyString(record.id) &&
+        (record.category === "tops" ||
+          record.category === "bottoms" ||
+          record.category === "shoes" ||
+          record.category === "outerwear") &&
+        (record.role === "core" ||
+          record.role === "use_with_care" ||
+          record.role === "optional") &&
+        isNonEmptyString(record.reason)
+      );
+    });
+
+  return hasValidIdGroups && hasValidItems;
+}
+
+function validatePreferenceProfile(value: unknown): value is PreferenceProfile {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const profile = value as Record<string, unknown>;
+  const stringFields = [profile.liked_direction, profile.avoid_direction, profile.note];
+  const hasValidStrings = stringFields.every(
+    (field) => field === undefined || typeof field === "string"
+  );
+  const hasValidReaction =
+    profile.last_reaction === undefined ||
+    profile.last_reaction === "helpful" ||
+    profile.last_reaction === "not_sure" ||
+    profile.last_reaction === "save_for_later";
+
+  return hasValidStrings && hasValidReaction;
+}
+
 export function validateAgentRequest(payload: unknown): payload is AgentRequest {
   if (!payload || typeof payload !== "object") {
     return false;
@@ -214,6 +310,14 @@ export function validateAgentRequest(payload: unknown): payload is AgentRequest 
   }
 
   if (!validateClosetItems(request.closet_items)) {
+    return false;
+  }
+
+  if (!validateClosetStrategy(request.closet_strategy)) {
+    return false;
+  }
+
+  if (!validatePreferenceProfile(request.preference_profile)) {
     return false;
   }
 

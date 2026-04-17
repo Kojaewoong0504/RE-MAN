@@ -173,6 +173,7 @@ try {
 - [ ] Gemini 재시도 로직 동작 확인 (강제 오류 주입 테스트)
 - [ ] 사진 업로드 실패 시 Fallback UI 노출 확인
 - [ ] upload/delete 장애가 `runtime-incidents.json` 과 `runtime-learned-failures.json` 에 기록되는지 확인
+- [ ] `runtime-incidents.json` 은 최근 50개만 보관하고, 반복 횟수는 `runtime-learned-failures.json` 에 누적되는지 확인
 - [ ] Sentry 연동 및 에러 캡처 동작 확인
 - [ ] Firebase 사용량 알림 설정 완료
 - [ ] Vercel 배포 실패 알림 설정 완료

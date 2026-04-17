@@ -2,6 +2,8 @@
 
 import type {
   AgentRequest,
+  ClosetStrategy,
+  ClosetStrategyRole,
   ClosetProfile,
   DailyAgentResponse,
   DeepDiveModule,
@@ -37,6 +39,9 @@ export type ClosetItem = {
   fit?: string;
   size?: string;
   wear_state?: string;
+  wear_frequency?: string;
+  season?: string;
+  condition?: string;
   notes?: string;
 };
 
@@ -187,6 +192,36 @@ function buildRecommendationFeedbackSummary(feedback: RecommendationFeedback | u
   return parts.join(" / ");
 }
 
+function buildPreferenceProfile(feedback: RecommendationFeedback | undefined) {
+  if (!feedback) {
+    return undefined;
+  }
+
+  const note = feedback.note?.trim() ? compactText(feedback.note, 72) : undefined;
+
+  if (feedback.reaction === "helpful") {
+    return {
+      liked_direction: `${compactText(feedback.outfit_title, 36)} 방향 선호`,
+      note,
+      last_reaction: feedback.reaction
+    };
+  }
+
+  if (feedback.reaction === "not_sure") {
+    return {
+      avoid_direction: `${compactText(feedback.outfit_title, 36)} 방향은 애매함`,
+      note,
+      last_reaction: feedback.reaction
+    };
+  }
+
+  return {
+    liked_direction: `${compactText(feedback.outfit_title, 36)} 방향은 후보로 보류`,
+    note,
+    last_reaction: feedback.reaction
+  };
+}
+
 function buildHistoryPreview(item: FeedbackHistoryItem) {
   const parts = [getPrimaryHistorySummary(item.summary)];
 
@@ -223,6 +258,9 @@ function compactClosetItemText(item: ClosetItem) {
     item.fit ? `(${item.fit})` : null,
     item.size ? `[${item.size}]` : null,
     item.wear_state ? `{${item.wear_state}}` : null,
+    item.wear_frequency ? `빈도:${item.wear_frequency}` : null,
+    item.season ? `계절:${item.season}` : null,
+    item.condition ? `상태:${item.condition}` : null,
     item.notes ? `- ${item.notes}` : null
   ]
     .filter(Boolean)
@@ -266,6 +304,10 @@ export function normalizeClosetItems(items: unknown): ClosetItem[] {
         fit: typeof record.fit === "string" ? record.fit.trim() : "",
         size: typeof record.size === "string" ? record.size.trim() : "",
         wear_state: typeof record.wear_state === "string" ? record.wear_state.trim() : "",
+        wear_frequency:
+          typeof record.wear_frequency === "string" ? record.wear_frequency.trim() : "",
+        season: typeof record.season === "string" ? record.season.trim() : "",
+        condition: typeof record.condition === "string" ? record.condition.trim() : "",
         notes: typeof record.notes === "string" ? record.notes.trim() : ""
       } satisfies ClosetItem;
     })
@@ -335,8 +377,98 @@ function toAgentClosetItems(items: ClosetItem[] | undefined) {
     fit: item.fit,
     size: item.size,
     wear_state: item.wear_state,
+    wear_frequency: item.wear_frequency,
+    season: item.season,
+    condition: item.condition,
     notes: item.notes
   }));
+}
+
+function hasCautionSignal(item: ClosetItem) {
+  const text = [item.wear_state, item.notes, item.fit, item.wear_frequency, item.condition]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return ["작", "큼", "낡", "오염", "불편", "애매", "주의", "수선", "타이트", "헐렁"].some(
+    (keyword) => text.includes(keyword)
+  );
+}
+
+function hasCoreSignal(item: ClosetItem) {
+  const text = [item.wear_state, item.notes, item.fit, item.wear_frequency, item.condition]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return ["잘 맞", "자주", "주 2", "주 3", "매일", "깔끔", "기본", "무난", "단정", "편함", "좋음"].some(
+    (keyword) => text.includes(keyword)
+  );
+}
+
+function getClosetStrategyRole(item: ClosetItem): ClosetStrategyRole {
+  if (hasCautionSignal(item)) {
+    return "use_with_care";
+  }
+
+  if (hasCoreSignal(item)) {
+    return "core";
+  }
+
+  return "optional";
+}
+
+function buildClosetStrategyReason(item: ClosetItem, role: ClosetStrategyRole) {
+  if (role === "core") {
+    return compactText(
+      item.condition || item.wear_frequency || item.wear_state || item.notes || "현재 추천의 기준으로 먼저 써볼 수 있음",
+      52
+    );
+  }
+
+  if (role === "use_with_care") {
+    return compactText(
+      item.condition || item.wear_state || item.notes || item.wear_frequency || "핏이나 상태를 확인하고 써야 함",
+      52
+    );
+  }
+
+  return compactText(
+    item.season || item.condition || item.notes || item.wear_state || "필요할 때 바꿔볼 수 있는 후보",
+    52
+  );
+}
+
+export function buildClosetStrategy(items: ClosetItem[] | undefined): ClosetStrategy | undefined {
+  const normalizedItems = normalizeClosetItems(items);
+
+  if (!normalizedItems.length) {
+    return undefined;
+  }
+
+  const strategyItems = normalizedItems.map((item) => {
+    const role = getClosetStrategyRole(item);
+
+    return {
+      id: item.id,
+      category: item.category,
+      role,
+      reason: buildClosetStrategyReason(item, role)
+    };
+  });
+
+  return {
+    core_item_ids: strategyItems
+      .filter((item) => item.role === "core")
+      .map((item) => item.id),
+    caution_item_ids: strategyItems
+      .filter((item) => item.role === "use_with_care")
+      .map((item) => item.id),
+    optional_item_ids: strategyItems
+      .filter((item) => item.role === "optional")
+      .map((item) => item.id),
+    items: strategyItems
+  };
 }
 
 export function normalizeSizeProfile(profile: unknown): SizeProfile {
@@ -506,9 +638,11 @@ export function buildOnboardingRequest(state: OnboardingState): AgentRequest | n
         : closet_profile
     ),
     closet_items: toAgentClosetItems(closet_items),
+    closet_strategy: buildClosetStrategy(closet_items),
     image,
     text_description,
-    feedback_history: state.feedback_history ?? []
+    feedback_history: state.feedback_history ?? [],
+    preference_profile: buildPreferenceProfile(state.recommendation_feedback)
   };
 }
 
@@ -700,9 +834,11 @@ export function buildDailyRequest(
     survey,
     closet_profile: getClosetProfileOrUndefined(hasItemProfile ? itemProfile : closet_profile),
     closet_items: toAgentClosetItems(closet_items),
+    closet_strategy: buildClosetStrategy(closet_items),
     image,
     text_description,
-    feedback_history
+    feedback_history,
+    preference_profile: buildPreferenceProfile(state.recommendation_feedback)
   };
 }
 

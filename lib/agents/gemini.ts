@@ -152,6 +152,14 @@ function buildInstruction(
   payload: AgentRequest,
   instructionMode: InstructionMode = "default"
 ) {
+  const preferenceProfile = payload.preference_profile;
+  const closetStrategy = payload.closet_strategy;
+  const strategySummary = closetStrategy?.items.length
+    ? closetStrategy.items
+        .map((item) => `${item.category}:${item.id}:${item.role}:${item.reason}`)
+        .join(" / ")
+    : "없음";
+
   if (instructionMode === "smoke") {
     return [
       "친한 친구 같은 스타일 코치로 답하세요.",
@@ -167,9 +175,16 @@ function buildInstruction(
         : "옷장 컨텍스트: 없음",
       payload.closet_items?.length
         ? `옷장 아이템 id 목록: ${payload.closet_items
-            .map((item) => `${item.category}:${item.id}:${item.color || ""} ${item.name}`)
+            .map(
+              (item) =>
+                `${item.category}:${item.id}:${item.color || ""} ${item.name}:freq=${item.wear_frequency || "미입력"}:season=${item.season || "미입력"}:condition=${item.condition || "미입력"}`
+            )
             .join(" / ")}`
         : "옷장 아이템 id 목록: 없음",
+      `옷장 전략: ${strategySummary}`,
+      preferenceProfile
+        ? `개인화 선호: 좋아한 방향=${preferenceProfile.liked_direction || "없음"} / 피할 방향=${preferenceProfile.avoid_direction || "없음"} / 메모=${preferenceProfile.note || "없음"}`
+        : "개인화 선호: 없음",
       payload.text_description
         ? `설명: ${payload.text_description}`
         : "설명: 이미지 없음",
@@ -237,11 +252,21 @@ ${
     ? payload.closet_items
         .map(
           (item) =>
-            `- ${item.category} / id=${item.id} / ${item.color || ""} ${item.name} / size=${item.size || "미입력"} / wear=${item.wear_state || "미입력"}`
+            `- ${item.category} / id=${item.id} / ${item.color || ""} ${item.name} / size=${item.size || "미입력"} / wear=${item.wear_state || "미입력"} / freq=${item.wear_frequency || "미입력"} / season=${item.season || "미입력"} / condition=${item.condition || "미입력"}`
         )
         .join("\n")
     : "- 없음"
 }`,
+    `옷장 전략:
+- core: ${closetStrategy?.core_item_ids.join(", ") || "없음"}
+- caution: ${closetStrategy?.caution_item_ids.join(", ") || "없음"}
+- optional: ${closetStrategy?.optional_item_ids.join(", ") || "없음"}
+- items: ${strategySummary}`,
+    `개인화 선호:
+- 좋아한 방향: ${preferenceProfile?.liked_direction || "없음"}
+- 피할 방향: ${preferenceProfile?.avoid_direction || "없음"}
+- 최근 반응: ${preferenceProfile?.last_reaction || "없음"}
+- 메모: ${preferenceProfile?.note || "없음"}`,
     `기존 피드백 이력:
 ${history}`,
     agent === "fit" || agent === "color" || agent === "occasion" || agent === "closet"
@@ -257,7 +282,8 @@ ${
         ? "상황별 코디 deep dive는 사용자의 motivation을 기준으로 소개팅, 출근, 주말 약속 같은 실제 상황에서 현재 추천 조합을 어떻게 조정할지 설명하세요. 새 구매는 유도하지 마세요."
         : "내 옷장 다른 조합 deep dive는 closet_profile에 있는 상의, 하의, 신발, 겉옷 안에서만 다른 조합을 제안하세요. 새 구매나 없는 아이템을 제안하지 마세요."
 }`
-      : "onboarding-agent는 recommended_outfit을 반드시 포함하세요. 추천 조합은 현재 옷장 컨텍스트를 먼저 사용하고 구매를 유도하지 마세요. 등록된 옷장 아이템을 사용했다면 recommended_outfit.source_item_ids에 해당 id를 카테고리별로 넣으세요.",
+      : "onboarding-agent는 recommended_outfit을 반드시 포함하세요. 추천 조합은 현재 옷장 컨텍스트를 먼저 사용하고 구매를 유도하지 마세요. preference_profile의 좋아한 방향은 유지하고 피할 방향은 반복하지 마세요. 등록된 옷장 아이템을 사용했다면 recommended_outfit.source_item_ids에 해당 id를 카테고리별로 넣으세요.",
+    "closet_strategy가 있으면 core 아이템을 우선 사용하고, caution 아이템은 꼭 필요할 때만 쓰며 reason에 확인할 점을 짧게 반영하세요. optional 아이템은 겉옷처럼 상황에 따라 더하는 후보로만 취급하세요.",
     "recommended_outfit.try_on_prompt는 별도 실착 이미지 생성 API에 넘길 수 있게 짧고 구체적으로 작성하세요.",
     "응답은 JSON만 반환하세요. 코드펜스 없이 순수 JSON만 반환하세요.",
     `JSON 스키마:

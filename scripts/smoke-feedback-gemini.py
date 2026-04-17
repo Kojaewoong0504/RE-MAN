@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import base64
+import hashlib
+import hmac
 import json
 import struct
 import sys
@@ -13,6 +15,39 @@ from os import environ
 
 BASE_URL = environ.get("SMOKE_BASE_URL", "http://127.0.0.1:3001")
 TIMEOUT_SECONDS = int(environ.get("SMOKE_TIMEOUT_SECONDS", "70"))
+AUTH_JWT_SECRET = environ.get("AUTH_JWT_SECRET", "development-auth-secret-change-me")
+
+
+def base64url(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode("ascii").rstrip("=")
+
+
+def issue_smoke_access_token() -> str:
+    now = int(time.time())
+    header = {"alg": "HS256", "typ": "JWT"}
+    payload = {
+        "type": "access",
+        "sub": "gemini-smoke-user",
+        "email": "gemini-smoke@example.com",
+        "name": "Gemini Smoke User",
+        "picture": None,
+        "provider": "google",
+        "iat": now,
+        "exp": now + 900,
+    }
+    signing_input = ".".join(
+        [
+            base64url(json.dumps(header, separators=(",", ":")).encode("utf-8")),
+            base64url(json.dumps(payload, separators=(",", ":")).encode("utf-8")),
+        ]
+    )
+    signature = hmac.new(
+        AUTH_JWT_SECRET.encode("utf-8"),
+        signing_input.encode("ascii"),
+        hashlib.sha256,
+    ).digest()
+
+    return f"{signing_input}.{base64url(signature)}"
 
 
 def png_chunk(kind: bytes, data: bytes) -> bytes:
@@ -48,7 +83,10 @@ def post_json(path: str, payload: dict) -> tuple[int, dict]:
     request = urllib.request.Request(
         f"{BASE_URL}{path}",
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "Cookie": f"reman_access_token={issue_smoke_access_token()}",
+        },
         method="POST",
     )
 

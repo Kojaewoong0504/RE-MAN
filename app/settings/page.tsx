@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CreditStatus } from "@/components/credits/CreditStatus";
 import { SizeProfileEditor } from "@/components/profile/SizeProfileEditor";
 import { fetchAuthSession } from "@/lib/auth/client";
 import {
@@ -197,12 +198,9 @@ export default function SettingsPage() {
             </Link>
             <p className="app-brand">RE:MAN</p>
           </div>
-          <Link
-            className="text-sm font-black uppercase tracking-[0.12em] text-ink underline underline-offset-4"
-            href="/profile"
-          >
-            Profile
-          </Link>
+          <div className="app-header-actions">
+            <CreditStatus variant="badge" />
+          </div>
         </div>
         <div className="space-y-4 poster-rule">
           <p className="poster-kicker">Settings</p>
