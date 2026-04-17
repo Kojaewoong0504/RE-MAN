@@ -36,6 +36,8 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByLabel("아이템 이름").fill("검정 슬랙스");
   await page.getByLabel("색").fill("검정");
   await page.getByLabel("사이즈").fill("32");
+  await page.getByLabel("빈도").selectOption("거의 안 입음");
+  await page.getByLabel("상태").selectOption("깨끗함");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
@@ -160,10 +162,17 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   expect(onboardingPayload.closet_items[0]).not.toHaveProperty("photo_data_url");
   expect(onboardingPayload.closet_strategy).toMatchObject({
     core_item_ids: expect.arrayContaining([onboardingPayload.closet_items[0].id]),
+    optional_item_ids: expect.arrayContaining([onboardingPayload.closet_items[1].id]),
     items: expect.arrayContaining([
       expect.objectContaining({
         id: onboardingPayload.closet_items[0].id,
-        role: "core"
+        role: "core",
+        score: expect.any(Number)
+      }),
+      expect.objectContaining({
+        id: onboardingPayload.closet_items[1].id,
+        role: "optional",
+        score: expect.any(Number)
       })
     ])
   });

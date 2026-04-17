@@ -98,7 +98,7 @@
 > 단, 이미 스타일 체크 결과가 있는 재체크 세션은 compact `feedback_history`를 전달해 이전 피드백을 개인화 컨텍스트로 사용할 수 있다.
 > `preference_profile`은 추천 반응에서 만든 구조화된 개인화 신호다. 좋아한 방향은 유지하고, 피할 방향은 반복하지 않는다.
 > 옷장은 현실 옷장 사진을 저장하는 기능이지만, 현재 에이전트 payload에는 옷장 사진 원본을 보내지 않는다. `closet_items`의 카테고리/이름/색/핏/사이즈/착용감/착용 빈도/계절/상태/메모 요약만 사용한다.
-> `closet_strategy`는 `closet_items`를 기본템(`core`), 주의 필요(`use_with_care`), 선택지(`optional`)로 나눈 추천용 힌트다. 에이전트는 `core`를 우선 쓰고 `use_with_care`는 필요할 때만 확인 포인트로 언급한다.
+> `closet_strategy`는 `closet_items`를 점수 기반으로 기본템(`core`), 주의 필요(`use_with_care`), 선택지(`optional`)로 나눈 추천용 힌트다. 에이전트는 score가 높은 `core`를 우선 쓰고 `use_with_care`는 필요할 때만 확인 포인트로 언급한다.
 > `/api/feedback`의 `image`는 사용자의 현재 전신 사진 1장만 의미한다.
 
 ---
@@ -152,6 +152,7 @@
   (구매를 유도하는 액션은 Day 6 이전 금지 — `docs/product/core-beliefs.md` 참고)
 - `recommended_outfit`은 현재 옷장 컨텍스트를 우선 사용해야 함. Day 6 전까지 구매 유도 금지.
 - `recommended_outfit.source_item_ids`는 현재 요청의 `closet_items`에 같은 id와 같은 카테고리로 존재할 때만 직접 매칭 근거로 사용한다. 검증되지 않은 id는 제거하고 근거 후보로 낮춘다.
+- `closet_strategy.items[].score`는 착용감, 착용 빈도, 계절, 상태, 메모 기반 신뢰 점수다. 깨끗하지만 거의 안 입는 옷을 `core`로 올리면 실패다.
 - 응답 실패 또는 포맷 불일치 시 최대 2회 재시도, 이후 fallback 메시지 노출.
 
 ---
@@ -180,6 +181,7 @@
 - 크레딧을 차감하는 API는 `Idempotency-Key`로 같은 성공 요청의 중복 차감을 막아야 한다.
 - 크레딧/구독/결제와 연결되는 변경은 단위 테스트와 route 통합 테스트로 원장 기록, 환불, 중복 요청을 검증해야 한다.
 - 옷장 근거를 수정하면 `source_item_ids`가 실제 `closet_items`에 존재하고 같은 카테고리인지 단위/통합/E2E 중 최소 두 계층에서 검증해야 한다.
+- 옷장 전략을 수정하면 깨끗하지만 거의 안 입는 옷이 `optional`, 불편하거나 오염/수선 필요 옷이 `use_with_care`, 자주 입고 잘 맞는 옷이 `core`로 분류되는지 단위 테스트와 payload E2E로 검증해야 한다.
 
 ---
 

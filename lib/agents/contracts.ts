@@ -42,6 +42,7 @@ export type ClosetStrategyItem = {
   category: AgentClosetItemCategory;
   role: ClosetStrategyRole;
   reason: string;
+  score?: number;
 };
 
 export type ClosetStrategy = {
@@ -230,7 +231,8 @@ function validateClosetStrategy(value: unknown): value is ClosetStrategy {
         (record.role === "core" ||
           record.role === "use_with_care" ||
           record.role === "optional") &&
-        isNonEmptyString(record.reason)
+        isNonEmptyString(record.reason) &&
+        (record.score === undefined || typeof record.score === "number")
       );
     });
 

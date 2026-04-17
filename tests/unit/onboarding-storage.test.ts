@@ -293,6 +293,61 @@ describe("closet item modeling", () => {
       "use_with_care"
     );
   });
+
+  it("scores closet strategy so clean but rarely worn items are not promoted to core", () => {
+    const strategy = buildClosetStrategy([
+      {
+        id: "top-reliable",
+        category: "tops",
+        name: "네이비 셔츠",
+        wear_state: "잘 맞음",
+        wear_frequency: "자주 입음",
+        season: "사계절",
+        condition: "깨끗함",
+        notes: "기본템"
+      },
+      {
+        id: "bottom-rare",
+        category: "bottoms",
+        name: "베이지 치노",
+        wear_frequency: "거의 안 입음",
+        condition: "깨끗함"
+      },
+      {
+        id: "shoes-caution",
+        category: "shoes",
+        name: "낡은 스니커즈",
+        wear_state: "불편함",
+        condition: "오염 있음"
+      },
+      {
+        id: "outer-good",
+        category: "outerwear",
+        name: "차콜 자켓",
+        wear_state: "잘 맞음",
+        wear_frequency: "자주 입음",
+        condition: "깨끗함"
+      }
+    ]);
+
+    expect(strategy).toMatchObject({
+      core_item_ids: ["top-reliable"],
+      caution_item_ids: ["shoes-caution"],
+      optional_item_ids: expect.arrayContaining(["bottom-rare", "outer-good"])
+    });
+    expect(strategy?.items.find((item) => item.id === "top-reliable")).toMatchObject({
+      role: "core",
+      score: expect.any(Number)
+    });
+    expect(strategy?.items.find((item) => item.id === "bottom-rare")).toMatchObject({
+      role: "optional",
+      score: expect.any(Number)
+    });
+    expect(strategy?.items.find((item) => item.id === "outer-good")).toMatchObject({
+      role: "optional",
+      score: expect.any(Number)
+    });
+  });
 });
 
 describe("size profile modeling", () => {

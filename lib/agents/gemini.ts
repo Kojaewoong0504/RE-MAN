@@ -156,7 +156,7 @@ function buildInstruction(
   const closetStrategy = payload.closet_strategy;
   const strategySummary = closetStrategy?.items.length
     ? closetStrategy.items
-        .map((item) => `${item.category}:${item.id}:${item.role}:${item.reason}`)
+        .map((item) => `${item.category}:${item.id}:${item.role}:score=${item.score ?? "n/a"}:${item.reason}`)
         .join(" / ")
     : "없음";
 
@@ -283,7 +283,7 @@ ${
         : "내 옷장 다른 조합 deep dive는 closet_profile에 있는 상의, 하의, 신발, 겉옷 안에서만 다른 조합을 제안하세요. 새 구매나 없는 아이템을 제안하지 마세요."
 }`
       : "onboarding-agent는 recommended_outfit을 반드시 포함하세요. 추천 조합은 현재 옷장 컨텍스트를 먼저 사용하고 구매를 유도하지 마세요. preference_profile의 좋아한 방향은 유지하고 피할 방향은 반복하지 마세요. 등록된 옷장 아이템을 사용했다면 recommended_outfit.source_item_ids에 해당 id를 카테고리별로 넣으세요.",
-    "closet_strategy가 있으면 core 아이템을 우선 사용하고, caution 아이템은 꼭 필요할 때만 쓰며 reason에 확인할 점을 짧게 반영하세요. optional 아이템은 겉옷처럼 상황에 따라 더하는 후보로만 취급하세요.",
+    "closet_strategy가 있으면 score가 높은 core 아이템을 우선 사용하고, caution 아이템은 꼭 필요할 때만 쓰며 reason에 확인할 점을 짧게 반영하세요. optional 아이템은 겉옷이나 낮은 신뢰 후보처럼 상황에 따라 더하는 후보로만 취급하세요.",
     "recommended_outfit.try_on_prompt는 별도 실착 이미지 생성 API에 넘길 수 있게 짧고 구체적으로 작성하세요.",
     "응답은 JSON만 반환하세요. 코드펜스 없이 순수 JSON만 반환하세요.",
     `JSON 스키마:

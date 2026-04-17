@@ -384,59 +384,85 @@ function toAgentClosetItems(items: ClosetItem[] | undefined) {
   }));
 }
 
-function hasCautionSignal(item: ClosetItem) {
-  const text = [item.wear_state, item.notes, item.fit, item.wear_frequency, item.condition]
+function getClosetStrategySignalText(item: ClosetItem) {
+  return [item.wear_state, item.notes, item.fit, item.wear_frequency, item.condition, item.season]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
-
-  return ["작", "큼", "낡", "오염", "불편", "애매", "주의", "수선", "타이트", "헐렁"].some(
-    (keyword) => text.includes(keyword)
-  );
 }
 
-function hasCoreSignal(item: ClosetItem) {
-  const text = [item.wear_state, item.notes, item.fit, item.wear_frequency, item.condition]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return ["잘 맞", "자주", "주 2", "주 3", "매일", "깔끔", "기본", "무난", "단정", "편함", "좋음"].some(
-    (keyword) => text.includes(keyword)
-  );
+function countSignal(text: string, keywords: string[], score: number) {
+  return keywords.some((keyword) => text.includes(keyword)) ? score : 0;
 }
 
-function getClosetStrategyRole(item: ClosetItem): ClosetStrategyRole {
-  if (hasCautionSignal(item)) {
+function countComfortSignal(text: string) {
+  if (text.includes("불편")) {
+    return 0;
+  }
+
+  return countSignal(text, ["잘 맞", "편함"], 2);
+}
+
+export function getClosetStrategyScore(item: ClosetItem) {
+  const text = getClosetStrategySignalText(item);
+
+  return [
+    countComfortSignal(text),
+    countSignal(text, ["자주", "주 2", "주 3", "매일"], 2),
+    countSignal(text, ["깨끗", "좋음"], 1),
+    countSignal(text, ["사계절"], 1),
+    countSignal(text, ["기본", "무난", "단정", "깔끔"], 1),
+    countSignal(text, ["거의 안", "안 입"], -2),
+    countSignal(
+      text,
+      ["작", "큼", "낡", "오염", "불편", "애매", "주의", "수선", "타이트", "헐렁"],
+      -3
+    )
+  ].reduce((total, value) => total + value, 0);
+}
+
+function getClosetStrategyRole(item: ClosetItem, score: number): ClosetStrategyRole {
+  if (score <= -2) {
     return "use_with_care";
   }
 
-  if (hasCoreSignal(item)) {
+  if (item.category === "outerwear") {
+    return "optional";
+  }
+
+  if (score >= 3) {
     return "core";
   }
 
   return "optional";
 }
 
-function buildClosetStrategyReason(item: ClosetItem, role: ClosetStrategyRole) {
+function buildScoreReason(item: ClosetItem, score: number) {
+  const signals = [
+    item.wear_state ? `착용감 ${item.wear_state}` : null,
+    item.wear_frequency ? `빈도 ${item.wear_frequency}` : null,
+    item.condition ? `상태 ${item.condition}` : null,
+    item.season ? `계절 ${item.season}` : null
+  ].filter(Boolean);
+
+  return compactText(
+    `${signals.join(" · ") || item.notes || "추가 정보 부족"} · 점수 ${score}`,
+    52
+  );
+}
+
+function buildClosetStrategyReason(item: ClosetItem, role: ClosetStrategyRole, score: number) {
+  const scoreReason = buildScoreReason(item, score);
+
   if (role === "core") {
-    return compactText(
-      item.condition || item.wear_frequency || item.wear_state || item.notes || "현재 추천의 기준으로 먼저 써볼 수 있음",
-      52
-    );
+    return scoreReason;
   }
 
   if (role === "use_with_care") {
-    return compactText(
-      item.condition || item.wear_state || item.notes || item.wear_frequency || "핏이나 상태를 확인하고 써야 함",
-      52
-    );
+    return scoreReason;
   }
 
-  return compactText(
-    item.season || item.condition || item.notes || item.wear_state || "필요할 때 바꿔볼 수 있는 후보",
-    52
-  );
+  return scoreReason;
 }
 
 export function buildClosetStrategy(items: ClosetItem[] | undefined): ClosetStrategy | undefined {
@@ -447,13 +473,15 @@ export function buildClosetStrategy(items: ClosetItem[] | undefined): ClosetStra
   }
 
   const strategyItems = normalizedItems.map((item) => {
-    const role = getClosetStrategyRole(item);
+    const score = getClosetStrategyScore(item);
+    const role = getClosetStrategyRole(item, score);
 
     return {
       id: item.id,
       category: item.category,
       role,
-      reason: buildClosetStrategyReason(item, role)
+      reason: buildClosetStrategyReason(item, role, score),
+      score
     };
   });
 
