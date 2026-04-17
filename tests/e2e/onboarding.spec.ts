@@ -186,7 +186,9 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(
     page.getByRole("heading", { name: "오늘 바꿀 조합만 먼저 봅니다" })
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "이 옷장에서 고른 이유" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "내 옷장에서 쓴 것" })).toBeVisible();
+  await expect(page.getByText(/상의 · 하의 · 신발 중 \d개 반영/)).toBeVisible();
+  await expect(page.getByText(/흰색 무지 티셔츠 중심으로 시작/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "흰색 무지 티셔츠" })).toBeVisible();
   await expect(page.getByText(/추천에 사용|비슷한 후보/).first()).toBeVisible();
   await expect(page.getByText("자주 입고 잘 맞음").first()).toHaveCount(0);

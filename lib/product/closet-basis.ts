@@ -24,6 +24,11 @@ export type ClosetBasisItem = {
   wearState?: string;
 };
 
+export type ClosetBasisSummary = {
+  countLabel: string;
+  reasonLabel: string;
+};
+
 const closetCategoryLabels: Record<ClosetItemCategory, string> = {
   tops: "상의",
   bottoms: "하의",
@@ -192,4 +197,21 @@ export function buildClosetBasisMatches(input: {
   });
 
   return basis;
+}
+
+export function buildClosetBasisSummary(basis: ClosetBasisItem[]): ClosetBasisSummary {
+  const primaryCategories: ClosetItemCategory[] = ["tops", "bottoms", "shoes"];
+  const matchedCount = basis.filter(
+    (item) =>
+      primaryCategories.includes(item.category) && item.matchStatus === "matched"
+  ).length;
+  const reasonBasis =
+    basis.find((item) => item.matchStatus === "matched") ?? basis[0];
+
+  return {
+    countLabel: `상의 · 하의 · 신발 중 ${matchedCount}개 반영`,
+    reasonLabel: reasonBasis
+      ? `${reasonBasis.itemName} 중심으로 시작`
+      : "옷장을 등록하면 추천 근거가 더 선명해집니다"
+  };
 }

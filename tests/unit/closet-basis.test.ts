@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildClosetBasisMatches } from "@/lib/product/closet-basis";
+import {
+  buildClosetBasisMatches,
+  buildClosetBasisSummary
+} from "@/lib/product/closet-basis";
 
 describe("closet recommendation basis", () => {
   it("matches recommended outfit text to registered closet items", () => {
@@ -173,6 +176,46 @@ describe("closet recommendation basis", () => {
     expect(basis[2]).toMatchObject({
       statusLabel: "비슷한 후보",
       signalLabel: "후보"
+    });
+  });
+
+  it("summarizes how much of the recommendation came from the closet", () => {
+    const summary = buildClosetBasisSummary([
+      {
+        category: "tops",
+        label: "상의",
+        itemName: "흰색 무지 티셔츠",
+        role: "얼굴 주변 인상을 정하는 기준",
+        matchStatus: "matched",
+        statusLabel: "추천에 사용",
+        signalLabel: "자주 입고 잘 맞음",
+        detailLabel: "L · 잘 맞음"
+      },
+      {
+        category: "bottoms",
+        label: "하의",
+        itemName: "검정 슬랙스",
+        role: "전체 비율과 실루엣 기준",
+        matchStatus: "matched",
+        statusLabel: "추천에 사용",
+        signalLabel: "후보",
+        detailLabel: "32"
+      },
+      {
+        category: "shoes",
+        label: "신발",
+        itemName: "흰색 스니커즈",
+        role: "코디가 흩어지지 않게 묶는 기준",
+        matchStatus: "fallback",
+        statusLabel: "비슷한 후보",
+        signalLabel: "후보",
+        detailLabel: "270"
+      }
+    ]);
+
+    expect(summary).toEqual({
+      countLabel: "상의 · 하의 · 신발 중 2개 반영",
+      reasonLabel: "흰색 무지 티셔츠 중심으로 시작"
     });
   });
 });

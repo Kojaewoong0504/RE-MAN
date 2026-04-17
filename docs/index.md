@@ -71,6 +71,8 @@
 - [2026-04-17-recommendation-feedback-memory.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-recommendation-feedback-memory.md)
 - [2026-04-17-today-action-plan-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-today-action-plan-design.md)
 - [2026-04-17-today-action-plan.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-today-action-plan.md)
+- [2026-04-17-closet-basis-visibility-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-closet-basis-visibility-design.md)
+- [2026-04-17-closet-basis-visibility.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-closet-basis-visibility.md)
 
 ### Incidents
 

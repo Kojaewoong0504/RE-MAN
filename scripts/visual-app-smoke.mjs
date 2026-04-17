@@ -60,7 +60,7 @@ const pages = [
     id: "result",
     path: "/programs/style/onboarding/result",
     visibleText: "오늘 바꿀 조합만 먼저 봅니다",
-    expectedTexts: ["이 옷장에서 고른 이유", "사이즈 후보 보기", "체크 3회"],
+    expectedTexts: ["내 옷장에서 쓴 것", "상의 · 하의 · 신발 중", "사이즈 후보 보기", "체크 3회"],
     hiddenTexts: ["사이즈 체크 후보", "구매하기"],
   },
   {

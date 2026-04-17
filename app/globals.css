@@ -351,6 +351,20 @@ a {
     @apply grid gap-2;
   }
 
+  .result-basis-summary {
+    @apply border p-4;
+    border-color: var(--color-line);
+    background: var(--color-bg);
+  }
+
+  .result-basis-summary span {
+    @apply block text-[11px] font-black uppercase tracking-[0.16em] text-muted;
+  }
+
+  .result-basis-summary strong {
+    @apply mt-2 block text-[18px] font-black leading-6 tracking-[-0.04em] text-ink;
+  }
+
   .result-basis-chip-grid {
     @apply grid grid-cols-3 gap-2;
   }

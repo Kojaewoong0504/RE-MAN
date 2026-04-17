@@ -26,6 +26,7 @@ import {
 } from "@/lib/onboarding/storage";
 import {
   buildClosetBasisMatches,
+  buildClosetBasisSummary,
   type ClosetBasisItem
 } from "@/lib/product/closet-basis";
 import {
@@ -123,6 +124,7 @@ export default function ResultPage() {
         recommendedItems: feedback.recommended_outfit.items
       })
     : null;
+  const closetBasisSummary = buildClosetBasisSummary(closetBasis);
 
   useEffect(() => {
     const state = readOnboardingState();
@@ -335,32 +337,19 @@ export default function ResultPage() {
                 ))}
               </div>
             </div>
-            {todayPlan ? (
-              <div className="result-next-action">
-                <span>오늘 실행 3단계</span>
-                <p>{compactUiText(todayPlan.summary, 50)}</p>
-                <ol className="result-action-plan">
-                  {todayPlan.steps.map((step, index) => (
-                    <li key={step.title}>
-                      <b>{index + 1}</b>
-                      <span>
-                        <strong>{step.title}</strong>
-                        <small>{step.detail}</small>
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ) : null}
           </section>
 
           <section className="result-closet-basis">
             <div className="result-section-heading">
               <p className="poster-kicker">Closet Basis</p>
-              <h2>이 옷장에서 고른 이유</h2>
+              <h2>내 옷장에서 쓴 것</h2>
             </div>
             {closetBasis.length > 0 ? (
               <>
+                <div className="result-basis-summary">
+                  <span>{closetBasisSummary.countLabel}</span>
+                  <strong>{closetBasisSummary.reasonLabel}</strong>
+                </div>
                 <div className="result-basis-chip-grid">
                   {closetBasis.slice(0, 3).map((item) => (
                     <article
@@ -411,6 +400,24 @@ export default function ResultPage() {
               </div>
             )}
           </section>
+
+          {todayPlan ? (
+            <section className="result-next-action">
+              <span>오늘 실행 3단계</span>
+              <p>{compactUiText(todayPlan.summary, 50)}</p>
+              <ol className="result-action-plan">
+                {todayPlan.steps.map((step, index) => (
+                  <li key={step.title}>
+                    <b>{index + 1}</b>
+                    <span>
+                      <strong>{step.title}</strong>
+                      <small>{step.detail}</small>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
 
           <section className="result-action-dock" aria-label="다음 행동">
             <button onClick={handleStartNewCheck} type="button">
