@@ -21,6 +21,7 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
+  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
   await page.getByLabel("아이템 이름").fill("무지 티셔츠");
   await page.getByLabel("색").fill("흰색");
   await page.getByLabel("핏").fill("레귤러");
@@ -33,6 +34,7 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("bottoms");
+  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
   await page.getByLabel("아이템 이름").fill("검정 슬랙스");
   await page.getByLabel("색").fill("검정");
   await page.getByLabel("사이즈").fill("32");
@@ -42,6 +44,7 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("shoes");
+  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
   await page.getByLabel("아이템 이름").fill("스니커즈");
   await page.getByLabel("색").fill("흰색");
   await page.getByLabel("사이즈").fill("270");
@@ -476,6 +479,7 @@ test("upload requires top bottom and shoes closet context before analysis", asyn
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
+  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
   await page.getByLabel("아이템 이름").fill("네이비 셔츠");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
 
@@ -817,8 +821,12 @@ test("closet page saves items into the next style check context", async ({ page 
   await expect(page.getByRole("button", { name: "옷장 저장" })).toBeVisible();
   await expect(page.getByRole("button", { name: "옷 추가", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
+  await expect(page.getByLabel("아이템 이름")).toHaveCount(0);
+  await expect(page.getByLabel("색")).toHaveCount(0);
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
+  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
+  await expect(page.getByLabel("아이템 이름")).toBeVisible();
   await page.getByLabel("아이템 이름").fill("옥스포드 셔츠");
   await page.getByLabel("색").fill("하늘색");
   await page.getByLabel("핏").fill("레귤러");
@@ -839,8 +847,6 @@ test("closet page saves items into the next style check context", async ({ page 
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("bottoms");
-  await page.getByLabel("아이템 이름").fill("네이비 치노");
-  await page.getByLabel("사이즈").fill("32");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
   await expect(page.getByPlaceholder("피하고 싶은 핏, 색, 아이템")).toHaveCount(0);
   await page.getByRole("button", { name: "옷장 저장" }).click();
@@ -855,6 +861,7 @@ test("closet page saves items into the next style check context", async ({ page 
 
   expect(savedState.closet_items).toHaveLength(2);
   expect(savedState.closet_items[0].photo_data_url).toMatch(/^data:image\/jpeg;base64,/);
+  expect(savedState.closet_items[1].name).toBe("하의 사진");
   expect(savedState.closet_profile.tops).toContain("하늘색 옥스포드 셔츠");
   expect(savedState.closet_profile.tops).toContain("[L]");
   expect(savedState.closet_profile.tops).toContain("{잘 맞음}");
@@ -867,7 +874,7 @@ test("closet page saves items into the next style check context", async ({ page 
   expect(savedState.closet_items[0].wear_frequency).toBe("가끔 입음");
   expect(savedState.closet_items[0].season).toBe("여름");
   expect(savedState.closet_items[0].condition).toBe("수선 필요");
-  expect(savedState.closet_profile.bottoms).toContain("네이비 치노");
+  expect(savedState.closet_profile.bottoms).toContain("하의 사진");
   expect(savedState.closet_profile.avoid).toBe("");
 });
 

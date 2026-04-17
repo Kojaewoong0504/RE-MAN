@@ -1182,6 +1182,24 @@ a {
     border-color: var(--color-line);
   }
 
+  .closet-photo-first {
+    @apply grid gap-3 sm:grid-cols-[220px_1fr];
+  }
+
+  .closet-photo-first-actions {
+    @apply grid content-start gap-3;
+  }
+
+  .closet-photo-first-actions p {
+    @apply text-sm font-bold leading-6 text-muted;
+  }
+
+  .closet-optional-toggle {
+    @apply flex min-h-12 items-center justify-between border px-4 py-3 text-sm font-black;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
   .closet-photo-preview > div {
     @apply flex h-full flex-col justify-end p-4;
   }

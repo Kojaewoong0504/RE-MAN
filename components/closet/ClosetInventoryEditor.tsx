@@ -114,6 +114,7 @@ export function ClosetInventoryEditor({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [openCategories, setOpenCategories] = useState<ClosetItemCategory[]>([]);
+  const [showOptionalDetails, setShowOptionalDetails] = useState(false);
 
   const canAdd = Boolean(photoDataUrl);
   const isEditing = Boolean(editingItemId);
@@ -136,6 +137,7 @@ export function ClosetInventoryEditor({
   function openAddModal() {
     resetForm();
     setEditingItemId(null);
+    setShowOptionalDetails(false);
     setIsAdding(true);
   }
 
@@ -153,12 +155,14 @@ export function ClosetInventoryEditor({
     setPhotoDataUrl(item.photo_data_url ?? "");
     setPhotoError(null);
     setEditingItemId(item.id);
+    setShowOptionalDetails(true);
     setIsAdding(true);
   }
 
   function closeModal() {
     resetForm();
     setEditingItemId(null);
+    setShowOptionalDetails(false);
     setIsAdding(false);
   }
 
@@ -394,7 +398,7 @@ export function ClosetInventoryEditor({
               </button>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
+            <div className="closet-photo-first">
               <div className="closet-photo-preview">
                 {photoDataUrl ? (
                   <NextImage
@@ -407,12 +411,12 @@ export function ClosetInventoryEditor({
                   />
                 ) : (
                   <div>
-                    <p>옷장 사진</p>
-                    <span>사진 먼저</span>
+                    <p>사진 먼저</p>
+                    <span>옷 하나가 잘 보이게 찍어주세요</span>
                   </div>
                 )}
               </div>
-              <div className="space-y-3">
+              <div className="closet-photo-first-actions">
                 <label className="ui-button cursor-pointer py-4" htmlFor="closet-photo-upload">
                   {photoDataUrl ? "사진 다시 선택" : "사진 선택"}
                 </label>
@@ -435,10 +439,11 @@ export function ClosetInventoryEditor({
                 {photoError ? (
                   <p className="text-sm font-black leading-6 text-red-700">{photoError}</p>
                 ) : null}
+                <p>사진과 종류만으로 저장할 수 있습니다.</p>
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-[120px_1fr]">
+            <div className="grid gap-3">
               <label className="space-y-2">
                 <span className="text-sm font-black text-ink">종류</span>
                 <select
@@ -453,119 +458,131 @@ export function ClosetInventoryEditor({
                   ))}
                 </select>
               </label>
-              <label className="space-y-2">
-                <span className="text-sm font-black text-ink">아이템 이름</span>
-                <input
-                  className="ui-input w-full"
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="흰색 티셔츠"
-                  value={name}
-                />
-              </label>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-black text-ink">색</span>
-                <input
-                  className="ui-input w-full"
-                  onChange={(event) => setColor(event.target.value)}
-                  placeholder="흰색"
-                  value={color}
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-black text-ink">핏</span>
-                <input
-                  className="ui-input w-full"
-                  onChange={(event) => setFit(event.target.value)}
-                  placeholder="레귤러"
-                  value={fit}
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-black text-ink">사이즈</span>
-                <input
-                  className="ui-input w-full"
-                  onChange={(event) => setSize(event.target.value)}
-                  placeholder="M, 32, 270"
-                  value={size}
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-black text-ink">착용감</span>
-                <select
-                  className="ui-input w-full"
-                  onChange={(event) =>
-                    setWearState(event.target.value === "선택 안 함" ? "" : event.target.value)
-                  }
-                  value={wearState || "선택 안 함"}
-                >
-                  {wearStateOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-black text-ink">빈도</span>
-                <select
-                  className="ui-input w-full"
-                  onChange={(event) =>
-                    setWearFrequency(event.target.value === "선택 안 함" ? "" : event.target.value)
-                  }
-                  value={wearFrequency || "선택 안 함"}
-                >
-                  {wearFrequencyOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-black text-ink">계절</span>
-                <select
-                  className="ui-input w-full"
-                  onChange={(event) =>
-                    setSeason(event.target.value === "선택 안 함" ? "" : event.target.value)
-                  }
-                  value={season || "선택 안 함"}
-                >
-                  {seasonOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-black text-ink">상태</span>
-                <select
-                  className="ui-input w-full"
-                  onChange={(event) =>
-                    setCondition(event.target.value === "선택 안 함" ? "" : event.target.value)
-                  }
-                  value={condition || "선택 안 함"}
-                >
-                  {conditionOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-2 sm:col-span-2">
-                <span className="text-sm font-black text-ink">메모</span>
-                <input
-                  className="ui-input w-full"
-                  onChange={(event) => setNotes(event.target.value)}
-                  placeholder="자주 입음"
-                  value={notes}
-                />
-              </label>
-            </div>
+            <button
+              aria-expanded={showOptionalDetails}
+              className="closet-optional-toggle"
+              onClick={() => setShowOptionalDetails((current) => !current)}
+              type="button"
+            >
+              <span>{showOptionalDetails ? "선택 정보 닫기" : "선택 정보 열기"}</span>
+              <span>{showOptionalDetails ? "접기" : "→"}</span>
+            </button>
+
+            {showOptionalDetails ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-sm font-black text-ink">아이템 이름</span>
+                  <input
+                    className="ui-input w-full"
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="흰색 티셔츠"
+                    value={name}
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-black text-ink">색</span>
+                  <input
+                    className="ui-input w-full"
+                    onChange={(event) => setColor(event.target.value)}
+                    placeholder="흰색"
+                    value={color}
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-black text-ink">핏</span>
+                  <input
+                    className="ui-input w-full"
+                    onChange={(event) => setFit(event.target.value)}
+                    placeholder="레귤러"
+                    value={fit}
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-black text-ink">사이즈</span>
+                  <input
+                    className="ui-input w-full"
+                    onChange={(event) => setSize(event.target.value)}
+                    placeholder="M, 32, 270"
+                    value={size}
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-black text-ink">착용감</span>
+                  <select
+                    className="ui-input w-full"
+                    onChange={(event) =>
+                      setWearState(event.target.value === "선택 안 함" ? "" : event.target.value)
+                    }
+                    value={wearState || "선택 안 함"}
+                  >
+                    {wearStateOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-black text-ink">빈도</span>
+                  <select
+                    className="ui-input w-full"
+                    onChange={(event) =>
+                      setWearFrequency(event.target.value === "선택 안 함" ? "" : event.target.value)
+                    }
+                    value={wearFrequency || "선택 안 함"}
+                  >
+                    {wearFrequencyOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-black text-ink">계절</span>
+                  <select
+                    className="ui-input w-full"
+                    onChange={(event) =>
+                      setSeason(event.target.value === "선택 안 함" ? "" : event.target.value)
+                    }
+                    value={season || "선택 안 함"}
+                  >
+                    {seasonOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-black text-ink">상태</span>
+                  <select
+                    className="ui-input w-full"
+                    onChange={(event) =>
+                      setCondition(event.target.value === "선택 안 함" ? "" : event.target.value)
+                    }
+                    value={condition || "선택 안 함"}
+                  >
+                    {conditionOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-black text-ink">메모</span>
+                  <input
+                    className="ui-input w-full"
+                    onChange={(event) => setNotes(event.target.value)}
+                    placeholder="자주 입음"
+                    value={notes}
+                  />
+                </label>
+              </div>
+            ) : null}
 
             <button
               className="ui-button-secondary justify-between py-4 disabled:opacity-50"
