@@ -14,6 +14,7 @@ import {
   syncSurveyToFirestore
 } from "@/lib/firebase/firestore";
 import {
+  buildClosetStrategy,
   buildHistoryFromState,
   getRecommendationFeedbackLabel,
   normalizeClosetItems,
@@ -77,7 +78,8 @@ function buildResultClosetBasis(
   return buildClosetBasisMatches({
     closetItems,
     recommendedItems: feedback.recommended_outfit.items,
-    sourceItemIds: feedback.recommended_outfit.source_item_ids
+    sourceItemIds: feedback.recommended_outfit.source_item_ids,
+    strategyItems: buildClosetStrategy(closetItems)?.items
   });
 }
 
@@ -192,30 +194,6 @@ export default function ResultPage() {
       fallback_message: undefined
     });
     router.push("/programs/style/onboarding/upload");
-  }
-
-  function getMatchLabel(status: ClosetBasisItem["matchStatus"]) {
-    if (status === "matched") {
-      return "직접 매칭";
-    }
-
-    if (status === "optional") {
-      return "추가 선택";
-    }
-
-    return "근거 후보";
-  }
-
-  function getMatchTone(status: ClosetBasisItem["matchStatus"]) {
-    if (status === "matched") {
-      return "추천에 직접 사용";
-    }
-
-    if (status === "optional") {
-      return "있으면 추가";
-    }
-
-    return "가장 가까운 옷";
   }
 
   async function handleSaveRecommendationFeedback() {
@@ -374,13 +352,11 @@ export default function ResultPage() {
                         <p>{item.label}</p>
                         <h3>{compactUiText(item.itemName, 24)}</h3>
                       </div>
-                      <span>{getMatchLabel(item.matchStatus)}</span>
+                      <span>{item.statusLabel}</span>
                     </div>
                     <div className="result-basis-meta">
-                      <strong>{getMatchTone(item.matchStatus)}</strong>
-                      <small>
-                        {[item.size, item.wearState].filter(Boolean).join(" · ") || item.role}
-                      </small>
+                      <strong>{item.signalLabel}</strong>
+                      <small>{compactUiText(item.detailLabel, 34)}</small>
                     </div>
                   </article>
                 ))}

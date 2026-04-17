@@ -59,6 +59,8 @@
 - [2026-04-17-closet-strategy-scoring.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-closet-strategy-scoring.md)
 - [2026-04-17-minimum-closet-readiness-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-minimum-closet-readiness-design.md)
 - [2026-04-17-minimum-closet-readiness.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-minimum-closet-readiness.md)
+- [2026-04-17-result-basis-ui-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-result-basis-ui-design.md)
+- [2026-04-17-result-basis-ui.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-result-basis-ui.md)
 
 ### Incidents
 

@@ -175,18 +175,6 @@ function buildCards(view: HistoryView, timeline: StyleFeedbackTimelineItem[]) {
   return buildDayCards(timeline);
 }
 
-function getBasisStatusLabel(status: ClosetBasisItem["matchStatus"]) {
-  if (status === "matched") {
-    return "사용";
-  }
-
-  if (status === "optional") {
-    return "추가";
-  }
-
-  return "후보";
-}
-
 export default function HistoryPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -382,10 +370,10 @@ export default function HistoryPage() {
                                 <div className="history-basis-chip" key={`${card.id}-${basis.category}`}>
                                   <span>
                                     <b>{basis.label}</b>
-                                    <em>{getBasisStatusLabel(basis.matchStatus)}</em>
+                                    <em>{basis.statusLabel}</em>
                                   </span>
                                   <strong>{basis.itemName}</strong>
-                                  {basis.size ? <small>{basis.size}</small> : null}
+                                  <small>{basis.signalLabel}</small>
                                 </div>
                               ))}
                             </div>

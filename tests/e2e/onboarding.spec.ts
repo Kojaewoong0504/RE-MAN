@@ -185,8 +185,8 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "이 옷장에서 고른 이유" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "흰색 무지 티셔츠" })).toBeVisible();
-  await expect(page.getByText(/직접 매칭|근거 후보/).first()).toBeVisible();
-  await expect(page.getByText(/추천에 직접 사용|가장 가까운 옷/).first()).toBeVisible();
+  await expect(page.getByText(/추천에 사용|비슷한 후보/).first()).toBeVisible();
+  await expect(page.getByText(/자주 입고 잘 맞음|후보/).first()).toBeVisible();
   const resultActionDock = page.getByLabel("다음 행동");
   await expect(resultActionDock.getByRole("link", { name: "옷장" })).toBeVisible();
   await expect(resultActionDock.getByRole("link", { name: "기록" })).toBeVisible();
@@ -360,8 +360,8 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
     page.getByRole("heading", { name: "오늘 바꿀 조합만 먼저 봅니다" })
   ).toBeVisible();
   await expect(page.getByText("텍스트 기준")).toBeVisible();
-  await expect(page.getByText("근거 후보")).toBeVisible();
-  await expect(page.getByText("직접 매칭")).toHaveCount(0);
+  await expect(page.getByText("비슷한 후보")).toBeVisible();
+  await expect(page.getByText("추천에 사용")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /색 조합 보기/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /핏 더 보기/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /레퍼런스\/실착 보기/ })).toHaveCount(0);
@@ -1007,7 +1007,7 @@ test("profile shows saved style check context for signed-in users", async ({ pag
   await expect(page.getByText("네이비 셔츠")).toBeVisible();
   await expect(page.getByText("검정 슬랙스")).toBeVisible();
   await expect(page.getByText("흰색 스니커즈")).toBeVisible();
-  await expect(page.getByText("사용").first()).toBeVisible();
+  await expect(page.getByText("추천에 사용").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "비슷하게 다시 체크" })).toBeVisible();
   await expect(page.getByRole("link", { name: /최근 결과 보기/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /새 사진으로 다시 체크/ })).toHaveCount(0);

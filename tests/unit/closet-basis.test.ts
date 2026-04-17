@@ -103,4 +103,76 @@ describe("closet recommendation basis", () => {
       matchStatus: "matched"
     });
   });
+
+  it("returns short user-facing basis labels from match status and closet strategy", () => {
+    const basis = buildClosetBasisMatches({
+      recommendedItems: ["화이트 셔츠", "검정 슬랙스", "스니커즈"],
+      sourceItemIds: {
+        tops: "top-1",
+        bottoms: "bottom-1"
+      },
+      strategyItems: [
+        {
+          id: "top-1",
+          category: "tops",
+          role: "core",
+          reason: "착용감 잘 맞음 · 빈도 자주 입음 · 점수 6",
+          score: 6
+        },
+        {
+          id: "bottom-1",
+          category: "bottoms",
+          role: "use_with_care",
+          reason: "착용감 작음 · 상태 낡음 · 점수 -3",
+          score: -3
+        },
+        {
+          id: "shoe-1",
+          category: "shoes",
+          role: "optional",
+          reason: "추가 정보 부족 · 점수 0",
+          score: 0
+        }
+      ],
+      closetItems: [
+        {
+          id: "top-1",
+          category: "tops",
+          name: "셔츠",
+          color: "화이트",
+          size: "L",
+          wear_state: "잘 맞음"
+        },
+        {
+          id: "bottom-1",
+          category: "bottoms",
+          name: "슬랙스",
+          color: "검정",
+          size: "32",
+          wear_state: "작음"
+        },
+        {
+          id: "shoe-1",
+          category: "shoes",
+          name: "로퍼",
+          color: "브라운"
+        }
+      ]
+    });
+
+    expect(basis[0]).toMatchObject({
+      statusLabel: "추천에 사용",
+      signalLabel: "자주 입고 잘 맞음",
+      detailLabel: "L · 잘 맞음"
+    });
+    expect(basis[1]).toMatchObject({
+      statusLabel: "추천에 사용",
+      signalLabel: "핏/상태 확인",
+      detailLabel: "32 · 작음"
+    });
+    expect(basis[2]).toMatchObject({
+      statusLabel: "비슷한 후보",
+      signalLabel: "후보"
+    });
+  });
 });

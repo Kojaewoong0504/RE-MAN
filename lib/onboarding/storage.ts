@@ -953,6 +953,7 @@ export function getStyleFeedbackTimeline(state: OnboardingState): StyleFeedbackT
 
   if (state.feedback) {
     const recommendationFeedback = state.recommendation_feedback;
+    const normalizedClosetItems = normalizeClosetItems(state.closet_items);
     timeline.push({
       id: "style-check",
       label: "Style Check",
@@ -962,9 +963,10 @@ export function getStyleFeedbackTimeline(state: OnboardingState): StyleFeedbackT
         : state.feedback.diagnosis,
       action: state.feedback.today_action,
       basis: buildClosetBasisMatches({
-        closetItems: normalizeClosetItems(state.closet_items),
+        closetItems: normalizedClosetItems,
         recommendedItems: state.feedback.recommended_outfit.items,
-        sourceItemIds: state.feedback.recommended_outfit.source_item_ids
+        sourceItemIds: state.feedback.recommended_outfit.source_item_ids,
+        strategyItems: buildClosetStrategy(normalizedClosetItems)?.items
       }),
       reaction: recommendationFeedback
         ? getRecommendationFeedbackLabel(recommendationFeedback.reaction)

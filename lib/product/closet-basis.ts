@@ -1,6 +1,15 @@
 import type { ClosetItem, ClosetItemCategory } from "@/lib/onboarding/storage";
 
 export type ClosetBasisMatchStatus = "matched" | "fallback" | "optional";
+export type ClosetBasisStrategyRole = "core" | "use_with_care" | "optional";
+
+export type ClosetBasisStrategyItem = {
+  id: string;
+  category: ClosetItemCategory;
+  role: ClosetBasisStrategyRole;
+  reason: string;
+  score?: number;
+};
 
 export type ClosetBasisItem = {
   category: ClosetItemCategory;
@@ -8,6 +17,9 @@ export type ClosetBasisItem = {
   itemName: string;
   role: string;
   matchStatus: ClosetBasisMatchStatus;
+  statusLabel: string;
+  signalLabel: string;
+  detailLabel: string;
   size?: string;
   wearState?: string;
 };
@@ -30,6 +42,18 @@ const recommendationCategoryIndex: Partial<Record<ClosetItemCategory, number>> =
   tops: 0,
   bottoms: 1,
   shoes: 2
+};
+
+const matchStatusLabels: Record<ClosetBasisMatchStatus, string> = {
+  matched: "추천에 사용",
+  fallback: "비슷한 후보",
+  optional: "추가 후보"
+};
+
+const strategySignalLabels: Record<ClosetBasisStrategyRole, string> = {
+  core: "자주 입고 잘 맞음",
+  use_with_care: "핏/상태 확인",
+  optional: "후보"
 };
 
 function normalizeText(value: string) {
@@ -68,23 +92,45 @@ function getMatchScore(item: ClosetItem, recommendedText: string) {
 
 function toBasisItem(
   item: ClosetItem,
-  matchStatus: ClosetBasisMatchStatus
+  matchStatus: ClosetBasisMatchStatus,
+  strategyItem?: ClosetBasisStrategyItem
 ): ClosetBasisItem {
+  const detailParts = [item.size, item.wear_state].filter(Boolean);
+
   return {
     category: item.category,
     label: closetCategoryLabels[item.category],
     itemName: getClosetItemDisplayName(item),
     role: closetCategoryRoles[item.category],
     matchStatus,
+    statusLabel: matchStatusLabels[matchStatus],
+    signalLabel: strategyItem
+      ? strategySignalLabels[strategyItem.role]
+      : matchStatusLabels[matchStatus],
+    detailLabel:
+      detailParts.length > 0
+        ? detailParts.join(" · ")
+        : strategyItem?.reason ?? closetCategoryRoles[item.category],
     size: item.size || undefined,
     wearState: item.wear_state || undefined
   };
+}
+
+function findStrategyItem(
+  strategyItems: ClosetBasisStrategyItem[] | undefined,
+  item: ClosetItem
+) {
+  return strategyItems?.find(
+    (strategyItem) =>
+      strategyItem.id === item.id && strategyItem.category === item.category
+  );
 }
 
 export function buildClosetBasisMatches(input: {
   closetItems: ClosetItem[];
   recommendedItems: [string, string, string];
   sourceItemIds?: Partial<Record<ClosetItemCategory, string>>;
+  strategyItems?: ClosetBasisStrategyItem[];
 }): ClosetBasisItem[] {
   const basis: ClosetBasisItem[] = [];
   const categories: ClosetItemCategory[] = ["tops", "bottoms", "shoes", "outerwear"];
@@ -100,7 +146,14 @@ export function buildClosetBasisMatches(input: {
       const sourceItem = input.sourceItemIds?.outerwear
         ? categoryItems.find((item) => item.id === input.sourceItemIds?.outerwear)
         : null;
-      basis.push(toBasisItem(sourceItem ?? categoryItems[0], sourceItem ? "matched" : "optional"));
+      const basisItem = sourceItem ?? categoryItems[0];
+      basis.push(
+        toBasisItem(
+          basisItem,
+          sourceItem ? "matched" : "optional",
+          findStrategyItem(input.strategyItems, basisItem)
+        )
+      );
       return;
     }
 
@@ -110,7 +163,7 @@ export function buildClosetBasisMatches(input: {
       : null;
 
     if (sourceItem) {
-      basis.push(toBasisItem(sourceItem, "matched"));
+      basis.push(toBasisItem(sourceItem, "matched", findStrategyItem(input.strategyItems, sourceItem)));
       return;
     }
 
@@ -129,7 +182,13 @@ export function buildClosetBasisMatches(input: {
       return;
     }
 
-    basis.push(toBasisItem(best.item, best.score > 0 ? "matched" : "fallback"));
+    basis.push(
+      toBasisItem(
+        best.item,
+        best.score > 0 ? "matched" : "fallback",
+        findStrategyItem(input.strategyItems, best.item)
+      )
+    );
   });
 
   return basis;
