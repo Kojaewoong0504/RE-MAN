@@ -458,6 +458,28 @@ test("onboarding shows fallback when storage upload fails", async ({ page }) => 
   await expect(page.getByRole("button", { name: "텍스트 설명 다시 입력하기" })).toBeVisible();
 });
 
+test("upload requires top bottom and shoes closet context before analysis", async ({ page }) => {
+  await addTryOnSession(page, "e2e-minimum-closet-user");
+  await page.goto("/programs/style/onboarding/survey");
+  await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
+  await page.getByRole("button", { name: "소개팅 / 이성 만남" }).click();
+  await page.getByRole("button", { name: "15~30만원" }).click();
+  await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
+
+  await page.locator("#photo-upload").setInputFiles(tinyPng);
+  await page.getByRole("button", { name: "옷 추가", exact: true }).click();
+  await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
+  await page.getByLabel("종류").selectOption("tops");
+  await page.getByLabel("아이템 이름").fill("네이비 셔츠");
+  await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
+
+  await expect(page.getByLabel("추천에 필요한 옷장").getByText("상의 ✓")).toBeVisible();
+  await expect(page.getByLabel("추천에 필요한 옷장").getByText("하의 필요")).toBeVisible();
+  await expect(page.getByLabel("추천에 필요한 옷장").getByText("신발 필요")).toBeVisible();
+  await expect(page.getByText("하의, 신발 필요")).toBeVisible();
+  await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
+});
+
 test("onboarding shows a specific message when feedback is rate limited", async ({ page }) => {
   await addTryOnSession(page);
   await page.route("**/api/feedback", async (route) => {
@@ -1129,7 +1151,7 @@ test("profile can start a fresh photo check without losing closet context", asyn
   await expect(page.getByRole("heading", { name: "사진이 기준입니다" })).toBeVisible();
   await expect(page.getByText("사진 선택하기")).toBeVisible();
   await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
-  await expect(page.getByText(/개 옷으로 추천합니다/)).toBeVisible();
+  await expect(page.getByText("상의, 하의, 신발 준비됨")).toBeVisible();
   await expect(page.getByRole("button", { name: /이전 반응 반영/ })).toBeVisible();
 
   const resetState = await page.evaluate(() => JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}"));

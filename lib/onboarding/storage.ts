@@ -125,6 +125,13 @@ const defaultClosetProfile: ClosetProfile = {
 };
 
 const closetCategories: ClosetItemCategory[] = ["tops", "bottoms", "shoes", "outerwear"];
+const requiredStyleClosetCategories = ["tops", "bottoms", "shoes"] as const satisfies ReadonlyArray<ClosetItemCategory>;
+const closetCategoryLabels: Record<ClosetItemCategory, string> = {
+  tops: "상의",
+  bottoms: "하의",
+  shoes: "신발",
+  outerwear: "겉옷"
+};
 const sizeProfileKeys = [
   "height_cm",
   "weight_kg",
@@ -366,6 +373,27 @@ export function buildClosetItemsFromProfile(profile: ClosetProfile | undefined):
 
 export function getClosetItemCount(state: OnboardingState) {
   return normalizeClosetItems(state.closet_items).length;
+}
+
+export function getMinimumClosetReadiness(items: ClosetItem[] | undefined) {
+  const normalizedItems = normalizeClosetItems(items);
+  const presentCategories = requiredStyleClosetCategories.filter((category) =>
+    normalizedItems.some((item) => item.category === category)
+  );
+  const missingCategories = requiredStyleClosetCategories.filter(
+    (category) => !presentCategories.includes(category)
+  );
+
+  return {
+    isReady: missingCategories.length === 0,
+    presentCategories,
+    missingCategories,
+    requiredCategories: [...requiredStyleClosetCategories]
+  };
+}
+
+export function getClosetCategoryLabel(category: ClosetItemCategory) {
+  return closetCategoryLabels[category];
 }
 
 function toAgentClosetItems(items: ClosetItem[] | undefined) {

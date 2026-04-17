@@ -13,6 +13,8 @@ import {
 import {
   buildClosetItemsFromProfile,
   buildClosetProfileFromItems,
+  getClosetCategoryLabel,
+  getMinimumClosetReadiness,
   normalizeClosetItems,
   patchOnboardingState,
   readOnboardingState,
@@ -157,6 +159,8 @@ export default function ClosetPage() {
   }
 
   const totalCount = items.length;
+  const closetReadiness = getMinimumClosetReadiness(items);
+  const missingClosetLabels = closetReadiness.missingCategories.map(getClosetCategoryLabel);
 
   return (
     <main className="app-shell flex min-h-screen flex-col justify-between">
@@ -208,6 +212,29 @@ export default function ClosetPage() {
           </div>
         </section>
 
+        <section className="closet-readiness-panel">
+          <div>
+            <p className="poster-kicker">Ready Check</p>
+            <h2>{closetReadiness.isReady ? "추천 준비 완료" : "더 필요한 옷장"}</h2>
+          </div>
+          <p>
+            {closetReadiness.isReady
+              ? "상의, 하의, 신발이 준비됐습니다."
+              : `${missingClosetLabels.join(", ")}을 추가하면 분석할 수 있습니다.`}
+          </p>
+          <div className="closet-readiness" aria-label="추천에 필요한 옷장">
+            {closetReadiness.requiredCategories.map((category) => {
+              const ready = closetReadiness.presentCategories.includes(category);
+
+              return (
+                <span className={ready ? "closet-readiness-ready" : ""} key={category}>
+                  {getClosetCategoryLabel(category)} {ready ? "✓" : "필요"}
+                </span>
+              );
+            })}
+          </div>
+        </section>
+
         <section className="ui-panel-muted space-y-5">
           {isLoading ? (
             <div className="ui-panel">
@@ -248,7 +275,7 @@ export default function ClosetPage() {
         </button>
         <button
           className="ui-button-secondary h-14 w-full text-base"
-          disabled={isLoading || isSaving || !user || totalCount === 0}
+          disabled={isLoading || isSaving || !user || !closetReadiness.isReady}
           onClick={handleStartStyleCheck}
           type="button"
         >

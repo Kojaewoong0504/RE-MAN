@@ -13,6 +13,8 @@ import {
   buildHistoryFromState,
   buildClosetItemsFromProfile,
   buildClosetProfileFromItems,
+  getClosetCategoryLabel,
+  getMinimumClosetReadiness,
   getRecentHistoryPreview,
   normalizeClosetItems,
   normalizeSizeProfile,
@@ -123,8 +125,10 @@ export default function UploadPage() {
   }, [router]);
 
   const hasPhotoInput = Boolean(image || isValidTextDescription(textDescription));
-  const hasClosetInput = closetItems.length > 0;
+  const closetReadiness = getMinimumClosetReadiness(closetItems);
+  const hasClosetInput = closetReadiness.isReady;
   const hasInput = hasPhotoInput && hasClosetInput;
+  const missingClosetLabels = closetReadiness.missingCategories.map(getClosetCategoryLabel);
 
   return (
     <main className="app-shell space-y-7">
@@ -219,8 +223,8 @@ export default function UploadPage() {
               <p>{hasClosetInput ? "옷장 준비됨" : "옷장 필요"}</p>
               <span>
                 {hasClosetInput
-                  ? `${closetItems.length}개 옷으로 추천합니다`
-                  : "옷 사진 1개 이상 등록하세요"}
+                  ? "상의, 하의, 신발 준비됨"
+                  : `${missingClosetLabels.join(", ")} 필요`}
               </span>
             </div>
             <button
@@ -229,6 +233,17 @@ export default function UploadPage() {
             >
               {isClosetEditing ? "닫기" : hasClosetInput ? "수정" : "옷장 추가"}
             </button>
+          </div>
+          <div className="closet-readiness" aria-label="추천에 필요한 옷장">
+            {closetReadiness.requiredCategories.map((category) => {
+              const ready = closetReadiness.presentCategories.includes(category);
+
+              return (
+                <span className={ready ? "closet-readiness-ready" : ""} key={category}>
+                  {getClosetCategoryLabel(category)} {ready ? "✓" : "필요"}
+                </span>
+              );
+            })}
           </div>
           {isClosetEditing || !hasClosetInput ? (
             <ClosetInventoryEditor

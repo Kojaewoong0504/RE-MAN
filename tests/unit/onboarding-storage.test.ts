@@ -3,6 +3,7 @@ import {
   buildClosetStrategy,
   buildClosetProfileFromItems,
   buildOnboardingRequest,
+  getMinimumClosetReadiness,
   buildHistoryFromState,
   getRecentHistoryPreview,
   getStyleFeedbackTimeline,
@@ -347,6 +348,48 @@ describe("closet item modeling", () => {
       role: "optional",
       score: expect.any(Number)
     });
+  });
+
+  it("reports missing required closet categories for style analysis", () => {
+    expect(
+      getMinimumClosetReadiness([
+        {
+          id: "top-only",
+          category: "tops",
+          name: "네이비 셔츠"
+        },
+        {
+          id: "outer-extra",
+          category: "outerwear",
+          name: "차콜 자켓"
+        }
+      ])
+    ).toEqual({
+      isReady: false,
+      presentCategories: ["tops"],
+      missingCategories: ["bottoms", "shoes"],
+      requiredCategories: ["tops", "bottoms", "shoes"]
+    });
+
+    expect(
+      getMinimumClosetReadiness([
+        {
+          id: "top",
+          category: "tops",
+          name: "상의"
+        },
+        {
+          id: "bottom",
+          category: "bottoms",
+          name: "하의"
+        },
+        {
+          id: "shoes",
+          category: "shoes",
+          name: "신발"
+        }
+      ]).isReady
+    ).toBe(true);
   });
 });
 
