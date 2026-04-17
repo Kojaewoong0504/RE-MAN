@@ -69,6 +69,41 @@ PACKAGE_SCRIPT_PATTERNS = [
     "python3 harness/mvp/run.py",
 ]
 
+BASIS_UI_REQUIRED_LABELS = [
+    "추천에 사용",
+    "비슷한 후보",
+    "추가 후보",
+    "자주 입고 잘 맞음",
+    "핏/상태 확인",
+    "후보",
+]
+
+BASIS_UI_DOC_FILES = [
+    "AGENTS.md",
+    "docs/product/closet-recommendation-basis.md",
+    "docs/product/style-check-session.md",
+    "docs/product/style-history.md",
+]
+
+BASIS_UI_SOURCE_FILES = [
+    "lib/product/closet-basis.ts",
+    "app/onboarding/result/page.tsx",
+    "app/history/page.tsx",
+]
+
+BASIS_UI_RENDER_FILES = [
+    "app/onboarding/result/page.tsx",
+    "app/history/page.tsx",
+]
+
+BASIS_UI_LEGACY_LABELS = [
+    "직접 매칭",
+    "근거 후보",
+    "추천에 직접 사용",
+    "가장 가까운 옷",
+    "있으면 추가",
+]
+
 
 def print_result(ok: bool, message: str):
     prefix = "PASS" if ok else "FAIL"
@@ -119,6 +154,46 @@ def check_package_scripts() -> list[str]:
     return failures
 
 
+def check_basis_ui_labels() -> list[str]:
+    failures: list[str] = []
+    doc_text = "\n".join(
+        (ROOT / relative_path).read_text(encoding="utf-8")
+        for relative_path in BASIS_UI_DOC_FILES
+        if (ROOT / relative_path).exists()
+    )
+    source_text = "\n".join(
+        (ROOT / relative_path).read_text(encoding="utf-8")
+        for relative_path in BASIS_UI_SOURCE_FILES
+        if (ROOT / relative_path).exists()
+    )
+    render_text = "\n".join(
+        (ROOT / relative_path).read_text(encoding="utf-8")
+        for relative_path in BASIS_UI_RENDER_FILES
+        if (ROOT / relative_path).exists()
+    )
+
+    for relative_path in [*BASIS_UI_DOC_FILES, *BASIS_UI_SOURCE_FILES]:
+        if not (ROOT / relative_path).exists():
+            failures.append(f"missing required basis UI file: {relative_path}")
+
+    for label in BASIS_UI_REQUIRED_LABELS:
+        if label not in doc_text:
+            failures.append(f"basis UI docs are missing '{label}'")
+
+    for label in ["추천에 사용", "비슷한 후보", "추가 후보"]:
+        if label not in source_text:
+            failures.append(f"basis UI source is missing '{label}'")
+
+    for legacy_label in BASIS_UI_LEGACY_LABELS:
+        if legacy_label in source_text:
+            failures.append(f"basis UI source still exposes legacy label '{legacy_label}'")
+
+    if "score" in render_text:
+        failures.append("basis UI render files must not expose internal score")
+
+    return failures
+
+
 def main() -> int:
     failures: list[str] = []
 
@@ -142,6 +217,16 @@ def main() -> int:
         failures.extend(package_failures)
     else:
         print_result(True, "package-scripts")
+
+    basis_ui_failures = check_basis_ui_labels()
+
+    if basis_ui_failures:
+        print_result(False, "basis-ui-labels")
+        for failure in basis_ui_failures:
+            print_result(False, f"  {failure}")
+        failures.extend(basis_ui_failures)
+    else:
+        print_result(True, "basis-ui-labels")
 
     if failures:
         print(f"\nMVP harness failed with {len(failures)} issue(s).", file=sys.stderr)
