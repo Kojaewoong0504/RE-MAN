@@ -36,6 +36,7 @@ import {
   buildSizeCandidates,
   type SizeCandidate
 } from "@/lib/product/size-candidates";
+import { buildTodayActionPlan } from "@/lib/product/today-action-plan";
 
 type AccountSaveStatus = "checking" | "signed-out" | "ready" | "saving" | "saved" | "error";
 type RecommendationFeedbackStatus = "idle" | "saving" | "saved" | "error";
@@ -116,6 +117,12 @@ export default function ResultPage() {
   const [closetBasis, setClosetBasis] = useState<ClosetBasisItem[]>([]);
   const [sizeCandidates, setSizeCandidates] = useState<SizeCandidate[]>([]);
   const [catalogCandidates, setCatalogCandidates] = useState<ProductCatalogCandidate[]>([]);
+  const todayPlan = feedback
+    ? buildTodayActionPlan({
+        todayAction: feedback.today_action,
+        recommendedItems: feedback.recommended_outfit.items
+      })
+    : null;
 
   useEffect(() => {
     const state = readOnboardingState();
@@ -328,10 +335,23 @@ export default function ResultPage() {
                 ))}
               </div>
             </div>
-            <div className="result-next-action">
-              <span>오늘 할 일</span>
-              <p>{compactUiText(feedback.today_action, 50)}</p>
-            </div>
+            {todayPlan ? (
+              <div className="result-next-action">
+                <span>오늘 실행 3단계</span>
+                <p>{compactUiText(todayPlan.summary, 50)}</p>
+                <ol className="result-action-plan">
+                  {todayPlan.steps.map((step, index) => (
+                    <li key={step.title}>
+                      <b>{index + 1}</b>
+                      <span>
+                        <strong>{step.title}</strong>
+                        <small>{step.detail}</small>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
           </section>
 
           <section className="result-closet-basis">

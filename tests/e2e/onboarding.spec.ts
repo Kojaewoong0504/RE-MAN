@@ -202,6 +202,10 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(
     page.getByRole("heading", { name: "지금 가진 옷으로 만드는 깔끔한 기본 조합" })
   ).toBeVisible();
+  await expect(page.getByText("오늘 실행 3단계")).toBeVisible();
+  await expect(page.getByText("추천 상의 꺼내기")).toBeVisible();
+  await expect(page.getByText("하의와 신발 같이 입기")).toBeVisible();
+  await expect(page.getByText("거울 앞에서 사진 비교하기")).toBeVisible();
   await page.getByRole("button", { name: /진단과 이유 보기/ }).click();
   await expect(page.getByText("청바지 + 무지 티셔츠 중심의 코디라")).toBeVisible();
   await expect(page.getByText("새로 사기보다 지금 가진 옷")).toBeVisible();

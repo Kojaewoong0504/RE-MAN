@@ -317,6 +317,28 @@ a {
     @apply mt-2 text-[22px] font-black leading-7 tracking-[-0.05em] text-ink;
   }
 
+  .result-action-plan {
+    @apply mt-4 grid gap-2;
+  }
+
+  .result-action-plan li {
+    @apply grid grid-cols-[32px_1fr] items-start gap-3 border p-3;
+    border-color: var(--color-line);
+    background: var(--color-bg);
+  }
+
+  .result-action-plan b {
+    @apply flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-ink)] text-xs font-black text-[var(--color-bg)];
+  }
+
+  .result-action-plan strong {
+    @apply block text-sm font-black leading-5 text-ink;
+  }
+
+  .result-action-plan small {
+    @apply mt-1 block text-xs font-bold leading-5 text-muted;
+  }
+
   .result-closet-basis {
     @apply space-y-3;
   }
