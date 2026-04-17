@@ -63,6 +63,8 @@
 - [2026-04-17-result-basis-ui.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-result-basis-ui.md)
 - [2026-04-17-basis-ui-harness-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-basis-ui-harness-design.md)
 - [2026-04-17-basis-ui-harness.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-basis-ui-harness.md)
+- [2026-04-17-result-density-reduction-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-result-density-reduction-design.md)
+- [2026-04-17-result-density-reduction.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-result-density-reduction.md)
 
 ### Incidents
 

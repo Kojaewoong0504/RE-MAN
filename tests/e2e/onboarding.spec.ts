@@ -186,7 +186,7 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "이 옷장에서 고른 이유" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "흰색 무지 티셔츠" })).toBeVisible();
   await expect(page.getByText(/추천에 사용|비슷한 후보/).first()).toBeVisible();
-  await expect(page.getByText(/자주 입고 잘 맞음|후보/).first()).toBeVisible();
+  await expect(page.getByText("자주 입고 잘 맞음").first()).toHaveCount(0);
   const resultActionDock = page.getByLabel("다음 행동");
   await expect(resultActionDock.getByRole("link", { name: "옷장" })).toBeVisible();
   await expect(resultActionDock.getByRole("link", { name: "기록" })).toBeVisible();
@@ -194,10 +194,16 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(page.getByRole("link", { name: "크레딧 확인" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /핏 더 보기/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /레퍼런스\/실착 보기/ })).toHaveCount(0);
-  await expect(page.getByText("청바지 + 무지 티셔츠 중심의 코디라")).toBeVisible();
+  await expect(page.getByText("청바지 + 무지 티셔츠 중심의 코디라")).toHaveCount(0);
+  await expect(page.getByText("새로 사기보다 지금 가진 옷")).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "지금 가진 옷으로 만드는 깔끔한 기본 조합" })
   ).toBeVisible();
+  await page.getByRole("button", { name: /진단과 이유 보기/ }).click();
+  await expect(page.getByText("청바지 + 무지 티셔츠 중심의 코디라")).toBeVisible();
+  await expect(page.getByText("새로 사기보다 지금 가진 옷")).toBeVisible();
+  await page.getByRole("button", { name: /근거 자세히 보기/ }).click();
+  await expect(page.getByText("자주 입고 잘 맞음").first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
   await page.getByRole("button", { name: /바꿀 점 3개 보기/ }).click();
   await expect(page.getByText("바지 핏을 조금 더 곧게 잡으면")).toBeVisible();

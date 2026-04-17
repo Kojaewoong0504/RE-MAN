@@ -110,6 +110,8 @@ export default function ResultPage() {
   const [showSizeCheck, setShowSizeCheck] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showAccountSave, setShowAccountSave] = useState(false);
+  const [showResultDetails, setShowResultDetails] = useState(false);
+  const [showBasisDetails, setShowBasisDetails] = useState(false);
   const [closetBasis, setClosetBasis] = useState<ClosetBasisItem[]>([]);
   const [sizeCandidates, setSizeCandidates] = useState<SizeCandidate[]>([]);
   const [catalogCandidates, setCatalogCandidates] = useState<ProductCatalogCandidate[]>([]);
@@ -316,7 +318,6 @@ export default function ResultPage() {
                   <p className="poster-kicker">오늘의 조합</p>
                   <h2>{feedback.recommended_outfit.title}</h2>
                 </div>
-                <p>{compactUiText(feedback.diagnosis, 72)}</p>
               </div>
             </div>
             <div className="result-outfit-block">
@@ -325,9 +326,6 @@ export default function ResultPage() {
                   <span key={item}>{item}</span>
                 ))}
               </div>
-              <p className="text-[14px] font-semibold leading-6 text-muted">
-                {compactUiText(feedback.recommended_outfit.reason)}
-              </p>
             </div>
             <div className="result-next-action">
               <span>오늘 할 일</span>
@@ -341,26 +339,51 @@ export default function ResultPage() {
               <h2>이 옷장에서 고른 이유</h2>
             </div>
             {closetBasis.length > 0 ? (
-              <div className="result-basis-grid">
-                {closetBasis.map((item) => (
-                  <article
-                    className={`result-basis-card result-basis-${item.matchStatus}`}
-                    key={`${item.category}-${item.itemName}`}
-                  >
-                    <div className="result-basis-main">
-                      <div>
-                        <p>{item.label}</p>
-                        <h3>{compactUiText(item.itemName, 24)}</h3>
-                      </div>
+              <>
+                <div className="result-basis-chip-grid">
+                  {closetBasis.slice(0, 3).map((item) => (
+                    <article
+                      className={`result-basis-chip result-basis-${item.matchStatus}`}
+                      key={`${item.category}-${item.itemName}-summary`}
+                    >
+                      <p>{item.label}</p>
+                      <h3>{compactUiText(item.itemName, 18)}</h3>
                       <span>{item.statusLabel}</span>
-                    </div>
-                    <div className="result-basis-meta">
-                      <strong>{item.signalLabel}</strong>
-                      <small>{compactUiText(item.detailLabel, 34)}</small>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                    </article>
+                  ))}
+                </div>
+                <button
+                  aria-expanded={showBasisDetails}
+                  className="action-row result-inline-action w-full"
+                  onClick={() => setShowBasisDetails((current) => !current)}
+                  type="button"
+                >
+                  <span>근거 자세히 보기</span>
+                  <span>{showBasisDetails ? "접기" : "→"}</span>
+                </button>
+                {showBasisDetails ? (
+                  <div className="result-basis-grid">
+                    {closetBasis.map((item) => (
+                      <article
+                        className={`result-basis-card result-basis-${item.matchStatus}`}
+                        key={`${item.category}-${item.itemName}`}
+                      >
+                        <div className="result-basis-main">
+                          <div>
+                            <p>{item.label}</p>
+                            <h3>{compactUiText(item.itemName, 24)}</h3>
+                          </div>
+                          <span>{item.statusLabel}</span>
+                        </div>
+                        <div className="result-basis-meta">
+                          <strong>{item.signalLabel}</strong>
+                          <small>{compactUiText(item.detailLabel, 34)}</small>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+              </>
             ) : (
               <div className="result-basis-empty">
                 옷장 사진을 등록하면 다음 추천부터 근거가 보입니다.
@@ -377,6 +400,34 @@ export default function ResultPage() {
           </section>
 
           <section className="result-tools">
+            <button
+              aria-expanded={showResultDetails}
+              className="action-row w-full"
+              onClick={() => setShowResultDetails((current) => !current)}
+              type="button"
+            >
+              <span>진단과 이유 보기</span>
+              <span>{showResultDetails ? "접기" : "→"}</span>
+            </button>
+            {showResultDetails ? (
+              <div className="result-collapsible-panel">
+                <div className="result-section-heading">
+                  <p className="poster-kicker">Reason</p>
+                  <h2>진단과 추천 이유</h2>
+                </div>
+                <div className="result-detail-copy">
+                  <div>
+                    <span>진단</span>
+                    <p>{compactUiText(feedback.diagnosis, 110)}</p>
+                  </div>
+                  <div>
+                    <span>이유</span>
+                    <p>{compactUiText(feedback.recommended_outfit.reason, 110)}</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             <button
               aria-expanded={showImprovements}
               className="action-row w-full"
