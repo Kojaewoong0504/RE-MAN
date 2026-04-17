@@ -13,6 +13,7 @@ import {
   buildHistoryFromState,
   buildClosetItemsFromProfile,
   buildClosetProfileFromItems,
+  buildRecommendationFeedbackMemory,
   getClosetCategoryLabel,
   getMinimumClosetReadiness,
   getRecentHistoryPreview,
@@ -75,6 +76,9 @@ export default function UploadPage() {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
   const [memoryPreview, setMemoryPreview] = useState<string[]>([]);
+  const [feedbackMemoryRows, setFeedbackMemoryRows] = useState<
+    ReturnType<typeof buildRecommendationFeedbackMemory>
+  >([]);
 
   useEffect(() => {
     let state = readOnboardingState();
@@ -122,6 +126,7 @@ export default function UploadPage() {
     setStyleGoal(state.survey.style_goal || defaultStyleGoal);
     setConfidenceLevel(state.survey.confidence_level || defaultConfidenceLevel);
     setMemoryPreview(getRecentHistoryPreview(state, 2));
+    setFeedbackMemoryRows(buildRecommendationFeedbackMemory(state.recommendation_feedback));
   }, [router]);
 
   const hasPhotoInput = Boolean(image || isValidTextDescription(textDescription));
@@ -192,10 +197,25 @@ export default function UploadPage() {
               <span>
                 <span className="poster-kicker">Memory</span>
                 <strong>이전 반응 반영</strong>
-                <small>{memoryPreview.length}개 기록을 참고합니다</small>
+                <small>
+                  {feedbackMemoryRows.length > 0
+                    ? "다음 추천 기준을 함께 보냅니다"
+                    : `${memoryPreview.length}개 기록을 참고합니다`}
+                </small>
               </span>
               <span>{isMemoryOpen ? "접기" : "보기"}</span>
             </button>
+            {feedbackMemoryRows.length > 0 ? (
+              <div className="feedback-memory-summary">
+                <strong>다음 추천 기준</strong>
+                {feedbackMemoryRows.map((row) => (
+                  <span key={`${row.label}-${row.value}`}>
+                    <b>{row.label}</b>
+                    <em>{row.value}</em>
+                  </span>
+                ))}
+              </div>
+            ) : null}
             {isMemoryOpen ? (
               <div className="grid gap-2 border-t pt-4">
                 {memoryPreview.map((item) => (

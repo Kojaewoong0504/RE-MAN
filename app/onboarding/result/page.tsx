@@ -16,6 +16,7 @@ import {
 import {
   buildClosetStrategy,
   buildHistoryFromState,
+  buildRecommendationFeedbackMemory,
   getRecommendationFeedbackLabel,
   normalizeClosetItems,
   patchOnboardingState,
@@ -639,10 +640,24 @@ export default function ResultPage() {
                     계정 동기화 실패.
                   </p>
                 ) : null}
-                {recommendationFeedbackStatus === "saved" ? (
-                  <p className="result-feedback-memory">
-                    다음 스타일 체크에 이 반응을 함께 반영합니다.
-                  </p>
+                {recommendationFeedbackStatus === "saved" && selectedReaction ? (
+                  <div className="result-feedback-memory">
+                    <p>다음 스타일 체크에 이 반응을 함께 반영합니다.</p>
+                    <div className="feedback-memory-summary">
+                      <strong>다음 추천 기준</strong>
+                      {buildRecommendationFeedbackMemory({
+                        reaction: selectedReaction,
+                        note: recommendationNote.trim() || undefined,
+                        outfit_title: feedback.recommended_outfit.title,
+                        created_at: new Date().toISOString()
+                      }).map((row) => (
+                        <span key={`${row.label}-${row.value}`}>
+                          <b>{row.label}</b>
+                          <em>{row.value}</em>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 ) : null}
               </div>
             ) : null}

@@ -67,6 +67,8 @@
 - [2026-04-17-result-density-reduction.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-result-density-reduction.md)
 - [2026-04-17-closet-photo-first-registration-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-closet-photo-first-registration-design.md)
 - [2026-04-17-closet-photo-first-registration.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-closet-photo-first-registration.md)
+- [2026-04-17-recommendation-feedback-memory-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-recommendation-feedback-memory-design.md)
+- [2026-04-17-recommendation-feedback-memory.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-recommendation-feedback-memory.md)
 
 ### Incidents
 

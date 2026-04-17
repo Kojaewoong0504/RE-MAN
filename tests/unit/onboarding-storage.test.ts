@@ -5,6 +5,7 @@ import {
   buildOnboardingRequest,
   getMinimumClosetReadiness,
   buildHistoryFromState,
+  buildRecommendationFeedbackMemory,
   getRecentHistoryPreview,
   getStyleFeedbackTimeline,
   mergePersistedProgramState,
@@ -451,6 +452,36 @@ describe("recommendation feedback", () => {
       outfit_title: "기본 조합",
       created_at: "2026-04-15T00:00:00.000Z"
     });
+  });
+
+  it("builds short user-facing memory rows from recommendation feedback", () => {
+    expect(
+      buildRecommendationFeedbackMemory({
+        reaction: "helpful",
+        note: "셔츠 방향이 좋음",
+        outfit_title: "기본 조합",
+        created_at: "2026-04-15T00:00:00.000Z"
+      })
+    ).toEqual([
+      { label: "좋아한 방향", value: "기본 조합" },
+      { label: "메모", value: "셔츠 방향이 좋음" }
+    ]);
+
+    expect(
+      buildRecommendationFeedbackMemory({
+        reaction: "not_sure",
+        outfit_title: "강한 컬러 조합",
+        created_at: "2026-04-15T00:00:00.000Z"
+      })
+    ).toEqual([{ label: "피할 방향", value: "강한 컬러 조합" }]);
+
+    expect(
+      buildRecommendationFeedbackMemory({
+        reaction: "save_for_later",
+        outfit_title: "새 조합",
+        created_at: "2026-04-15T00:00:00.000Z"
+      })
+    ).toEqual([{ label: "보류 후보", value: "새 조합" }]);
   });
 
   it("adds user reaction into the saved feedback timeline", () => {

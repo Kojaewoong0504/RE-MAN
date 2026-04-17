@@ -668,8 +668,30 @@ a {
   }
 
   .result-feedback-memory {
-    @apply border-t pt-3 text-sm font-black leading-6 text-ink;
+    @apply space-y-3 border-t pt-3 text-sm font-black leading-6 text-ink;
     border-color: var(--color-line);
+  }
+
+  .feedback-memory-summary {
+    @apply grid gap-2 border p-3;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .feedback-memory-summary strong {
+    @apply text-[10px] font-black uppercase tracking-[0.16em] text-muted;
+  }
+
+  .feedback-memory-summary span {
+    @apply grid grid-cols-[86px_1fr] gap-3 text-sm leading-5;
+  }
+
+  .feedback-memory-summary b {
+    @apply font-black text-ink;
+  }
+
+  .feedback-memory-summary em {
+    @apply not-italic font-bold text-muted;
   }
 
   .home-hero {

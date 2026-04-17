@@ -217,6 +217,11 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await page.getByRole("button", { name: "추천 반응 저장" }).click();
   await expect(page.getByRole("button", { name: /도움됨 저장됨/ })).toBeVisible();
   await expect(page.getByText("다음 스타일 체크에 이 반응을 함께 반영합니다.")).toBeVisible();
+  const resultMemory = page.locator(".feedback-memory-summary").first();
+  await expect(resultMemory.getByText("다음 추천 기준", { exact: true })).toBeVisible();
+  await expect(resultMemory.getByText("좋아한 방향")).toBeVisible();
+  await expect(resultMemory.getByText("지금 가진 옷으로 만드는 깔끔한 기본 조합")).toBeVisible();
+  await expect(resultMemory.getByText("메모")).toBeVisible();
   const recommendationFeedbackState = await page.evaluate(() =>
     JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}")
   );
@@ -1166,6 +1171,10 @@ test("profile can start a fresh photo check without losing closet context", asyn
   await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
   await expect(page.getByText("상의, 하의, 신발 준비됨")).toBeVisible();
   await expect(page.getByRole("button", { name: /이전 반응 반영/ })).toBeVisible();
+  const uploadMemory = page.locator(".feedback-memory-summary").first();
+  await expect(uploadMemory.getByText("다음 추천 기준", { exact: true })).toBeVisible();
+  await expect(uploadMemory.getByText("좋아한 방향")).toBeVisible();
+  await expect(uploadMemory.getByText("이전 추천")).toBeVisible();
 
   const resetState = await page.evaluate(() => JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}"));
 

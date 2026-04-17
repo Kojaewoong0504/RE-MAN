@@ -63,6 +63,11 @@ export type RecommendationFeedback = {
   created_at: string;
 };
 
+export type RecommendationFeedbackMemoryRow = {
+  label: "좋아한 방향" | "피할 방향" | "보류 후보" | "메모";
+  value: string;
+};
+
 export type TryOnPreviewCacheEntry = {
   cache_key: string;
   source: "reference" | "upload";
@@ -227,6 +232,31 @@ function buildPreferenceProfile(feedback: RecommendationFeedback | undefined) {
     note,
     last_reaction: feedback.reaction
   };
+}
+
+export function buildRecommendationFeedbackMemory(
+  feedback: RecommendationFeedback | undefined
+): RecommendationFeedbackMemoryRow[] {
+  if (!feedback) {
+    return [];
+  }
+
+  const title = compactText(feedback.outfit_title, 36);
+  const rows: RecommendationFeedbackMemoryRow[] = [];
+
+  if (feedback.reaction === "helpful") {
+    rows.push({ label: "좋아한 방향", value: title });
+  } else if (feedback.reaction === "not_sure") {
+    rows.push({ label: "피할 방향", value: title });
+  } else {
+    rows.push({ label: "보류 후보", value: title });
+  }
+
+  if (feedback.note?.trim()) {
+    rows.push({ label: "메모", value: compactText(feedback.note, 48) });
+  }
+
+  return rows;
 }
 
 function buildHistoryPreview(item: FeedbackHistoryItem) {
