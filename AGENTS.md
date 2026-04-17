@@ -151,6 +151,7 @@
 - `today_action`은 반드시 "지금 가진 것"으로 할 수 있는 것이어야 함.
   (구매를 유도하는 액션은 Day 6 이전 금지 — `docs/product/core-beliefs.md` 참고)
 - `recommended_outfit`은 현재 옷장 컨텍스트를 우선 사용해야 함. Day 6 전까지 구매 유도 금지.
+- `recommended_outfit.source_item_ids`는 현재 요청의 `closet_items`에 같은 id와 같은 카테고리로 존재할 때만 직접 매칭 근거로 사용한다. 검증되지 않은 id는 제거하고 근거 후보로 낮춘다.
 - 응답 실패 또는 포맷 불일치 시 최대 2회 재시도, 이후 fallback 메시지 노출.
 
 ---
@@ -178,6 +179,7 @@
 - 위 명령은 `scripts/with-next-artifact-lock.py` 잠금을 통해 병렬 실행을 막아야 한다. 에이전트는 `multi_tool`로 이 명령들을 동시에 실행하지 않는다.
 - 크레딧을 차감하는 API는 `Idempotency-Key`로 같은 성공 요청의 중복 차감을 막아야 한다.
 - 크레딧/구독/결제와 연결되는 변경은 단위 테스트와 route 통합 테스트로 원장 기록, 환불, 중복 요청을 검증해야 한다.
+- 옷장 근거를 수정하면 `source_item_ids`가 실제 `closet_items`에 존재하고 같은 카테고리인지 단위/통합/E2E 중 최소 두 계층에서 검증해야 한다.
 
 ---
 

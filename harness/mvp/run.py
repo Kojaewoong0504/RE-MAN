@@ -18,6 +18,7 @@ CHECKS = [
             "추천 반응 저장",
             "비슷하게 다시 체크",
             "옷장 사진 원본은 `/api/feedback` payload에 포함하지 않는다",
+            "provider가 반환한 `source_item_ids`는 현재 `closet_items`의 같은 카테고리 id로 검증",
             "실착 UI는 MVP 기본 결과 화면에 노출하지 않는다",
             "조합 느낌 보기",
             "`조합 느낌 보기`는 `/api/try-on`을 호출하지 않는다",

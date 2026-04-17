@@ -149,6 +149,57 @@ describe("feedback API route", () => {
     });
   });
 
+  it("removes provider source item ids that are not valid closet matches", async () => {
+    vi.doMock("@/lib/agents/mock-feedback", () => ({
+      buildMockOnboardingFeedback: () => ({
+        diagnosis: "진단",
+        improvements: ["핏", "색", "신발"],
+        recommended_outfit: {
+          title: "검증 테스트 조합",
+          items: ["상의", "하의", "신발"],
+          reason: "요청 옷장 기준입니다.",
+          try_on_prompt: "전신 정면 사진 기준 검증 테스트",
+          source_item_ids: {
+            tops: "valid-top",
+            bottoms: "valid-top",
+            shoes: "missing-shoes"
+          }
+        },
+        today_action: "오늘 바로 비교",
+        day1_mission: "오늘 바로 시작"
+      })
+    }));
+    const { POST } = await loadRouteWithCookies(
+      await buildAuthCookies({
+        ...authUser,
+        uid: "feedback-invalid-source-user"
+      })
+    );
+    const response = await POST(
+      buildRequest({
+        ...validFeedbackPayload,
+        closet_items: [
+          {
+            id: "valid-top",
+            category: "tops",
+            name: "네이비 셔츠"
+          },
+          {
+            id: "valid-bottom",
+            category: "bottoms",
+            name: "검정 슬랙스"
+          }
+        ]
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.recommended_outfit.source_item_ids).toEqual({
+      tops: "valid-top"
+    });
+  });
+
   it("does not charge twice when the same feedback request is replayed", async () => {
     const user = {
       ...authUser,

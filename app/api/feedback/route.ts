@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   FALLBACK_MESSAGE,
+  sanitizeSourceItemIdsForCloset,
   validateAgentRequest
 } from "@/lib/agents/contracts";
 import {
@@ -118,10 +119,20 @@ export async function POST(request: Request) {
             }),
       getStorageFailureMode(request)
     );
+    const verifiedFeedback = {
+      ...feedback,
+      recommended_outfit: {
+        ...feedback.recommended_outfit,
+        source_item_ids: sanitizeSourceItemIdsForCloset(
+          feedback.recommended_outfit.source_item_ids,
+          payload.closet_items
+        )
+      }
+    };
 
     return NextResponse.json(
       {
-        ...feedback,
+        ...verifiedFeedback,
         credits_charged:
           entitlement.charged && !entitlement.credits.idempotent_replay
             ? STYLE_FEEDBACK_CREDIT_COST

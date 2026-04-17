@@ -378,6 +378,33 @@ function normalizeSourceItemIds(
   }, {});
 }
 
+export function sanitizeSourceItemIdsForCloset(
+  value: OutfitRecommendation["source_item_ids"],
+  closetItems: AgentClosetItem[] | undefined
+): OutfitRecommendation["source_item_ids"] {
+  const normalized = normalizeSourceItemIds(value);
+
+  if (!normalized || !closetItems?.length) {
+    return undefined;
+  }
+
+  const sanitized = (["tops", "bottoms", "shoes", "outerwear"] as AgentClosetItemCategory[])
+    .reduce<NonNullable<OutfitRecommendation["source_item_ids"]>>((acc, category) => {
+      const itemId = normalized[category];
+
+      if (
+        itemId &&
+        closetItems.some((item) => item.id === itemId && item.category === category)
+      ) {
+        acc[category] = itemId;
+      }
+
+      return acc;
+    }, {});
+
+  return Object.keys(sanitized).length > 0 ? sanitized : undefined;
+}
+
 export function validateOnboardingResponse(
   payload: unknown
 ): payload is OnboardingAgentResponse {

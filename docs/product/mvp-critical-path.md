@@ -30,6 +30,7 @@ RE:MEN Style MVP는 기능을 많이 보여주는 앱이 아니라, 사용자의
 - 분석 요청은 현재 전신 사진 1장만 이미지로 포함해야 한다.
 - 옷장 사진 원본은 `/api/feedback` payload에 포함하지 않는다.
 - 옷장 메타데이터와 `closet_strategy`는 `/api/feedback` payload에 포함한다.
+- provider가 반환한 `source_item_ids`는 현재 `closet_items`의 같은 카테고리 id로 검증한 뒤에만 직접 매칭으로 사용한다.
 - 결과 화면은 추천 조합, 옷장 근거, 오늘 행동을 먼저 보여준다.
 - 결과 화면의 `조합 느낌 보기`는 생성 없는 레퍼런스/준비 안내로만 동작한다.
 - 추천 반응 저장 후 다음 체크 payload에 `feedback_history`와 `preference_profile`을 포함한다.

@@ -53,6 +53,8 @@
 
 - [2026-04-17-style-mvp-reliability-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-style-mvp-reliability-design.md)
 - [2026-04-17-style-mvp-reliability.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-style-mvp-reliability.md)
+- [2026-04-17-closet-source-id-validation-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-closet-source-id-validation-design.md)
+- [2026-04-17-closet-source-id-validation.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-closet-source-id-validation.md)
 
 ### Incidents
 

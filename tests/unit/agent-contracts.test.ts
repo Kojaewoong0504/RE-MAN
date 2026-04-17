@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeDeepDiveResponse,
   normalizeOnboardingResponse,
+  sanitizeSourceItemIdsForCloset,
   validateAgentRequest,
   validateOnboardingResponse
 } from "@/lib/agents/contracts";
@@ -134,6 +135,48 @@ describe("agent response contracts", () => {
         day1_mission: "오늘 바로 확인"
       })
     ).toBe(true);
+  });
+
+  it("keeps only source item ids that exist in the same closet category", () => {
+    expect(
+      sanitizeSourceItemIdsForCloset(
+        {
+          tops: " top-valid ",
+          bottoms: "top-valid",
+          shoes: "missing-shoes",
+          outerwear: "   "
+        },
+        [
+          {
+            id: "top-valid",
+            category: "tops",
+            name: "네이비 셔츠"
+          },
+          {
+            id: "bottom-valid",
+            category: "bottoms",
+            name: "검정 슬랙스"
+          }
+        ]
+      )
+    ).toEqual({
+      tops: "top-valid"
+    });
+
+    expect(
+      sanitizeSourceItemIdsForCloset(
+        {
+          tops: "missing-top"
+        },
+        [
+          {
+            id: "bottom-valid",
+            category: "bottoms",
+            name: "검정 슬랙스"
+          }
+        ]
+      )
+    ).toBeUndefined();
   });
 
   it("normalizes deep-dive fields to keep result cards scannable", () => {

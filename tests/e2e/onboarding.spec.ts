@@ -332,7 +332,12 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
         feedback: {
           diagnosis: "저장된 스타일 체크 진단",
           improvements: ["핏", "색", "신발"],
-          recommended_outfit: outfit,
+          recommended_outfit: {
+            ...outfit,
+            source_item_ids: {
+              tops: "missing-top"
+            }
+          },
           today_action: "오늘 바로 할 것",
           day1_mission: "Day 1 미션"
         }
@@ -346,6 +351,8 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
     page.getByRole("heading", { name: "오늘 바꿀 조합만 먼저 봅니다" })
   ).toBeVisible();
   await expect(page.getByText("텍스트 기준")).toBeVisible();
+  await expect(page.getByText("근거 후보")).toBeVisible();
+  await expect(page.getByText("직접 매칭")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /색 조합 보기/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /핏 더 보기/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /레퍼런스\/실착 보기/ })).toHaveCount(0);
