@@ -8,6 +8,7 @@ import { SizeProfileEditor } from "@/components/profile/SizeProfileEditor";
 import { fetchAuthSession } from "@/lib/auth/client";
 import {
   readCurrentUserProfile,
+  syncClosetItemsToServer,
   updateCurrentUserProfile
 } from "@/lib/firebase/firestore";
 import {
@@ -18,6 +19,7 @@ import {
   normalizeSizeProfile,
   patchOnboardingState,
   readOnboardingState,
+  saveClosetContextToOnboardingState,
   type ClosetItem,
   type SizeProfile
 } from "@/lib/onboarding/storage";
@@ -152,14 +154,14 @@ export default function SettingsPage() {
     };
     const closetProfile = buildClosetProfileFromItems(closetItems, closetAvoid);
 
-    patchOnboardingState({
+    saveClosetContextToOnboardingState({
       user_id: uid,
       email: email ?? undefined,
-      survey,
-      closet_profile: closetProfile,
-      closet_items: closetItems,
+      items: closetItems,
+      avoid: closetProfile.avoid,
       size_profile: sizeProfile
     });
+    patchOnboardingState({ survey });
     window.sessionStorage.setItem(
       "reman:style-settings",
       JSON.stringify({
@@ -170,13 +172,18 @@ export default function SettingsPage() {
     );
 
     try {
+      const persisted = await syncClosetItemsToServer({
+        items: closetItems,
+        closet_profile: closetProfile,
+        size_profile: sizeProfile
+      });
       await updateCurrentUserProfile(uid, {
         displayName,
         bio,
         preferredProgram,
         survey,
-        closet_profile: closetProfile,
-        closet_items: closetItems,
+        closet_profile: persisted.closet_profile ?? closetProfile,
+        closet_items: persisted.closet_items.length ? persisted.closet_items : closetItems,
         size_profile: sizeProfile
       });
       setSaved(true);

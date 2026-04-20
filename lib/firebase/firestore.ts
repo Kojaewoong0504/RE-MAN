@@ -255,6 +255,38 @@ export async function updateCurrentUserProfile(
   );
 }
 
+export async function syncClosetItemsToServer(input: {
+  items: ClosetItem[];
+  closet_profile?: Partial<ClosetProfile> | null;
+  size_profile?: SizeProfile | null;
+}) {
+  const response = await fetch("/api/closet/items", {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(input)
+  });
+
+  const body = (await response.json().catch(() => null)) as
+    | {
+        closet_items?: ClosetItem[];
+        closet_profile?: ClosetProfile;
+        error?: string;
+      }
+    | null;
+
+  if (!response.ok) {
+    throw new Error(body?.error ?? "closet_sync_failed");
+  }
+
+  return {
+    closet_items: normalizeClosetItems(body?.closet_items),
+    closet_profile: body?.closet_profile
+  };
+}
+
 function parseSurvey(input: UserProfileDocument | null): SurveyInput {
   const survey = input?.survey ?? {};
 

@@ -10,7 +10,7 @@ import { PhotoUploader } from "@/components/upload/PhotoUploader";
 import type { ClosetProfile } from "@/lib/agents/contracts";
 import { fetchAuthSession } from "@/lib/auth/client";
 import type { AuthUser } from "@/lib/auth/types";
-import { syncSurveyToFirestore } from "@/lib/firebase/firestore";
+import { syncClosetItemsToServer, syncSurveyToFirestore } from "@/lib/firebase/firestore";
 import {
   buildHistoryFromState,
   buildClosetItemsFromProfile,
@@ -168,7 +168,23 @@ export default function UploadPage() {
     setClosetSyncStatus("saving");
 
     try {
-      await syncSurveyToFirestore(nextState);
+      const persisted = await syncClosetItemsToServer({
+        items: nextItems,
+        closet_profile: nextState.closet_profile,
+        size_profile: nextState.size_profile
+      });
+
+      if (persisted.closet_items.length) {
+        setClosetItems(persisted.closet_items);
+        saveClosetContextToOnboardingState({
+          user_id: nextState.user_id,
+          email: nextState.email,
+          items: persisted.closet_items,
+          avoid: persisted.closet_profile?.avoid ?? nextState.closet_profile?.avoid ?? "",
+          size_profile: nextState.size_profile
+        });
+      }
+
       setClosetSyncStatus("saved");
     } catch {
       setClosetSyncStatus("error");

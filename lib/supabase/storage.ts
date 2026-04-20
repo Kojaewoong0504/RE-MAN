@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 type UploadedImageRef = {
   bucket: string;
   path: string;
+  publicUrl?: string;
 };
 
 const ALLOWED_IMAGE_TYPES = new Set([
@@ -88,9 +89,12 @@ export async function uploadImageToSupabaseStorage(image: string, userId?: strin
     throw new Error(`supabase_upload_failed:${error.message}`);
   }
 
+  const { data } = client.storage.from(bucket).getPublicUrl(path);
+
   return {
     bucket,
-    path
+    path,
+    publicUrl: data.publicUrl
   } satisfies UploadedImageRef;
 }
 

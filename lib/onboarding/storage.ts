@@ -39,6 +39,9 @@ export type ClosetItem = {
   category: ClosetItemCategory;
   name: string;
   photo_data_url?: string;
+  image_url?: string;
+  storage_bucket?: string;
+  storage_path?: string;
   color?: string;
   fit?: string;
   size?: string;
@@ -329,8 +332,20 @@ export function normalizeClosetItems(items: unknown): ClosetItem[] {
         typeof record.photo_data_url === "string" && record.photo_data_url.startsWith("data:image/")
           ? record.photo_data_url
           : "";
+      const imageUrl =
+        typeof record.image_url === "string" && record.image_url.trim()
+          ? record.image_url.trim()
+          : "";
+      const storageBucket =
+        typeof record.storage_bucket === "string" && record.storage_bucket.trim()
+          ? record.storage_bucket.trim()
+          : "";
+      const storagePath =
+        typeof record.storage_path === "string" && record.storage_path.trim()
+          ? record.storage_path.trim()
+          : "";
 
-      if (!category || (!name && !photoDataUrl)) {
+      if (!category || (!name && !photoDataUrl && !imageUrl)) {
         return null;
       }
 
@@ -342,6 +357,9 @@ export function normalizeClosetItems(items: unknown): ClosetItem[] {
         category,
         name: name || `옷장 사진 ${index + 1}`,
         photo_data_url: photoDataUrl,
+        image_url: imageUrl,
+        storage_bucket: storageBucket,
+        storage_path: storagePath,
         color: typeof record.color === "string" ? record.color.trim() : "",
         fit: typeof record.fit === "string" ? record.fit.trim() : "",
         size: typeof record.size === "string" ? record.size.trim() : "",

@@ -8,6 +8,7 @@ import { CreditStatus } from "@/components/credits/CreditStatus";
 import { fetchAuthSession } from "@/lib/auth/client";
 import {
   readCurrentUserProfile,
+  syncClosetItemsToServer,
   updateCurrentUserProfile
 } from "@/lib/firebase/firestore";
 import {
@@ -135,13 +136,30 @@ export default function ClosetPage() {
     const closetProfile = nextState.closet_profile ?? buildClosetProfileFromItems(items, avoid);
 
     try {
+      const persisted = await syncClosetItemsToServer({
+        items,
+        closet_profile: closetProfile,
+        size_profile: profile?.size_profile ?? nextState.size_profile
+      });
+
+      if (persisted.closet_items.length) {
+        setItems(persisted.closet_items);
+        saveClosetContextToOnboardingState({
+          user_id: user.uid,
+          email: user.email ?? undefined,
+          items: persisted.closet_items,
+          avoid: persisted.closet_profile?.avoid ?? closetProfile.avoid,
+          size_profile: profile?.size_profile ?? nextState.size_profile
+        });
+      }
+
       await updateCurrentUserProfile(user.uid, {
         displayName: profile?.displayName ?? user.name ?? "",
         bio: profile?.bio ?? "",
         preferredProgram: profile?.preferredProgram ?? "style",
         survey: profile?.survey ?? nextState.survey,
-        closet_items: items,
-        closet_profile: closetProfile,
+        closet_items: persisted.closet_items.length ? persisted.closet_items : items,
+        closet_profile: persisted.closet_profile ?? closetProfile,
         size_profile: profile?.size_profile ?? nextState.size_profile
       });
       setStatus("saved");

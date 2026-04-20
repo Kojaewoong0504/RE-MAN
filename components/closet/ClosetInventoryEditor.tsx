@@ -52,6 +52,10 @@ function getItemDisplayName(item: ClosetItem) {
   return `${color} ${name}`;
 }
 
+function getItemImageSrc(item: ClosetItem) {
+  return item.photo_data_url || item.image_url || "";
+}
+
 export function ClosetInventoryEditor({
   items,
   onChange
@@ -71,6 +75,9 @@ export function ClosetInventoryEditor({
   const [condition, setCondition] = useState("");
   const [notes, setNotes] = useState("");
   const [photoDataUrl, setPhotoDataUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [storageBucket, setStorageBucket] = useState("");
+  const [storagePath, setStoragePath] = useState("");
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isModeChoosing, setIsModeChoosing] = useState(false);
@@ -79,7 +86,8 @@ export function ClosetInventoryEditor({
   const [openCategories, setOpenCategories] = useState<ClosetItemCategory[]>([]);
   const [showOptionalDetails, setShowOptionalDetails] = useState(false);
 
-  const canAdd = Boolean(photoDataUrl);
+  const photoPreviewSrc = photoDataUrl || imageUrl;
+  const canAdd = Boolean(photoPreviewSrc);
   const isEditing = Boolean(editingItemId);
   const selectedItem = items.find((item) => item.id === selectedItemId) ?? null;
 
@@ -94,6 +102,9 @@ export function ClosetInventoryEditor({
     setCondition("");
     setNotes("");
     setPhotoDataUrl("");
+    setImageUrl("");
+    setStorageBucket("");
+    setStoragePath("");
     setPhotoError(null);
   }
 
@@ -126,6 +137,9 @@ export function ClosetInventoryEditor({
     setCondition(item.condition ?? "");
     setNotes(item.notes ?? "");
     setPhotoDataUrl(item.photo_data_url ?? "");
+    setImageUrl(item.image_url ?? "");
+    setStorageBucket(item.storage_bucket ?? "");
+    setStoragePath(item.storage_path ?? "");
     setPhotoError(null);
     setEditingItemId(item.id);
     setShowOptionalDetails(true);
@@ -152,6 +166,9 @@ export function ClosetInventoryEditor({
 
     try {
       setPhotoDataUrl(await normalizePhotoForBrowserUpload(file));
+      setImageUrl("");
+      setStorageBucket("");
+      setStoragePath("");
     } catch {
       setPhotoError("사진을 처리하지 못했습니다. JPG 또는 PNG 사진을 다시 선택해주세요.");
       setPhotoDataUrl("");
@@ -168,6 +185,9 @@ export function ClosetInventoryEditor({
       category,
       name: name.trim() || `${categoryLabels[category]} 사진`,
       photo_data_url: photoDataUrl,
+      image_url: imageUrl,
+      storage_bucket: storageBucket,
+      storage_path: storagePath,
       color: color.trim(),
       fit: fit.trim(),
       size: size.trim(),
@@ -270,12 +290,12 @@ export function ClosetInventoryEditor({
                         type="button"
                       >
                         <span className="closet-item-photo">
-                          {item.photo_data_url ? (
+                          {getItemImageSrc(item) ? (
                             <NextImage
                               alt={`${getItemDisplayName(item)} 옷장 사진`}
                               className="h-full w-full object-cover"
                               height={160}
-                              src={item.photo_data_url}
+                              src={getItemImageSrc(item)}
                               unoptimized
                               width={120}
                             />
@@ -394,12 +414,12 @@ export function ClosetInventoryEditor({
 
             <div className="closet-photo-first">
               <div className="closet-photo-preview">
-                {photoDataUrl ? (
+                {photoPreviewSrc ? (
                   <NextImage
                     alt="등록할 옷장 사진 미리보기"
                     className="h-full w-full object-cover"
                     height={450}
-                    src={photoDataUrl}
+                    src={photoPreviewSrc}
                     unoptimized
                     width={360}
                   />
@@ -413,7 +433,7 @@ export function ClosetInventoryEditor({
               <div className="closet-photo-first-actions">
                 <div className="grid grid-cols-2 gap-2">
                   <label className="ui-button cursor-pointer py-4" htmlFor="closet-photo-upload">
-                    {photoDataUrl ? "다시 선택" : "사진 선택"}
+                    {photoPreviewSrc ? "다시 선택" : "사진 선택"}
                   </label>
                   <label
                     className="ui-button-secondary cursor-pointer justify-center py-4"
