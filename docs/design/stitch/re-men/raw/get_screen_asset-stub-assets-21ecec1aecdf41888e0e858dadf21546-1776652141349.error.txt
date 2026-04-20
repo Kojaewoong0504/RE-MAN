@@ -1,0 +1,1 @@
+Error: Tool Call Failed [get_screen]: Requested entity was not found.

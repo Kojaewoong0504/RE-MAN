@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#2f4865",
+                    "surface-container-high": "#e7e8e9",
+                    "on-surface": "#191c1d",
+                    "error": "#ba1a1a",
+                    "surface-container-low": "#f3f4f5",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed": "#b1f0ce",
+                    "inverse-primary": "#bbc6e2",
+                    "primary": "#051125",
+                    "inverse-on-surface": "#f0f1f2",
+                    "secondary-fixed": "#d1e4ff",
+                    "on-tertiary-fixed-variant": "#0e5138",
+                    "on-error": "#ffffff",
+                    "surface-bright": "#f8f9fa",
+                    "secondary": "#47607e",
+                    "secondary-container": "#c2dcff",
+                    "on-background": "#191c1d",
+                    "on-primary-fixed-variant": "#3c475d",
+                    "on-surface-variant": "#45474d",
+                    "on-tertiary-container": "#5d9a7c",
+                    "inverse-surface": "#2e3132",
+                    "outline": "#75777d",
+                    "on-tertiary-fixed": "#002114",
+                    "outline-variant": "#c5c6cd",
+                    "background": "#f8f9fa",
+                    "primary-container": "#1b263b",
+                    "tertiary-container": "#002d1c",
+                    "on-primary-fixed": "#101b30",
+                    "surface-tint": "#545e76",
+                    "on-secondary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#00160c",
+                    "on-error-container": "#93000a",
+                    "on-secondary-container": "#48617e",
+                    "on-primary-container": "#828da7",
+                    "on-tertiary": "#ffffff",
+                    "primary-fixed": "#d7e2ff",
+                    "on-secondary-fixed": "#001d36",
+                    "surface-variant": "#e1e3e4",
+                    "surface-dim": "#d9dadb",
+                    "surface-container-highest": "#e1e3e4",
+                    "primary-fixed-dim": "#bbc6e2",
+                    "tertiary-fixed-dim": "#95d4b3",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#afc9ea",
+                    "surface": "#f8f9fa",
+                    "surface-container": "#edeeef"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-shadow {
+            box-shadow: 0 24px 48px -12px rgba(5, 17, 37, 0.06);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen pb-32">
+<!-- TopAppBar -->
+<nav class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
+<div class="flex justify-between items-center w-full px-6 py-4">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-50 cursor-pointer active:scale-95 transition-transform" data-icon="menu">menu</span>
+<span class="font-['Manrope'] font-black tracking-widest text-slate-900 dark:text-slate-50 text-lg">RE:MEN</span>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container-high transition-all duration-300 hover:opacity-70 active:scale-95">
+<img class="w-full h-full object-cover" data-alt="Portrait of a well-groomed professional man with a confident expression in soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnHF54c_OSd8NSDFR4I17PyGsln5NvhoU-FZ5aeBDSQ4XCXwSU9LrolSEDk6KQIRQwcs2QlXoUMA5-sS4cDPyBQbbRpnbvr2oVgkoUppaJfmHeS3q-YFqe9FomsNnzRekV1jRH546BsX9GXMos2vvZjL3jG3df5aqQPsIsvXooapQua2F_30uAzTOcx9Y8Jbpdxi5jgFChwXcKHEvVSksyLwPzmOo6qECJTSNS6dxL3JG_X6Vo-Uq0ISa4ldJqdhKlSa3QUKGVcwgx"/>
+</div>
+</div>
+</nav>
+<main class="pt-24 px-6 max-w-5xl mx-auto">
+<!-- Header Section -->
+<header class="mb-10">
+<h1 class="font-headline text-display-sm md:text-display-md text-primary font-bold tracking-tight mb-2">Good morning, Julian</h1>
+<p class="text-on-surface-variant font-medium opacity-80">Your personal sartorial guide is ready.</p>
+</header>
+<!-- Style Score & Summary Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
+<!-- Summary Card -->
+<div class="md:col-span-7 bg-surface-container-lowest rounded-xl p-8 editorial-shadow relative overflow-hidden flex flex-col justify-between min-h-[240px]">
+<div class="relative z-10">
+<span class="text-xs font-bold uppercase tracking-[0.2em] text-on-tertiary-container mb-4 block">Style Intelligence</span>
+<h2 class="font-headline text-3xl font-extrabold text-primary mb-2">Today's Style Score</h2>
+<div class="flex items-baseline gap-2">
+<span class="text-6xl font-black text-primary">85</span>
+<span class="text-xl font-bold text-on-primary-container">/100</span>
+</div>
+</div>
+<div class="mt-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary-container" data-icon="trending_up">trending_up</span>
+<p class="text-sm font-medium text-on-surface-variant">Your coordination is 12% higher than last week. Sharp choice on the navy textures.</p>
+</div>
+<!-- Abstract Decorative Element -->
+<div class="absolute top-[-20%] right-[-10%] w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl"></div>
+</div>
+<!-- Quick Actions -->
+<div class="md:col-span-5 flex flex-col gap-4">
+<button class="flex-1 group relative overflow-hidden bg-gradient-to-br from-primary to-primary-container text-on-primary p-6 rounded-xl flex items-center justify-between transition-transform active:scale-[0.98] editorial-shadow">
+<div class="flex flex-col items-start">
+<span class="material-symbols-outlined mb-4 text-3xl" data-icon="checkroom">checkroom</span>
+<span class="font-headline font-bold text-lg">Add to Closet</span>
+</div>
+<span class="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity -translate-x-4 group-hover:translate-x-0 duration-300" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="flex-1 group bg-surface-container-highest text-on-secondary-container p-6 rounded-xl flex items-center justify-between transition-transform active:scale-[0.98]">
+<div class="flex flex-col items-start">
+<span class="material-symbols-outlined mb-4 text-3xl" data-icon="analytics">analytics</span>
+<span class="font-headline font-bold text-lg">Start New Analysis</span>
+</div>
+<span class="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity -translate-x-4 group-hover:translate-x-0 duration-300" data-icon="add_circle">add_circle</span>
+</button>
+</div>
+</section>
+<!-- Daily Recommendation Section -->
+<section class="mb-12">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h3 class="font-headline text-2xl font-bold text-primary tracking-tight">Daily Recommendation</h3>
+<p class="text-on-surface-variant text-sm mt-1">Curated from your active wardrobe for a clear, sunny day.</p>
+</div>
+<button class="text-on-primary-container text-sm font-bold tracking-widest uppercase hover:opacity-70 transition-opacity">See Options</button>
+</div>
+<!-- Recommendation Display (Editorial Layout) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+<!-- Large Feature Image -->
+<div class="relative group">
+<div class="aspect-[4/5] rounded-xl overflow-hidden editorial-shadow bg-surface-container-high">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Editorial fashion shot of a man wearing a charcoal tailored overcoat and navy wool trousers against a minimalist architecture background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCP2XqSulcyjx44YUdiV0bEAxaNBgcJGuoycwlvWQRgtupQjkMUlokKmIOfugVECTtfkb6fpPvAZbCmzI7PlsdfdyYCuyL_N4mLmnPM3s7XZbr7ANYwKslsIaXMYdnC7b2TomX_wLzQO6lARNI9AFwpLN0EA1BZ7CtCcyP3x0BS5RIWz1_NpMD1lFHuEih1iriJS-nKQ84NphXbiy1rMdL2sCalICedhzN-ZeY_W5YYHztCQ92C78CqCTFUNn1wYe8jNxbTJXxSOynH"/>
+</div>
+<!-- Overlapping Chip -->
+<div class="absolute -bottom-4 -right-4 bg-tertiary-container text-on-tertiary px-6 py-4 rounded-xl editorial-shadow">
+<p class="text-[10px] uppercase tracking-[0.2em] font-bold opacity-70 mb-1">Occasion</p>
+<p class="font-headline font-bold text-lg">Business Casual</p>
+</div>
+</div>
+<!-- Product Breakdown -->
+<div class="flex flex-col gap-8 py-4">
+<div class="flex items-center gap-6">
+<div class="w-20 h-20 rounded-lg bg-surface-container-low p-2 overflow-hidden shrink-0">
+<img class="w-full h-full object-contain" data-alt="High-quality close up of a white organic cotton button-down shirt texture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuo4IgntQ6ZrjIzsHK_mlatZWOu-EaL2SOcp05-oagcLZ-2kJWgKApiG88kScwxzB8eYUFaf-aP8Nbfv3ezR7MRTeNL0_c__YKMxregQVD2klF9aaOHjuvatSx6pVxLm8QOHPaSv4CkKOOXG6g0wafotpZXrMwDSQ6vDpq0sZFurqW-YVuW1gKLMpm10RP_WAcXZZxahQ51dVS3KyAZgJ3xtqVkxoEJXU8u8qsa0SVzx-GTXFzXByW_OIGS1otQARMD9j20Bs5lOAp"/>
+</div>
+<div>
+<p class="text-xs font-bold text-on-primary-container uppercase tracking-widest">Base Layer</p>
+<h4 class="font-headline font-bold text-primary">Oxford Cotton Shirt</h4>
+<p class="text-sm text-on-surface-variant">White • Slim Fit</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="w-20 h-20 rounded-lg bg-surface-container-low p-2 overflow-hidden shrink-0">
+<img class="w-full h-full object-contain" data-alt="Detail shot of dark navy chinos with precise stitching and high-quality fabric" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADyDEe5g7kJ5G6H7CPYfLRgxLiMKG0M_4Lsk0SUPvbTSW8vdxn1eiLaOu0ZoML-EAU77c5mquiar6wkR2CiQ1Veo6AX_117sTStHB8rwDOWPVvo5qMGXDalRtx2gyyOJF55sZRtgKXjDnzWwKbz38PCJjVQm7APOXe5zFo32gn-mlkc7R3XgKjVQPYn0XsPklyr68oLw1qYAGyjszGnFTXUnk-UJ8NdkSLCKYjYAJdHT-zNzmxPbgEwBvgOJxeC8tzmsgoF5quTE-h"/>
+</div>
+<div>
+<p class="text-xs font-bold text-on-primary-container uppercase tracking-widest">Trousers</p>
+<h4 class="font-headline font-bold text-primary">Midnight Navy Chinos</h4>
+<p class="text-sm text-on-surface-variant">Stretch Twill • Straight</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="w-20 h-20 rounded-lg bg-surface-container-low p-2 overflow-hidden shrink-0">
+<img class="w-full h-full object-contain" data-alt="Luxury leather Chelsea boots in dark brown with a polished finish" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdcP4qxKr0IzxfAXNLO1Lmwd3mnWm33Y0bHsjShs21gEjelGRS0vQJxfEGI4wOdZI1FMRnTFy_59YyDMxeq3y_9JmAbhc0-9mPoA1IbbefcFEXQKe6Tfc_MIiJSZRMJL1LuvAr_LL7xKdLbG2N1eGLxpXap3cRYvHQVvAcxydRjHQYGX8Ir7zcNGGwgbnLbS6vt-AHvaB_27qFh3_vX9tEf6_9Qz8xbQwgyj3AEZhqxK5JScCBfkXKJFZ1H-Me8lBoGhAjdP4kX5iT"/>
+</div>
+<div>
+<p class="text-xs font-bold text-on-primary-container uppercase tracking-widest">Footwear</p>
+<h4 class="font-headline font-bold text-primary">Leather Chelsea Boots</h4>
+<p class="text-sm text-on-surface-variant">Cocoa • Handcrafted</p>
+</div>
+</div>
+<div class="mt-4 pt-6 border-t border-surface-container-high">
+<button class="w-full bg-surface-container-highest py-4 rounded-lg font-headline font-bold text-primary transition-all hover:bg-surface-variant active:scale-[0.98]">
+                            Confirm This Outfit
+                        </button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur-2xl border-t border-slate-100/10 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] pb-safe">
+<div class="flex justify-around items-center px-4 py-3">
+<a class="flex flex-col items-center justify-center text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800/50 rounded-xl px-4 py-2 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home_app_logo">home_app_logo</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 px-4 py-2 hover:text-slate-600 dark:hover:text-slate-300 transition-colors active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="checkroom">checkroom</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold">Closet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 px-4 py-2 hover:text-slate-600 dark:hover:text-slate-300 transition-colors active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="analytics">analytics</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold">Analysis</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 px-4 py-2 hover:text-slate-600 dark:hover:text-slate-300 transition-colors active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

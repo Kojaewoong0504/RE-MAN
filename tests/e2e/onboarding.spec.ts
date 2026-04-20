@@ -100,6 +100,8 @@ test("closet batch capture accepts multiple photos and creates review drafts", a
 
   await expect(page.getByRole("heading", { name: "빠른 옷장 등록" })).toBeVisible();
   await expect(page.getByText("여러 장을 한 번에 추가하세요")).toBeVisible();
+  await expect(page.getByText("사진 여러 장 선택")).toBeVisible();
+  await expect(page.getByText("카메라로 한 장씩 추가")).toBeVisible();
 });
 
 test("closet review saves confirmed drafts and ignores deleted drafts", async ({ page }) => {

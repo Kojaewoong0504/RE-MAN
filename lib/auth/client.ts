@@ -187,6 +187,22 @@ export async function createServerSession(idToken: string) {
   return writeCachedSession((body?.user as AuthUser | undefined) ?? null);
 }
 
+export async function createDevServerSession() {
+  const response = await fetch("/api/auth/dev-login", {
+    method: "POST",
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    const body = await jsonOrNull(response);
+    clearAuthSessionCache();
+    throw new Error(typeof body?.error === "string" ? body.error : "dev_login_failed");
+  }
+
+  const body = await jsonOrNull(response);
+  return writeCachedSession((body?.user as AuthUser | undefined) ?? null);
+}
+
 export async function destroyServerSession() {
   await fetch("/api/auth/logout", {
     method: "POST",

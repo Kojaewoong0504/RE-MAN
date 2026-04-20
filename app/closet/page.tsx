@@ -177,36 +177,36 @@ export default function ClosetPage() {
           </div>
         </div>
 
-        <section className="space-y-4 poster-rule">
+        <section className="closet-slate-hero">
           <p className="poster-kicker">Closet</p>
-          <h1 className="text-[42px] font-black leading-[1.02] tracking-[-0.06em] text-ink">
+          <h1>
             옷장 사진 저장
           </h1>
-          <p className="max-w-sm text-base font-semibold leading-7 text-muted">
-            가진 옷을 찍어두세요.
+          <p>
+            자주 입는 옷을 사진으로 남기면 추천이 내 옷장 기준으로 좁혀집니다.
           </p>
         </section>
 
-        <section className="grid grid-cols-4 border border-black/15 bg-surface text-center">
-          <div className="border-r border-black/15 p-3">
+        <section className="closet-metric-strip">
+          <div>
             <p className="poster-kicker">All</p>
-            <p className="mt-2 text-2xl font-black text-ink">{totalCount}</p>
+            <p>{totalCount}</p>
           </div>
-          <div className="border-r border-black/15 p-3">
+          <div>
             <p className="poster-kicker">Top</p>
-            <p className="mt-2 text-2xl font-black text-ink">
+            <p>
               {getCategoryCount(items, "tops")}
             </p>
           </div>
-          <div className="border-r border-black/15 p-3">
+          <div>
             <p className="poster-kicker">Bottom</p>
-            <p className="mt-2 text-2xl font-black text-ink">
+            <p>
               {getCategoryCount(items, "bottoms")}
             </p>
           </div>
-          <div className="p-3">
+          <div>
             <p className="poster-kicker">Shoes</p>
-            <p className="mt-2 text-2xl font-black text-ink">
+            <p>
               {getCategoryCount(items, "shoes")}
             </p>
           </div>

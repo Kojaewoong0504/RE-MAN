@@ -2,9 +2,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { chromium, expect } from "@playwright/test";
+import { SignJWT } from "jose";
 
 const baseUrl = process.env.VISUAL_SMOKE_BASE_URL ?? "http://127.0.0.1:3001";
 const outputDir = "output/playwright/result-minimal";
+const jwtSecret = process.env.AUTH_JWT_SECRET ?? "visual-smoke-auth-secret";
 const scenarios = [
   {
     id: "desktop",
@@ -58,6 +60,8 @@ async function ensureServer() {
   const child = spawn("npm", ["run", "dev"], {
     env: {
       ...process.env,
+      PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH ?? ""}`,
+      AUTH_JWT_SECRET: jwtSecret,
       AI_PROVIDER: "mock",
       TRY_ON_PROVIDER: "mock",
       NEXT_PUBLIC_SUPABASE_URL: "",
@@ -70,6 +74,37 @@ async function ensureServer() {
 
   await waitForServer();
   return child;
+}
+
+async function issueAccessToken() {
+  return new SignJWT({
+    type: "access",
+    email: "visual-smoke@example.com",
+    name: "Visual Smoke User",
+    picture: null,
+    provider: "google"
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject("visual-smoke-user")
+    .setIssuedAt()
+    .setExpirationTime("15m")
+    .sign(new TextEncoder().encode(jwtSecret));
+}
+
+async function addSessionCookie(context) {
+  const token = await issueAccessToken();
+  const url = new URL(baseUrl);
+
+  await context.addCookies([
+    {
+      name: "reman_access_token",
+      value: token,
+      domain: url.hostname,
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax"
+    }
+  ]);
 }
 
 async function seedResultState(page) {
@@ -122,7 +157,9 @@ async function setupDeterministicRoutes(page) {
 }
 
 async function captureScenario(browser, scenario) {
-  const page = await browser.newPage({ viewport: scenario.viewport });
+  const context = await browser.newContext({ viewport: scenario.viewport });
+  await addSessionCookie(context);
+  const page = await context.newPage();
   const artifacts = [
     `${outputDir}/${scenario.id}-01-result.png`,
     `${outputDir}/${scenario.id}-02-improvements-open.png`
@@ -132,7 +169,7 @@ async function captureScenario(browser, scenario) {
 
   try {
     await page.goto(`${baseUrl}/programs/style/onboarding/result`);
-    await expect(page.getByRole("heading", { name: "오늘 바꿀 조합만 먼저 봅니다" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "오늘 조합" })).toBeVisible();
     await expect(page.getByText(/^provider:/)).toHaveCount(0);
     await expect(page.getByRole("button", { name: /핏 더 보기/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /레퍼런스\/실착 보기/ })).toHaveCount(0);
@@ -154,6 +191,7 @@ async function captureScenario(browser, scenario) {
     };
   } finally {
     await page.close();
+    await context.close();
   }
 }
 

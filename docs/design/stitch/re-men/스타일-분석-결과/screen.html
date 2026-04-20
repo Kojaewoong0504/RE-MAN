@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#2f4865",
+                        "surface-container-high": "#e7e8e9",
+                        "on-surface": "#191c1d",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f3f4f5",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#b1f0ce",
+                        "inverse-primary": "#bbc6e2",
+                        "primary": "#051125",
+                        "inverse-on-surface": "#f0f1f2",
+                        "secondary-fixed": "#d1e4ff",
+                        "on-tertiary-fixed-variant": "#0e5138",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#f8f9fa",
+                        "secondary": "#47607e",
+                        "secondary-container": "#c2dcff",
+                        "on-background": "#191c1d",
+                        "on-primary-fixed-variant": "#3c475d",
+                        "on-surface-variant": "#45474d",
+                        "on-tertiary-container": "#5d9a7c",
+                        "inverse-surface": "#2e3132",
+                        "outline": "#75777d",
+                        "on-tertiary-fixed": "#002114",
+                        "outline-variant": "#c5c6cd",
+                        "background": "#f8f9fa",
+                        "primary-container": "#1b263b",
+                        "tertiary-container": "#002d1c",
+                        "on-primary-fixed": "#101b30",
+                        "surface-tint": "#545e76",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#00160c",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#48617e",
+                        "on-primary-container": "#828da7",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#d7e2ff",
+                        "on-secondary-fixed": "#001d36",
+                        "surface-variant": "#e1e3e4",
+                        "surface-dim": "#d9dadb",
+                        "surface-container-highest": "#e1e3e4",
+                        "primary-fixed-dim": "#bbc6e2",
+                        "tertiary-fixed-dim": "#95d4b3",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#afc9ea",
+                        "surface": "#f8f9fa",
+                        "surface-container": "#edeeef"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
+<div class="flex justify-between items-center w-full px-6 py-4">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform hover:opacity-70 transition-all duration-300">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-50">menu</span>
+</button>
+<span class="font-['Manrope'] font-black tracking-widest text-slate-900 dark:text-slate-50 text-lg">RE:MEN</span>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-8">
+<a class="text-slate-400 dark:text-slate-500 font-medium hover:opacity-70 transition-all" href="#">홈</a>
+<a class="text-slate-400 dark:text-slate-500 font-medium hover:opacity-70 transition-all" href="#">옷장</a>
+<a class="text-slate-900 dark:text-white font-bold transition-all" href="#">분석</a>
+<a class="text-slate-400 dark:text-slate-500 font-medium hover:opacity-70 transition-all" href="#">프로필</a>
+</nav>
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden border-2 border-white shadow-sm">
+<img alt="User Profile" data-alt="Close-up portrait of a stylish man with short hair and groomed beard, professional lighting, neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe3kgd1gTAK__48TPybEYBnFKLfJUg1z6FAOrbm2JFbyyM0xR22hmDDqAJCJnEEK-Dhb7ayyZe0cNoC5Gl8V8WiLBee1rd6ryArgLfsbSGI-MdDQ2ZoQJBYo7hUmq_4W5SEEywxBxRybn5fMY1a7hdYR76mrZ86KOMV3pDUWy9LuEBaVc-neVfjEAf5XrMeLH-pQTHYlDXV3RRiCWttiEvT3uEvTCjPSbXjE-9AnOI9amuwP556CH77UwUarQksGfs15gUZkS6K9x1"/>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-6xl mx-auto">
+<!-- Hero Section: Editorial Analysis -->
+<section class="mb-12">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+<div>
+<span class="text-on-tertiary-container font-semibold tracking-widest uppercase text-xs mb-2 block">Dossier #0821</span>
+<h1 class="text-4xl md:text-5xl font-black text-primary tracking-tight leading-tight">시각적 분석 결과</h1>
+<p class="text-on-surface-variant max-w-md mt-4 leading-relaxed">AI 엔진이 현재 착장의 비율, 색조, 체형별 핏을 분석했습니다.</p>
+</div>
+<div class="flex gap-2">
+<div class="px-4 py-2 bg-surface-container-high rounded-full text-xs font-bold uppercase tracking-tighter">분석 신뢰도: 98%</div>
+<div class="px-4 py-2 bg-tertiary-container text-white rounded-full text-xs font-bold uppercase tracking-tighter">분석 완료</div>
+</div>
+</div>
+<!-- Comparison Canvas -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Original Photo side -->
+<div class="relative group aspect-[3/4] rounded-xl overflow-hidden bg-surface-container-low shadow-sm">
+<img alt="Original Look" class="w-full h-full object-cover grayscale-[0.2]" data-alt="Full length shot of a man wearing a slightly oversized navy suit with white sneakers, standing against a minimalist concrete wall" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZ7rDOmnsVMQAEDhjCAcNcs-aLqqpz1lvIaHyOyhDkDeQkpD9M717szIdxPQVpJAVChPP8_6mMp2H-2U9M70mdie13VIqv8RnhU1cLhQQthk5TGa8-3aTfkpHFXlZc80ePtUTDt36LmP6MEXRlzD38YF6SPxX0CzK5G-WVSPyb3qrpnmdklaZBkatBBVEeAa37kQmjeMr1Tmy41VKz9qbYR3wX5XaGVc-020SDapelPUdKijyFVO32pQtBme0-dbG6l5ZXtuJtSB2E"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<div class="absolute bottom-6 left-6">
+<span class="text-white font-black tracking-widest text-sm">원본 사진</span>
+</div>
+</div>
+<!-- AI Analysis side -->
+<div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-primary shadow-2xl">
+<img alt="Analyzed Look" class="w-full h-full object-cover opacity-60 mix-blend-overlay" data-alt="Stylized overlay of a man's outfit analysis with glowing digital lines tracing the silhouette and fabric texture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnz1EFM1iNrEVgw83S8DhYYRNkNsBvrB0xaS7xC4oGL0ubFBSbup6q0PUBU7tWfHxMRCxaV4qYUhub8ugu38MxpnxjAnfA0IEWWP7yFna7ok4RweLnidjuggycdoZ3qlRJnr4JpmNXJE4H0YQaQkOhp23Y6ubWAlihJOSEkKoNQlKX_-cIX1ZTK1oxBwKClg3-m3VlNp2-ib6XLOOFbNAozBdhdD0FG1oefRNRESlw_lrcvrrkHK9AjOiaHPhMzecnv0sCJ8A-23UP"/>
+<!-- Callout: Fit -->
+<div class="absolute top-[30%] left-[20%] flex items-center gap-3">
+<div class="w-4 h-4 rounded-full bg-tertiary-fixed shadow-[0_0_15px_rgba(177,240,206,0.6)] animate-pulse"></div>
+<div class="bg-white/90 backdrop-blur-md p-3 rounded-xl shadow-lg border-l-4 border-tertiary-fixed">
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">실루엣</p>
+<p class="text-sm font-bold text-primary">핏 좋음</p>
+</div>
+</div>
+<!-- Callout: Color Harmony -->
+<div class="absolute bottom-[40%] right-[15%] flex flex-col items-end gap-3">
+<div class="bg-white/90 backdrop-blur-md p-3 rounded-xl shadow-lg border-r-4 border-error">
+<p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">색상 조화</p>
+<p class="text-sm font-bold text-primary">보완 필요</p>
+</div>
+<div class="w-4 h-4 rounded-full bg-error shadow-[0_0_15px_rgba(186,26,26,0.4)]"></div>
+</div>
+<div class="absolute bottom-6 right-6">
+<span class="text-white font-black tracking-widest text-sm">RE:MEN AI 스캔</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Suggestion Section -->
+<section class="mb-20">
+<div class="bg-surface-container-lowest rounded-2xl p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-outline-variant/10">
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-12 items-center">
+<!-- Text side -->
+<div class="lg:col-span-2 space-y-6">
+<div class="inline-block px-3 py-1 bg-primary text-white text-[10px] font-bold tracking-[0.2em] uppercase rounded">제안 사항</div>
+<h2 class="text-4xl font-bold text-primary leading-tight">RE:MEN의 제안</h2>
+<p class="text-on-surface-variant leading-relaxed text-lg">더욱 신뢰감 있는 인상을 위해, 짙은 숯색(Charcoal) 팔레트와 구조감 있는 테일러링을 제안합니다. 이는 체형을 더 단단하게 보이게 하며 전문적인 분위기를 연출합니다.</p>
+<div class="space-y-4 pt-4">
+<div class="flex items-center gap-4 group">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<div>
+<h4 class="font-bold text-primary text-sm">톤 보정</h4>
+<p class="text-xs text-on-surface-variant">네이비를 숯색으로 변경하여 더 높은 대비감을 줍니다.</p>
+</div>
+</div>
+<div class="flex items-center gap-4 group">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<div>
+<h4 class="font-bold text-primary text-sm">소재 두께감</h4>
+<p class="text-xs text-on-surface-variant">탄탄한 울 혼방 소재로 어깨 라인을 보완합니다.</p>
+</div>
+</div>
+</div>
+<div class="pt-8">
+<button class="w-full md:w-auto px-10 py-5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold tracking-tight shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3">
+<span>가상 착용해보기</span>
+<span class="material-symbols-outlined">vrpano</span>
+</button>
+</div>
+</div>
+<!-- Virtual Try-on side -->
+<div class="lg:col-span-3">
+<div class="relative aspect-[16/10] rounded-2xl overflow-hidden shadow-2xl group">
+<img alt="Virtual Try-On Result" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Photorealistic virtual try-on image of a man in a bespoke charcoal grey three-piece suit, standing in a high-end modern atelier loft" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBM-FSGwsyRNOqStP4xUeI0_OSsE9KdbZ8s_tFoBaGCPQJqmCD5SpJXoaKrkF2XRtU6I9zIcgmf58HDeK3BcUz8-rAVnaFsiHfHJAJSejQe7744YHuBqsl7eWVeKbu4cWiA1Wgdd0VjkuNEKUfi99g-o7igbi54gt3i0X0AKbKRIOM2RfWtiqeujR3F7NFZXqXBM40s9-043kFMf68gYCarkSVJnS5O7BpIe1YfZsAmROBXJ9TH8EOSNCGj9TxxSxy36UFVFG9g5QV5"/>
+<!-- Glassmorphism Detail Card -->
+<div class="absolute bottom-6 right-6 left-6 md:left-auto md:w-72 p-6 bg-white/70 backdrop-blur-xl rounded-xl shadow-xl border border-white/40">
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-[10px] font-black text-primary/40 tracking-widest uppercase">가상 오버레이</p>
+<h4 class="text-lg font-bold text-primary">로로피아나 울 소재</h4>
+</div>
+<span class="material-symbols-outlined text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">99.4%의 정밀도로 분석된 가상 시뮬레이션 결과입니다.</p>
+</div>
+<!-- Decorative "Lens" effects -->
+<div class="absolute top-0 left-0 w-full h-full pointer-events-none border-[24px] border-black/5 mix-blend-overlay"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Consulting Notes (Bento Style) -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+<div class="p-8 bg-surface-container-low rounded-2xl">
+<span class="material-symbols-outlined text-primary mb-4">psychology</span>
+<h3 class="text-xl font-bold mb-2">색채 심리학</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed">숯색은 신뢰와 성숙함을 상징합니다. 현재의 네이비보다 전문적인 자리에서 더 강력한 권위를 보여줍니다.</p>
+</div>
+<div class="p-8 bg-tertiary-container text-white rounded-2xl">
+<span class="material-symbols-outlined text-white mb-4">straighten</span>
+<h3 class="text-xl font-bold mb-2">구조적 핏 분석</h3>
+<p class="text-sm text-on-tertiary-container leading-relaxed">분석 결과 왼쪽 어깨가 2cm 정도 낮게 측정되었습니다. 어깨 패드가 보강된 블레이저로 체형을 보정하는 것을 추천합니다.</p>
+</div>
+<div class="p-8 bg-surface-container-low rounded-2xl">
+<span class="material-symbols-outlined text-primary mb-4">calendar_today</span>
+<h3 class="text-xl font-bold mb-2">상황 적합성</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed">일정에 등록된 저녁 '아트 갈라' 이벤트에 매우 적합한 코디입니다.</p>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 bg-white/90 dark:bg-slate-950/90 backdrop-blur-2xl z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] border-t border-slate-100/10 md:hidden">
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 px-4 py-2 hover:text-slate-600 dark:hover:text-slate-300 transition-colors active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">home_app_logo</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">홈</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 px-4 py-2 hover:text-slate-600 dark:hover:text-slate-300 transition-colors active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">checkroom</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">옷장</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800/50 rounded-xl px-4 py-2 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">분석</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 px-4 py-2 hover:text-slate-600 dark:hover:text-slate-300 transition-colors active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">프로필</span>
+</a>
+</nav>
+</body></html>

@@ -1691,6 +1691,15 @@ a {
     box-shadow: inset 0 0 0 1px rgba(5, 17, 37, 0.08);
   }
 
+  .closet-batch-camera {
+    @apply grid cursor-pointer gap-1 rounded-3xl p-4 text-sm font-black;
+    background: rgba(5, 17, 37, 0.06);
+  }
+
+  .closet-batch-camera small {
+    @apply text-xs font-bold leading-5 text-muted;
+  }
+
   .closet-batch-grid {
     @apply grid grid-cols-3 gap-3;
   }

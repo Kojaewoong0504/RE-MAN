@@ -298,7 +298,7 @@ export default function ResultPage() {
         </div>
         <div className="space-y-2">
           <p className="poster-kicker">Style Check Result</p>
-          <h1 className="screen-title">오늘 바꿀 조합만 먼저 봅니다</h1>
+          <h1 className="screen-title">오늘 조합</h1>
         </div>
       </div>
 

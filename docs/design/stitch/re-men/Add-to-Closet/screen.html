@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "on-secondary-fixed-variant": "#2f4865",
+                  "surface-container-high": "#e7e8e9",
+                  "on-surface": "#191c1d",
+                  "error": "#ba1a1a",
+                  "surface-container-low": "#f3f4f5",
+                  "error-container": "#ffdad6",
+                  "tertiary-fixed": "#b1f0ce",
+                  "inverse-primary": "#bbc6e2",
+                  "primary": "#051125",
+                  "inverse-on-surface": "#f0f1f2",
+                  "secondary-fixed": "#d1e4ff",
+                  "on-tertiary-fixed-variant": "#0e5138",
+                  "on-error": "#ffffff",
+                  "surface-bright": "#f8f9fa",
+                  "secondary": "#47607e",
+                  "secondary-container": "#c2dcff",
+                  "on-background": "#191c1d",
+                  "on-primary-fixed-variant": "#3c475d",
+                  "on-surface-variant": "#45474d",
+                  "on-tertiary-container": "#5d9a7c",
+                  "inverse-surface": "#2e3132",
+                  "outline": "#75777d",
+                  "on-tertiary-fixed": "#002114",
+                  "outline-variant": "#c5c6cd",
+                  "background": "#f8f9fa",
+                  "primary-container": "#1b263b",
+                  "tertiary-container": "#002d1c",
+                  "on-primary-fixed": "#101b30",
+                  "surface-tint": "#545e76",
+                  "on-secondary": "#ffffff",
+                  "on-primary": "#ffffff",
+                  "tertiary": "#00160c",
+                  "on-error-container": "#93000a",
+                  "on-secondary-container": "#48617e",
+                  "on-primary-container": "#828da7",
+                  "on-tertiary": "#ffffff",
+                  "primary-fixed": "#d7e2ff",
+                  "on-secondary-fixed": "#001d36",
+                  "surface-variant": "#e1e3e4",
+                  "surface-dim": "#d9dadb",
+                  "surface-container-highest": "#e1e3e4",
+                  "primary-fixed-dim": "#bbc6e2",
+                  "tertiary-fixed-dim": "#95d4b3",
+                  "surface-container-lowest": "#ffffff",
+                  "secondary-fixed-dim": "#afc9ea",
+                  "surface": "#f8f9fa",
+                  "surface-container": "#edeeef"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "fontFamily": {
+                  "headline": ["Manrope"],
+                  "body": ["Inter"],
+                  "label": ["Inter"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .perspective-1000 { perspective: 1000px; }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex justify-between items-center px-6 py-4">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform hover:opacity-70 text-slate-900 dark:text-slate-50">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-['Manrope'] font-black tracking-widest text-slate-900 dark:text-slate-50 text-lg">RE:MEN</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant/20">
+<img alt="User Profile" data-alt="professional headshot of a stylish man with clean grooming and minimalist background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGYBCvfLs24UKTmtZctGasGTpbSQvMxrzjf8KF9low7vYfXlsQ77m2NizYItdfEgN8SrJr16dptqPLyxcBlQFMvlxXGs0Iujt87FBjUshwUMSO90g6TlP9xTRW-H0r7uGvmuJuyAICsSWrT1yEaOsJM2F-wjx0sqbNI4rZUOOAPnS-V1SuJiqFjc6rxvEg-qmi-3_WFug1uQJQjdnxrk3ig4A4ughZf9tPxo-w0iHTus4EQmTM3rQI3R6-_KeWO1fxlD_4okdIY45j"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-4 md:px-8 max-w-4xl mx-auto space-y-8">
+<!-- Camera Viewfinder Section -->
+<section class="relative group">
+<div class="aspect-[3/4] w-full rounded-xl overflow-hidden bg-primary-container relative shadow-2xl">
+<!-- Viewfinder Elements -->
+<div class="absolute inset-0 z-10 p-6 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div class="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/10">
+<p class="text-white font-headline font-bold text-sm tracking-tight">Snap your clothes to add them</p>
+<p class="text-white/60 text-xs font-body mt-1">Position garment within frame</p>
+</div>
+<button class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">flash_on</span>
+</button>
+</div>
+<!-- Viewfinder Frame -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-4/5 border-2 border-dashed border-white/30 rounded-xl pointer-events-none">
+<div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white -mt-1 -ml-1"></div>
+<div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white -mt-1 -mr-1"></div>
+<div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white -mb-1 -ml-1"></div>
+<div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white -mb-1 -mr-1"></div>
+</div>
+<!-- Camera Controls Overlay -->
+<div class="flex flex-col items-center gap-6">
+<!-- View Toggle -->
+<div class="flex bg-white/10 backdrop-blur-xl rounded-full p-1 border border-white/20">
+<button class="px-6 py-2 rounded-full text-xs font-bold tracking-widest text-white bg-white/20 transition-all">Front View</button>
+<button class="px-6 py-2 rounded-full text-xs font-bold tracking-widest text-white/60 hover:text-white transition-all">Side View</button>
+<button class="px-6 py-2 rounded-full text-xs font-bold tracking-widest text-white/60 hover:text-white transition-all">Back View</button>
+</div>
+<!-- Shutter Button -->
+<button class="w-20 h-20 rounded-full bg-white flex items-center justify-center p-1 shadow-lg active:scale-95 transition-transform">
+<div class="w-full h-full rounded-full border-4 border-primary-container flex items-center justify-center">
+<div class="w-14 h-14 rounded-full bg-primary-container"></div>
+</div>
+</button>
+</div>
+</div>
+<!-- Simulated Viewfinder Feed -->
+<img class="w-full h-full object-cover opacity-80" data-alt="a high-quality textured navy blue blazer laying flat on a clean neutral grey surface with soft professional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFTDLhh2AV64EK_kipq6yxr_Ootz8pVucBezZfG1tzAlNIBbQpcfTFHlJPdwPNrnE9P_pRioCyoMYmA7qT_xs0VPrlWr4HYA58yBD-BGi1oMloPSGekwNdGDJT0Bau0PUjMs8pkBhCleEMJlo7kSQLVu80EYFR-kU6q_zem0STGYWVcbeYTDa3SrwyYmdyMsvAsVW8GsLmO6_r_GUtMZZIGrQIw89SYFquO8d8x9zZaZHjd_7xWpjdlf1m3ronRH3cZPSoHMKGtAsY"/>
+<!-- Depth Mask Gradient -->
+<div class="absolute inset-0 bg-gradient-to-t from-primary/60 via-transparent to-transparent pointer-events-none"></div>
+</div>
+</section>
+<!-- Recently Added Horizontal List -->
+<section class="space-y-4">
+<div class="flex justify-between items-end px-2">
+<div>
+<h2 class="font-headline font-bold text-xl text-primary tracking-tight">Recent Scan</h2>
+<p class="text-on-surface-variant text-sm font-body">AI is processing your latest items</p>
+</div>
+<button class="text-secondary font-bold text-sm hover:opacity-70 transition-opacity">View All</button>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
+<!-- Item Card 1 -->
+<div class="min-w-[160px] snap-start group">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container-high mb-3 relative">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="close up of a high quality navy wool blazer on a hanger with soft daylight illumination" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoRllzC3bgZtnt70K5IrXlK6W28wRU3OqsSxph3jG6dQORodaat5gZgSfETU1XDI-xHDztoCbG397f0C-Q_dT161gag6r_3g4_8KLwxJwyE4Ia5q5xJoTBbaNK_rskVaWvAva2RSaW67uZywKFmVtnQx7Ls6LWMhMq1kKiNDte_nfIZ2ii8M-8HZrsml8KrQuloAe80dn-bVoibhLzc6qyoJ_wp6yEqvWJn4vgwXf6q4P2CQnduZXQ24r0mJIihK74JKOFdnqPz-Tg"/>
+<div class="absolute top-2 right-2">
+<div class="bg-tertiary-container text-[10px] text-white px-2 py-1 rounded-full font-bold uppercase tracking-wider">Identified</div>
+</div>
+</div>
+<p class="font-headline font-bold text-sm text-primary">Navy Blazer</p>
+<p class="font-body text-xs text-on-surface-variant">Italian Wool Blend</p>
+</div>
+<!-- Item Card 2 -->
+<div class="min-w-[160px] snap-start group">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container-high mb-3 relative">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="crisp white cotton dress shirt folded neatly with natural lighting showing fabric texture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6sdoOryE_VBtmpV2R9moJ6wjvjDNm5vrsZwxbK6xvQRMuJWZulPDCdUEo_WgWVBD7BHWnI-Da6dK9nEB3n6Om4Dx3JjugMW2ZBoqrSfvtZeACEbJxU0FBGx0gNYQ7kUJ12Bqj2nc3AFndZcu6PbJUoBXtcA7bgzN8d6uLXjR9gFFU_QgrUelR35IyI9s0m77CWj1o833olqYMxfxYtxgwJsbmMDjy6oS_D7i2RFeloY1y8WZ9jkKKgFyEBfTf3K0U_RVCVqCBkOMd"/>
+<div class="absolute top-2 right-2">
+<div class="bg-tertiary-container text-[10px] text-white px-2 py-1 rounded-full font-bold uppercase tracking-wider">Identified</div>
+</div>
+</div>
+<p class="font-headline font-bold text-sm text-primary">White Cotton Shirt</p>
+<p class="font-body text-xs text-on-surface-variant">Oxford Classic Fit</p>
+</div>
+<!-- Item Card 3 -->
+<div class="min-w-[160px] snap-start group">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container-high mb-3 relative">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="well-worn indigo selvedge denim jeans laid out on a clean wooden surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCagGGgutkRTparIs08QTsk4w2j8nvFbc0bjmpAuMCWZsWf6OUBKUxlF3O7o0JE7-TpgkAmQw9X32RpXsrev8sMbbhBSKtasv6_P9yji43kLpCn5jnS8oQK7KXTS5YHDseOVcDKvDXjcPOJFZkkSQgbWe_vT9ar8PADpDnV_j8_yQkM8SfyrgcMgETpTHs7ZW1m0L0_1jYk31sJzZTjocQcklUN_DIP_T36WrZ8anybNc1xSsQ9y3kRKxMIEH-NxEuDOGsMtqhcdGFu"/>
+<div class="absolute top-2 right-2">
+<div class="bg-tertiary-container text-[10px] text-white px-2 py-1 rounded-full font-bold uppercase tracking-wider">Identified</div>
+</div>
+</div>
+<p class="font-headline font-bold text-sm text-primary">Selvedge Denim</p>
+<p class="font-body text-xs text-on-surface-variant">Raw Indigo Wash</p>
+</div>
+<!-- Item Card 4 (Empty/Loading) -->
+<div class="min-w-[160px] snap-start flex flex-col">
+<div class="aspect-square rounded-xl bg-surface-container-low border-2 border-dashed border-outline-variant flex items-center justify-center mb-3">
+<div class="animate-pulse bg-surface-container-highest w-full h-full rounded-xl"></div>
+</div>
+<div class="h-4 bg-surface-container-high rounded w-3/4 mb-1 animate-pulse"></div>
+<div class="h-3 bg-surface-container-low rounded w-1/2 animate-pulse"></div>
+</div>
+</div>
+</section>
+<!-- High-Tech Context Tip -->
+<div class="bg-surface-container-low rounded-xl p-6 flex gap-4 items-start border border-outline-variant/10">
+<div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0 text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+</div>
+<div>
+<h4 class="font-headline font-bold text-primary">RE:MEN Intelligence</h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">Our computer vision automatically tags fabric types, color codes, and seasonal suitability so you don't have to.</p>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 bg-white/90 dark:bg-slate-950/90 backdrop-blur-2xl border-t border-slate-100/10 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] z-50 pb-safe">
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 px-4 py-2 hover:text-slate-600 dark:hover:text-slate-300 transition-colors active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">home_app_logo</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800/50 rounded-xl px-4 py-2 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">checkroom</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">Closet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 px-4 py-2 hover:text-slate-600 dark:hover:text-slate-300 transition-colors active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">Analysis</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 px-4 py-2 hover:text-slate-600 dark:hover:text-slate-300 transition-colors active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

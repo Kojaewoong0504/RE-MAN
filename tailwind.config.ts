@@ -17,7 +17,7 @@ const config: Config = {
         danger: "#F87171"
       },
       fontFamily: {
-        sans: ["Pretendard", "Inter", "system-ui", "sans-serif"]
+        sans: ["Manrope", "Pretendard", "Inter", "system-ui", "sans-serif"]
       }
     }
   },

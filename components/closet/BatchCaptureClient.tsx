@@ -155,6 +155,18 @@ export function BatchCaptureClient() {
         />
       </label>
 
+      <label className="closet-batch-camera">
+        <span>카메라로 한 장씩 추가</span>
+        <small>모바일 브라우저는 카메라 촬영을 보통 한 장씩 처리합니다.</small>
+        <input
+          accept="image/*"
+          capture="environment"
+          className="sr-only"
+          onChange={(event) => void handleFiles(event.target.files)}
+          type="file"
+        />
+      </label>
+
       {error ? <p className="text-sm font-black text-red-700">{error}</p> : null}
 
       <div className="closet-batch-grid">

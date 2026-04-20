@@ -20,7 +20,7 @@ export function AccountAccessButton() {
 
       if (user) {
         setHref("/profile");
-        setLabel("Me");
+        setLabel((user.name ?? user.email ?? "R").slice(0, 1));
         return;
       }
 
@@ -45,7 +45,7 @@ export function AccountAccessButton() {
     <div className="app-header-actions">
       <CreditStatus variant="badge" />
       <Link
-        className="flex h-8 min-w-8 items-center justify-center rounded-full border border-black/15 bg-[#fffaf0] px-3 text-[11px] font-black uppercase tracking-[0.12em] text-ink transition active:translate-y-px"
+        className="account-access-pill"
         href={href}
       >
         {label}

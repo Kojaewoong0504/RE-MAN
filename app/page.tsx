@@ -46,44 +46,62 @@ const featureTiles = [
 
 export default function LandingPage() {
   return (
-    <main className="app-shell min-h-screen pb-24 pt-6">
+    <main className="app-shell min-h-screen pb-24 pt-4">
       <div className="app-header">
         <p className="app-brand">RE:MAN</p>
         <AccountAccessButton />
       </div>
 
-      <section className="home-hero mt-5">
-        <div className="relative aspect-[1/1]">
+      <section className="home-slate-hero mt-5">
+        <div className="home-slate-copy">
+          <p className="poster-kicker">Style concierge</p>
+          <h1>관리 홈</h1>
+          <p>오늘 입은 옷과 옷장 기준으로 바로 바꿀 조합을 찾습니다.</p>
+          <Link className="home-action-primary" href="/programs/style">
+            <span>스타일 체크 시작 →</span>
+          </Link>
+        </div>
+        <div className="home-slate-score" aria-label="오늘의 스타일 점수">
+          <span>오늘의 스타일 점수</span>
+          <strong>85</strong>
+          <small>깔끔한 기본 조합부터 시작</small>
+        </div>
+        <div className="home-slate-figure">
           <Image
             alt="RE:MAN home visual"
-            className="h-full w-full object-cover grayscale"
+            className="object-cover grayscale"
             fill
             priority
             src={landingHeroImage}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 p-5 text-[var(--color-bg)]">
-            <p className="poster-kicker text-[var(--color-bg)]/65">RE:MAN HOME</p>
-            <h1 className="mt-3 text-[46px] font-black leading-[0.9] tracking-[-0.07em]">
-              관리 홈
-            </h1>
-            <p className="mt-3 text-sm font-black text-[var(--color-bg)]/80">
-              사진, 옷장, 추천을 한 곳에서.
-            </p>
-          </div>
+          <div className="home-slate-badge">RE:MEN</div>
         </div>
       </section>
 
-      <section className="mt-5">
-        <Link className="home-action-primary" href="/programs/style">
-          <span>스타일 체크 시작</span>
-          <span>→</span>
-        </Link>
+      <section className="home-recommendation">
+        <div>
+          <p className="poster-kicker">Today</p>
+          <h2>오늘의 추천 코스</h2>
+        </div>
+        <div className="home-course-list">
+          <Link href="/programs/style">
+            <span>01</span>
+            <strong>사진 체크</strong>
+          </Link>
+          <Link href="/closet">
+            <span>02</span>
+            <strong>옷장 정리</strong>
+          </Link>
+          <Link href="/history">
+            <span>03</span>
+            <strong>기록</strong>
+          </Link>
+        </div>
       </section>
 
       <section className="mt-7 space-y-3">
         <div className="section-heading">
-          <p className="poster-kicker">Quick</p>
+          <p className="poster-kicker">Programs</p>
           <h2>바로가기</h2>
         </div>
         <div className="home-quick-grid">

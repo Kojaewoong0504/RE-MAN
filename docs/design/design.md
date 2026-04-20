@@ -8,31 +8,34 @@ core-beliefs.md의 3가지 신념이 디자인에도 그대로 적용된다.
 
 ---
 
-## 비주얼 무드 — Warm Utility Masculine
+## 비주얼 무드 — Sartorial Slate
 
-> "사진을 기준으로 차분하게 진단하고, 오늘 바꿀 한 가지를 또렷하게 보여준다."
+> "사진을 기준으로 차분하게 진단하고, 조용한 스타일 컨시어지가 오늘 바꿀 한 가지를 또렷하게 제안한다."
 
 이 앱은 너드남이 처음으로 "지금 가진 옷으로 시작할 수 있다"는 감각을 갖게 만든다.
-그 감각은 따뜻한 스톤 배경, 실제 사진 중심의 큰 시각 앵커, 단단한 블랙 타이포그래피, 브라스/올리브 계열 CTA에서 온다.
+그 감각은 밝은 슬레이트 배경, 실제 사진 중심의 큰 시각 앵커, 딥 네이비 타이포그래피, muted emerald 액션에서 온다.
+
+Stitch 프로젝트 `RE:MEN`의 디자인 시스템 `Sartorial Slate`를 현재 기준으로 삼는다.
+Stitch 산출물은 [docs/design/stitch/re-men/README.md](/Users/gojaewoong/Desktop/ko/nerd/docs/design/stitch/re-men/README.md)에 보관한다.
 
 포스터형 강한 보더와 밝은 노란색 포인트는 쓰지 않는다.
-강조색은 남성적인 브라스/올리브 계열로 제한한다.
 기본 화면은 실제 앱처럼 차분하고 읽기 쉬워야 한다.
+경계는 보더보다 톤 차이와 레이어링으로 만든다.
 
 ### 컬러 팔레트
 
 | 용도 | 색상 | 비고 |
 |---|---|---|
-| Background | `--color-bg: #F2EEE3` | 앱 배경 기본 |
-| Background Soft | `--color-bg-soft: #E7DFD0` | 화면 하단/보조 배경 |
-| Surface | `--color-surface: #DDD4C2` | 보조 패널 |
-| Surface Raised | `--color-surface-raised: #FAF6ED` | 기본 패널/입력 표면 |
-| Accent | `--color-accent: #6F5F2D` | 브라스/올리브 계열 CTA 또는 핵심 미션 1개 |
-| Accent Ink | `--color-accent-ink: #F9F2DF` | 강조색 위 텍스트 |
-| Text Primary | `--color-ink: #15130F` | 본문 |
-| Text Secondary | `--color-muted: #6B6558` | 보조 텍스트 |
-| Line | `--color-line: rgba(21,19,15,0.16)` | 기본 구분선 |
-| Success | `#4ADE80` | 미션 완료 |
+| Background | `--color-bg: #F8F9FA` | 앱 배경 기본 |
+| Background Soft | `--color-bg-soft: #F3F4F5` | 화면 하단/보조 배경 |
+| Surface | `--color-surface: #EDEEEF` | 보조 패널 |
+| Surface Raised | `--color-surface-raised: #FFFFFF` | 기본 패널/입력 표면 |
+| Accent | `--color-accent: #1B263B` | 네이비 CTA 또는 핵심 미션 1개 |
+| Accent Ink | `--color-accent-ink: #FFFFFF` | 강조색 위 텍스트 |
+| Text Primary | `--color-ink: #051125` | 본문 |
+| Text Secondary | `--color-muted: #45474D` | 보조 텍스트 |
+| Line | `--color-line: rgba(69,71,77,0.18)` | 예외적 구분선 |
+| Success | `#002D1C` | 미션 완료/주요 액션 |
 | Error | `#F87171` | 실패/경고 |
 
 색상은 `app/globals.css`의 CSS variable을 기준으로 관리한다.
@@ -40,7 +43,7 @@ Tailwind theme 색상도 이 variable을 참조한다.
 
 ### 타이포그래피
 
-- **폰트**: Pretendard (한글), Inter (영문)
+- **폰트**: Manrope (영문 헤드라인), Pretendard (한글), Inter (유틸리티)
 - **헤드라인**: 32px / Bold / 자간 -0.5px
 - **서브헤드**: 20px / SemiBold
 - **본문**: 16px / Regular / 행간 1.6

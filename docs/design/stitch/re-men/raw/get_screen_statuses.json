@@ -1,0 +1,44 @@
+[
+  {
+    "title": "Add to Closet",
+    "id": "1f46ab21482240b4a6471725be7d7ca7",
+    "status": "ok",
+    "path": "docs/design/stitch/re-men/raw/get_screen_1f46ab21482240b4a6471725be7d7ca7.json"
+  },
+  {
+    "title": "Design System",
+    "id": "asset-stub-assets-21ecec1aecdf41888e0e858dadf21546-1776652141349",
+    "status": "error",
+    "error": "Error: Tool Call Failed [get_screen]: Requested entity was not found."
+  },
+  {
+    "title": "Home Screen",
+    "id": "c8d43704a5f44e6cb15bf553a18bd463",
+    "status": "ok",
+    "path": "docs/design/stitch/re-men/raw/get_screen_c8d43704a5f44e6cb15bf553a18bd463.json"
+  },
+  {
+    "title": "Style Analysis",
+    "id": "df3f025a6c5742bb8948e2af09efa977",
+    "status": "ok",
+    "path": "docs/design/stitch/re-men/raw/get_screen_df3f025a6c5742bb8948e2af09efa977.json"
+  },
+  {
+    "title": "옷장 등록",
+    "id": "0673f110c926411f99f8c1f19bde0360",
+    "status": "ok",
+    "path": "docs/design/stitch/re-men/raw/get_screen_0673f110c926411f99f8c1f19bde0360.json"
+  },
+  {
+    "title": "홈 화면",
+    "id": "100001f60a8f4e59a4b1e0ef58198ae3",
+    "status": "ok",
+    "path": "docs/design/stitch/re-men/raw/get_screen_100001f60a8f4e59a4b1e0ef58198ae3.json"
+  },
+  {
+    "title": "스타일 분석 결과",
+    "id": "ce0a7529079f4d3493d6f910fa16b61e",
+    "status": "ok",
+    "path": "docs/design/stitch/re-men/raw/get_screen_ce0a7529079f4d3493d6f910fa16b61e.json"
+  }
+]

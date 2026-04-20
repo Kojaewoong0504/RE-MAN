@@ -1,0 +1,76 @@
+[
+  {
+    "title": "Add to Closet",
+    "id": "1f46ab21482240b4a6471725be7d7ca7",
+    "status": "downloaded",
+    "deviceType": "MOBILE",
+    "width": "780",
+    "height": "2436",
+    "dir": "docs/design/stitch/re-men/Add-to-Closet",
+    "html": "docs/design/stitch/re-men/Add-to-Closet/screen.html",
+    "image": "docs/design/stitch/re-men/Add-to-Closet/screen.png"
+  },
+  {
+    "title": "Design System",
+    "id": "asset-stub-assets-21ecec1aecdf41888e0e858dadf21546-1776652141349",
+    "status": "error",
+    "error": "Error: Tool Call Failed [get_screen]: Requested entity was not found.",
+    "html": null,
+    "image": null
+  },
+  {
+    "title": "Home Screen",
+    "id": "c8d43704a5f44e6cb15bf553a18bd463",
+    "status": "downloaded",
+    "deviceType": "MOBILE",
+    "width": "780",
+    "height": "4146",
+    "dir": "docs/design/stitch/re-men/Home-Screen",
+    "html": "docs/design/stitch/re-men/Home-Screen/screen.html",
+    "image": "docs/design/stitch/re-men/Home-Screen/screen.png"
+  },
+  {
+    "title": "Style Analysis",
+    "id": "df3f025a6c5742bb8948e2af09efa977",
+    "status": "downloaded",
+    "deviceType": "MOBILE",
+    "width": "780",
+    "height": "6282",
+    "dir": "docs/design/stitch/re-men/Style-Analysis",
+    "html": "docs/design/stitch/re-men/Style-Analysis/screen.html",
+    "image": "docs/design/stitch/re-men/Style-Analysis/screen.png"
+  },
+  {
+    "title": "옷장 등록",
+    "id": "0673f110c926411f99f8c1f19bde0360",
+    "status": "downloaded",
+    "deviceType": "MOBILE",
+    "width": "780",
+    "height": "2392",
+    "dir": "docs/design/stitch/re-men/옷장-등록",
+    "html": "docs/design/stitch/re-men/옷장-등록/screen.html",
+    "image": "docs/design/stitch/re-men/옷장-등록/screen.png"
+  },
+  {
+    "title": "홈 화면",
+    "id": "100001f60a8f4e59a4b1e0ef58198ae3",
+    "status": "downloaded",
+    "deviceType": "MOBILE",
+    "width": "780",
+    "height": "4122",
+    "dir": "docs/design/stitch/re-men/홈-화면",
+    "html": "docs/design/stitch/re-men/홈-화면/screen.html",
+    "image": "docs/design/stitch/re-men/홈-화면/screen.png"
+  },
+  {
+    "title": "스타일 분석 결과",
+    "id": "ce0a7529079f4d3493d6f910fa16b61e",
+    "status": "downloaded",
+    "deviceType": "MOBILE",
+    "width": "780",
+    "height": "6048",
+    "dir": "docs/design/stitch/re-men/스타일-분석-결과",
+    "html": "docs/design/stitch/re-men/스타일-분석-결과/screen.html",
+    "image": "docs/design/stitch/re-men/스타일-분석-결과/screen.png"
+  }
+]

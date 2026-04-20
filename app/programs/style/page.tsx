@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AccountAccessButton } from "@/components/common/AccountAccessButton";
-import { BottomCTA } from "@/components/common/BottomCTA";
 import {
   getStyleProgramStatus,
   readOnboardingState,
@@ -51,16 +50,19 @@ export default function StyleProgramPage() {
             priority
             src={styleProgramImage}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 space-y-4 p-5 text-[var(--color-bg)]">
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-ink)] via-[rgba(5,17,37,0.38)] to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 space-y-4 p-6 text-[var(--color-bg)]">
             <div>
               <p className="poster-kicker text-[var(--color-bg)]/60">Style Check</p>
               <h1 className="mt-3 text-[42px] font-black leading-[0.95] tracking-[-0.07em]">
                 사진 올리고 조합 받기
               </h1>
+              <p className="mt-3 max-w-[260px] text-sm font-bold leading-6 text-white/72">
+                전신 사진과 옷장 기록을 기준으로 오늘 바꿀 조합 하나를 고릅니다.
+              </p>
             </div>
             <Link className="hero-inline-cta" href={startPath}>
-              <span>{startLabel}</span>
+              <span>{bottomLabel}</span>
               <span>→</span>
             </Link>
           </div>
@@ -82,17 +84,13 @@ export default function StyleProgramPage() {
         </section>
 
       </div>
-      <div className="space-y-3 pb-24">
+      <div className="pb-24 pt-5">
         <Link
           className="block text-center text-sm font-black text-muted underline underline-offset-4"
           href="/programs"
         >
           다른 프로그램 보기
         </Link>
-        <BottomCTA
-          href={startPath}
-          label={bottomLabel}
-        />
       </div>
     </main>
   );

@@ -72,9 +72,9 @@ export default function SurveyPage() {
             평가가 아니라 다음 행동을 정하기 위한 기준선입니다.
           </p>
         </div>
-        <section className="grid grid-cols-3 border-y border-black/15 py-4 text-center">
+        <section className="survey-proof-strip">
           {["3분 안에 끝", "판단 없음", "구매 강요 없음"].map((item) => (
-            <p key={item} className="text-[12px] font-black tracking-[-0.02em] text-ink">
+            <p key={item}>
               {item}
             </p>
           ))}
@@ -111,7 +111,7 @@ export default function SurveyPage() {
         title="한 달 스타일링 예산은?"
         value={survey.budget}
       />
-      <section className="space-y-3 border-t border-black/15 pt-6 pb-24">
+      <section className="survey-note-panel">
         <p className="poster-kicker">Why it works</p>
         <p className="max-w-md text-lg font-black leading-7 tracking-tight text-ink">
           여기서 정한 답변은 평가가 아니라, 지금 가진 조건 안에서 가장 현실적인 변화를

@@ -39,7 +39,6 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfileDocument | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [programSnapshot, setProgramSnapshot] =
     useState<StyleProgramSnapshot>(emptyProgramSnapshot);
 
@@ -48,7 +47,6 @@ export default function ProfilePage() {
 
     async function load() {
       setIsLoading(true);
-      setLoadError(null);
 
       const sessionUser = await fetchAuthSession();
 
@@ -71,9 +69,8 @@ export default function ProfilePage() {
           setProfile(nextProfile);
         }
       } catch {
-        if (active) {
-          setLoadError("프로필 로드 실패.");
-        }
+        // Profile sync is optional for the account screen; the session user and
+        // local program state still provide a usable app shell.
       } finally {
         if (active) {
           setIsLoading(false);
@@ -158,12 +155,6 @@ export default function ProfilePage() {
           <p>보호됨</p>
         </div>
       </section>
-
-      {loadError ? (
-        <section className="ui-panel mt-4">
-          <p className="text-sm font-bold leading-6 text-red-700">{loadError}</p>
-        </section>
-      ) : null}
 
       <div className="mt-5">
         <CreditLedger />
