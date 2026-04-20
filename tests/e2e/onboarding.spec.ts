@@ -20,6 +20,9 @@ const invalidGif = {
 async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
+  await expect(page.locator("#closet-photo-upload")).toHaveAttribute("accept", "image/*");
+  await expect(page.locator("#closet-photo-camera")).toHaveAttribute("accept", "image/*");
+  await expect(page.locator("#closet-photo-camera")).toHaveAttribute("capture", "environment");
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
   await page.getByRole("button", { name: /선택 정보 열기/ }).click();
@@ -932,6 +935,9 @@ test("closet page saves items into the next style check context", async ({ page 
   await expect(page.getByLabel("아이템 이름")).toHaveCount(0);
   await expect(page.getByLabel("색")).toHaveCount(0);
   await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
+  await expect(page.locator("#closet-photo-upload")).toHaveAttribute("accept", "image/*");
+  await expect(page.locator("#closet-photo-camera")).toHaveAttribute("accept", "image/*");
+  await expect(page.locator("#closet-photo-camera")).toHaveAttribute("capture", "environment");
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
   await page.getByRole("button", { name: /선택 정보 열기/ }).click();

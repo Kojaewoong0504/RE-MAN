@@ -4,7 +4,8 @@ import { useState } from "react";
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import type { ClosetItem, ClosetItemCategory } from "@/lib/onboarding/storage";
-import { validatePhotoFile } from "@/lib/upload/photo-input";
+import { normalizePhotoForBrowserUpload } from "@/lib/upload/browser-normalize";
+import { IMAGE_INPUT_ACCEPT, validatePhotoFile } from "@/lib/upload/photo-input";
 
 const categoryOptions: Array<{ value: ClosetItemCategory; label: string }> = [
   { value: "tops", label: "상의" },
@@ -31,8 +32,6 @@ const wearStateOptions = ["선택 안 함", "조금 작음", "잘 맞음", "조�
 const wearFrequencyOptions = ["선택 안 함", "자주 입음", "가끔 입음", "거의 안 입음"];
 const seasonOptions = ["선택 안 함", "봄/가을", "여름", "겨울", "사계절"];
 const conditionOptions = ["선택 안 함", "깨끗함", "사용감 있음", "수선 필요", "오염 있음"];
-const CLOSET_IMAGE_MAX_EDGE = 900;
-const CLOSET_IMAGE_QUALITY = 0.76;
 
 function createClosetItemId() {
   return `closet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -51,45 +50,6 @@ function getItemDisplayName(item: ClosetItem) {
   }
 
   return `${color} ${name}`;
-}
-
-function readImage(file: File) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("image_load_failed"));
-    };
-    image.src = url;
-  });
-}
-
-async function normalizeClosetPhoto(file: File) {
-  const image = await readImage(file);
-  const scale = Math.min(
-    1,
-    CLOSET_IMAGE_MAX_EDGE / Math.max(image.naturalWidth, image.naturalHeight)
-  );
-  const width = Math.max(1, Math.round(image.naturalWidth * scale));
-  const height = Math.max(1, Math.round(image.naturalHeight * scale));
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    throw new Error("canvas_context_unavailable");
-  }
-
-  canvas.width = width;
-  canvas.height = height;
-  context.drawImage(image, 0, 0, width, height);
-
-  return canvas.toDataURL("image/jpeg", CLOSET_IMAGE_QUALITY);
 }
 
 export function ClosetInventoryEditor({
@@ -191,9 +151,9 @@ export function ClosetInventoryEditor({
     }
 
     try {
-      setPhotoDataUrl(await normalizeClosetPhoto(file));
+      setPhotoDataUrl(await normalizePhotoForBrowserUpload(file));
     } catch {
-      setPhotoError("옷장 사진을 읽지 못했습니다. 다른 사진을 선택해 주세요.");
+      setPhotoError("사진을 처리하지 못했습니다. JPG 또는 PNG 사진을 다시 선택해주세요.");
       setPhotoDataUrl("");
     }
   }
@@ -451,13 +411,38 @@ export function ClosetInventoryEditor({
                 )}
               </div>
               <div className="closet-photo-first-actions">
-                <label className="ui-button cursor-pointer py-4" htmlFor="closet-photo-upload">
-                  {photoDataUrl ? "사진 다시 선택" : "사진 선택"}
-                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="ui-button cursor-pointer py-4" htmlFor="closet-photo-upload">
+                    {photoDataUrl ? "다시 선택" : "사진 선택"}
+                  </label>
+                  <label
+                    className="ui-button-secondary cursor-pointer justify-center py-4"
+                    htmlFor="closet-photo-camera"
+                  >
+                    카메라 촬영
+                  </label>
+                </div>
                 <input
-                  accept="image/png,image/jpeg,image/webp"
+                  accept={IMAGE_INPUT_ACCEPT}
                   className="sr-only"
                   id="closet-photo-upload"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+
+                    if (!file) {
+                      return;
+                    }
+
+                    await handlePhotoChange(file);
+                    event.target.value = "";
+                  }}
+                  type="file"
+                />
+                <input
+                  accept={IMAGE_INPUT_ACCEPT}
+                  capture="environment"
+                  className="sr-only"
+                  id="closet-photo-camera"
                   onChange={async (event) => {
                     const file = event.target.files?.[0];
 
