@@ -426,7 +426,13 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await page.getByRole("link", { name: "스타일 체크 시작 →" }).click();
   await expect(page).toHaveURL(/\/programs\/style$/);
   await expect(page.getByText("체크 3회")).toBeVisible();
-  await page.getByRole("link", { name: "스타일 프로그램 시작하기" }).click();
+  await page
+    .getByRole("region", { name: "스타일 체크 다음 행동" })
+    .getByRole("link", { name: "옷장 채우기" })
+    .click();
+  await expect(page).toHaveURL(/\/closet$/);
+  await fillClosetSnapshot(page);
+  await page.getByRole("button", { name: "이 옷장으로 스타일 체크" }).click();
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/survey$/);
   await expect(
     page.getByRole("heading", { name: "지금 스타일이 어때요?" })
@@ -456,7 +462,6 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   ).toBeVisible();
 
   await page.locator("#photo-upload").setInputFiles(tinyPng);
-  await fillUploadContext(page);
 
   const onboardingResponsePromise = page.waitForResponse(
     (response) =>
