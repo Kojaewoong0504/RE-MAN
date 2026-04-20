@@ -12,6 +12,11 @@ describe("photo input validation", () => {
     expect(validatePhotoFile({ type: "image/png", size: 1024 })).toEqual({ ok: true });
   });
 
+  it("accepts mobile HEIC and HEIF photos before client-side normalization", () => {
+    expect(validatePhotoFile({ type: "image/heic", size: 1024 })).toEqual({ ok: true });
+    expect(validatePhotoFile({ type: "image/heif", size: 1024 })).toEqual({ ok: true });
+  });
+
   it("rejects unsupported image types", () => {
     expect(validatePhotoFile({ type: "image/gif", size: 1024 })).toMatchObject({
       ok: false,

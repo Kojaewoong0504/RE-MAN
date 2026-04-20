@@ -4,6 +4,7 @@ import { useState } from "react";
 import NextImage from "next/image";
 import {
   ANALYSIS_IMAGE_QUALITY,
+  IMAGE_INPUT_ACCEPT,
   isValidTextDescription,
   MAX_ANALYSIS_IMAGE_EDGE,
   MIN_TEXT_DESCRIPTION_LENGTH,
@@ -139,7 +140,7 @@ export function PhotoUploader({
             ) : null}
             <input
               className="sr-only"
-              accept="image/png,image/jpeg,image/webp"
+              accept={IMAGE_INPUT_ACCEPT}
               id="photo-upload"
               onChange={async (event) => {
                 const file = event.target.files?.[0];

@@ -2,8 +2,15 @@ export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const MAX_ANALYSIS_IMAGE_EDGE = 1600;
 export const ANALYSIS_IMAGE_QUALITY = 0.85;
 export const MIN_TEXT_DESCRIPTION_LENGTH = 12;
+export const IMAGE_INPUT_ACCEPT = "image/*";
 
-export const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+export const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif"
+]);
 
 export type PhotoFileValidationResult =
   | { ok: true }
@@ -28,7 +35,7 @@ export function validatePhotoFile(input: { type?: string; size?: number }): Phot
     return {
       ok: false,
       reason: "unsupported_type",
-      message: "PNG, JPG, WEBP 이미지만 업로드할 수 있습니다."
+      message: "모바일 사진 앱의 이미지 파일만 업로드할 수 있습니다."
     };
   }
 
@@ -81,7 +88,7 @@ export function validateImageDataUrl(value: unknown): ImageDataUrlValidationResu
     return {
       ok: false,
       reason: "unsupported_type",
-      message: "PNG, JPG, WEBP 이미지만 사용할 수 있습니다."
+      message: "모바일 사진 앱의 이미지 파일만 사용할 수 있습니다."
     };
   }
 

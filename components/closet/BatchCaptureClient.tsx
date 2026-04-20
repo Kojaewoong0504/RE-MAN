@@ -1,14 +1,58 @@
 "use client";
 
-import Image from "next/image";
+import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { normalizeClosetDraft, type ClosetItemDraft } from "@/lib/closet/batch";
 import { patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
-import { validatePhotoFile } from "@/lib/upload/photo-input";
+import {
+  ANALYSIS_IMAGE_QUALITY,
+  IMAGE_INPUT_ACCEPT,
+  MAX_ANALYSIS_IMAGE_EDGE,
+  validatePhotoFile
+} from "@/lib/upload/photo-input";
 
 function createDraftId() {
   return `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function readImage(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("image_load_failed"));
+    };
+    image.src = url;
+  });
+}
+
+async function normalizeImageForDraft(file: File) {
+  const image = await readImage(file);
+  const scale = Math.min(
+    1,
+    MAX_ANALYSIS_IMAGE_EDGE / Math.max(image.naturalWidth, image.naturalHeight)
+  );
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("canvas_context_unavailable");
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  context.drawImage(image, 0, 0, width, height);
+
+  return canvas.toDataURL("image/jpeg", ANALYSIS_IMAGE_QUALITY);
 }
 
 function readAsDataUrl(file: File) {
@@ -81,7 +125,7 @@ export function BatchCaptureClient() {
       nextDrafts.push(
         normalizeClosetDraft({
           id: createDraftId(),
-          photo_data_url: await readAsDataUrl(file),
+          photo_data_url: await normalizeImageForDraft(file).catch(() => readAsDataUrl(file)),
           analysis_status: "pending"
         })
       );
@@ -147,7 +191,7 @@ export function BatchCaptureClient() {
       <label className="closet-batch-dropzone">
         <span>사진 여러 장 선택</span>
         <input
-          accept="image/*"
+          accept={IMAGE_INPUT_ACCEPT}
           className="sr-only"
           multiple
           onChange={(event) => void handleFiles(event.target.files)}
@@ -159,7 +203,7 @@ export function BatchCaptureClient() {
         <span>카메라로 한 장씩 추가</span>
         <small>모바일 브라우저는 카메라 촬영을 보통 한 장씩 처리합니다.</small>
         <input
-          accept="image/*"
+          accept={IMAGE_INPUT_ACCEPT}
           capture="environment"
           className="sr-only"
           onChange={(event) => void handleFiles(event.target.files)}
@@ -173,7 +217,7 @@ export function BatchCaptureClient() {
         {drafts.map((draft) => (
           <article className="closet-batch-tile" key={draft.id}>
             {draft.photo_data_url ? (
-              <Image
+              <NextImage
                 alt="옷장 등록 후보"
                 height={180}
                 src={draft.photo_data_url}
