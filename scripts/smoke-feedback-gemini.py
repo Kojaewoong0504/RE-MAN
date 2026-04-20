@@ -11,11 +11,43 @@ import urllib.error
 import urllib.request
 import zlib
 from os import environ
+from pathlib import Path
 
 
 BASE_URL = environ.get("SMOKE_BASE_URL", "http://127.0.0.1:3001")
 TIMEOUT_SECONDS = int(environ.get("SMOKE_TIMEOUT_SECONDS", "70"))
-AUTH_JWT_SECRET = environ.get("AUTH_JWT_SECRET", "development-auth-secret-change-me")
+
+
+def load_env_value(name: str, fallback: str = "") -> str:
+    if environ.get(name):
+        return environ[name]
+
+    for env_file in [".env.vercel.local", ".env.local"]:
+        path = Path(env_file)
+        if not path.exists():
+            continue
+
+        for line in path.read_text().splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+
+            key, value = stripped.split("=", 1)
+            if key.strip() != name:
+                continue
+
+            value = value.strip()
+            if (
+                (value.startswith('"') and value.endswith('"'))
+                or (value.startswith("'") and value.endswith("'"))
+            ):
+                value = value[1:-1]
+            return value
+
+    return fallback
+
+
+AUTH_JWT_SECRET = load_env_value("AUTH_JWT_SECRET", "development-auth-secret-change-me")
 
 
 def base64url(data: bytes) -> str:
@@ -202,7 +234,16 @@ def main() -> int:
         )
         return 1
 
-    required = ["diagnosis", "improvements", "recommended_outfit", "today_action", "day1_mission"]
+    required = [
+        "diagnosis",
+        "improvements",
+        "recommended_outfit",
+        "today_action",
+        "day1_mission",
+        "credits_charged",
+        "credits_remaining",
+        "credit_reference_id",
+    ]
     missing = [field for field in required if field not in data]
     if missing:
         print(
@@ -242,6 +283,22 @@ def main() -> int:
         )
         return 1
 
+    if data.get("credits_charged") != 1:
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "status": status,
+                    "duration_ms": duration_ms,
+                    "error": "style feedback did not charge exactly one credit",
+                    "credits_charged": data.get("credits_charged"),
+                    "credits_remaining": data.get("credits_remaining"),
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 1
+
     print(
         json.dumps(
             {
@@ -250,6 +307,8 @@ def main() -> int:
                 "duration_ms": duration_ms,
                 "recommended_outfit": data["recommended_outfit"].get("title"),
                 "source_item_ids": data["recommended_outfit"].get("source_item_ids"),
+                "credits_charged": data.get("credits_charged"),
+                "credits_remaining": data.get("credits_remaining"),
             },
             ensure_ascii=False,
         )

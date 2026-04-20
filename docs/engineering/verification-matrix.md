@@ -19,9 +19,13 @@
 | `npm run check:architecture` | 구조 규칙 검증 | architecture harness 통과 |
 | `npm run check:gc` | 문서/코드 drift와 GC 규칙 검증 | gc harness 통과 |
 | `npm run check:mvp` | MVP critical path와 verification matrix 문서/스크립트 연결 검증 | MVP harness 통과 |
+| `npm run check:deploy` | 배포 환경에서 기능별 real AI/mock, 크레딧 경계, 필수 env 상태 확인 | deployment readiness 통과 또는 mock/미구현 경고 확인 |
+| `npm run check:deploy:strict` | 실제 AI/크레딧 시나리오로 보고 가능한지 강제 검증 | strict deployment readiness 통과 |
+| `npm run check:deploy:vercel` | Vercel production env를 pull한 뒤 strict readiness 검증 | Vercel production readiness 통과 |
 | `npm run test:e2e` | mock provider 기반 브라우저 사용자 흐름 검증 | mock E2E 통과 |
 | `npm run smoke:feedback:gemini` | 실제 Gemini API 응답 계약 검증 | 실제 Gemini API 계약 통과 |
 | `npm run smoke:feedback:browser` | 브라우저 업로드 흐름과 실제 Gemini 경계 검증 | 브라우저 업로드와 실제 Gemini 경계 통과 |
+| `npm run smoke:closet:gemini` | 옷장 AI 초안 API가 실제 Gemini provider와 크레딧 차감을 통과 | 실제 옷장 AI+크레딧 smoke 통과 |
 | `npm run visual:app` | 홈, 스타일, 업로드, 분석, 결과, 옷장, 기록, 내 정보, 설정 화면의 캡처 생성 | visual smoke 통과 및 산출물 확인 |
 | `npm run build` | Next.js production build 가능 | build 통과 |
 
@@ -29,7 +33,8 @@
 
 | Feature | Required verification | Commands | Reporting limit |
 |---|---|---|---|
-| Closet batch capture | Unit + integration + E2E + visual | `npm run test:unit -- tests/unit/closet-batch.test.ts`, `npm run test:integration -- tests/integration/closet-analyze-route.test.ts`, `npm run test:e2e`, `npm run visual:app` | mock provider only unless `CLOSET_ANALYSIS_PROVIDER=gemini` smoke exists |
+| Closet batch capture | Unit + integration + E2E + visual + real provider smoke | `npm run test:unit -- tests/unit/closet-batch.test.ts`, `npm run test:integration -- tests/integration/closet-analyze-route.test.ts`, `npm run test:e2e`, `npm run visual:app`, `npm run smoke:closet:gemini` | mock provider only unless `CLOSET_ANALYSIS_PROVIDER=gemini` smoke passes |
+| Deployed real AI + credits | Env readiness + provider smoke + credit route tests | `npm run check:deploy:strict`, `npm run smoke:feedback:gemini`, `npm run test:integration -- tests/integration/feedback-route.test.ts tests/integration/credit-transactions-route.test.ts` | 배포 URL smoke 전에는 로컬/환경 readiness까지만 보고 |
 
 ## Sequential Commands
 
@@ -49,6 +54,7 @@
 - `npm run visual:app`을 실행하지 않고 UI 배치가 확인됐다고 말하지 않는다.
 - 실패한 명령이 있으면 숨기지 않는다.
 - 실패는 `auth`, `credit`, `payload`, `provider`, `storage`, `ui`, `visual`, `harness` 중 하나로 분류한다.
+- `npm run check:deploy` 경고를 무시하고 배포 기능이 실제 AI/크레딧으로 동작한다고 말하지 않는다.
 
 ## Visual Evidence
 

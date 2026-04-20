@@ -31,6 +31,8 @@ const FEEDBACK_RATE_LIMIT = {
   windowMs: 60 * 1000
 };
 
+export const maxDuration = 60;
+
 function getStorageFailureMode(request: Request): StorageFailureMode {
   const value = request.headers.get("x-harness-storage-failure-mode");
   return value === "upload" || value === "delete" ? value : "none";

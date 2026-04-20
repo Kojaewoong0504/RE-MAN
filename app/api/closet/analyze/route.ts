@@ -1,6 +1,24 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedSessionUser } from "@/lib/auth/session-user";
 import { analyzeClosetImage } from "@/lib/closet/analysis-provider";
+import {
+  CLOSET_ANALYSIS_CREDIT_COST,
+  InsufficientCreditsError,
+  refundCredits,
+  reserveEntitledUsage
+} from "@/lib/credits/server";
+
+export const maxDuration = 60;
+
+function getIdempotencyKey(request: Request) {
+  const value = request.headers.get("Idempotency-Key")?.trim();
+
+  if (!value) {
+    return null;
+  }
+
+  return value.slice(0, 160);
+}
 
 export async function POST(request: Request) {
   const user = await getAuthenticatedSessionUser().catch((error) => {
@@ -26,10 +44,52 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_image" }, { status: 400 });
   }
 
+  let chargedCredits = false;
+  let creditReferenceId = crypto.randomUUID();
+  const idempotencyKey = getIdempotencyKey(request);
+
   try {
+    const entitlement = reserveEntitledUsage(user.uid, CLOSET_ANALYSIS_CREDIT_COST, {
+      reason: "closet_analysis",
+      referenceId: creditReferenceId,
+      idempotencyKey
+    });
+    chargedCredits = entitlement.charged && !entitlement.credits.idempotent_replay;
+    creditReferenceId = entitlement.credits.replayed_reference_id ?? creditReferenceId;
+
     const result = await analyzeClosetImage({ image: (body as { image: string }).image });
-    return NextResponse.json(result);
+    return NextResponse.json({
+      ...result,
+      credits_charged:
+        entitlement.charged && !entitlement.credits.idempotent_replay
+          ? CLOSET_ANALYSIS_CREDIT_COST
+          : 0,
+      credits_remaining: entitlement.credits.balance,
+      subscription_active: entitlement.credits.subscription_active,
+      idempotent_replay: entitlement.credits.idempotent_replay,
+      credit_reference_id: creditReferenceId
+    });
   } catch (error) {
+    if (error instanceof InsufficientCreditsError) {
+      return NextResponse.json(
+        {
+          error: "insufficient_credits",
+          message: "옷장 AI 초안에 필요한 크레딧이 부족합니다.",
+          credits_remaining: error.balance,
+          credits_required: error.cost
+        },
+        { status: 402 }
+      );
+    }
+
+    if (chargedCredits) {
+      refundCredits(user.uid, CLOSET_ANALYSIS_CREDIT_COST, {
+        reason: "closet_analysis_failed_refund",
+        referenceId: creditReferenceId,
+        idempotencyKey
+      });
+    }
+
     const message = error instanceof Error ? error.message : "analysis_failed";
     return NextResponse.json({ error: message }, { status: 502 });
   }

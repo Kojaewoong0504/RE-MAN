@@ -34,8 +34,12 @@ CHECKS = [
             "`npm run test:e2e`",
             "`npm run smoke:feedback:gemini`",
             "`npm run smoke:feedback:browser`",
+            "`npm run smoke:closet:gemini`",
             "`npm run visual:app`",
             "`npm run build`",
+            "`npm run check:deploy`",
+            "`npm run check:deploy:strict`",
+            "`npm run check:deploy:vercel`",
             "mock E2E 통과",
             "실제 Gemini API 계약 통과",
             "visual smoke 통과 및 산출물 확인",
@@ -48,8 +52,10 @@ CHECKS = [
         "patterns": [
             "docs/product/mvp-critical-path.md",
             "docs/engineering/verification-matrix.md",
+            "npm run check:deploy:strict",
             "mock E2E",
             "실제 Gemini API 계약",
+            "실제 옷장 AI+크레딧 smoke",
             "브라우저 업로드와 실제 Gemini 경계",
             "UI 배치 확인",
         ],
@@ -60,6 +66,7 @@ CHECKS = [
         "patterns": [
             "mvp-critical-path.md",
             "verification-matrix.md",
+            "deployment-readiness.md",
         ],
     },
 ]
@@ -146,6 +153,15 @@ def check_package_scripts() -> list[str]:
 
     if "npm run check:mvp" not in aggregate_check:
         failures.append("package.json script check must include npm run check:mvp")
+
+    if "check:deploy" not in scripts:
+        failures.append("package.json script check:deploy is missing")
+
+    if "check:deploy:strict" not in scripts:
+        failures.append("package.json script check:deploy:strict is missing")
+
+    if "check:deploy:vercel" not in scripts:
+        failures.append("package.json script check:deploy:vercel is missing")
 
     for pattern in PACKAGE_SCRIPT_PATTERNS:
         if pattern not in package_text:

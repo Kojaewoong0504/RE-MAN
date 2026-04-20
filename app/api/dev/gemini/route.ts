@@ -4,6 +4,8 @@ import {
   resolveAiProvider
 } from "@/lib/agents/gemini";
 
+export const maxDuration = 60;
+
 export async function POST() {
   try {
     const provider = resolveAiProvider();
@@ -30,7 +32,7 @@ export async function POST() {
       },
       feedback_history: []
     }, {
-      timeoutMs: 15000,
+      timeoutMs: Number(process.env.GEMINI_REQUEST_TIMEOUT_MS ?? 60000),
       maxRetries: 0,
       instructionMode: "smoke"
     });

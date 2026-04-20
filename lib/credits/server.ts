@@ -1,6 +1,7 @@
 export const INITIAL_FREE_CREDITS = 3;
 export const INITIAL_EVENT_CREDITS = INITIAL_FREE_CREDITS;
 export const STYLE_FEEDBACK_CREDIT_COST = 1;
+export const CLOSET_ANALYSIS_CREDIT_COST = 1;
 export const TRY_ON_CREDIT_COST = 1;
 
 type CreditAccount = {
@@ -43,6 +44,7 @@ export type CreditBalance = {
   subscription_active: boolean;
   included_free_credits: number;
   style_feedback_cost: number;
+  closet_analysis_cost: number;
   try_on_cost: number;
   source: "memory";
 };
@@ -231,6 +233,7 @@ export function getCreditBalance(userId: string): CreditBalance {
     subscription_active: account.subscriptionActive,
     included_free_credits: INITIAL_EVENT_CREDITS,
     style_feedback_cost: STYLE_FEEDBACK_CREDIT_COST,
+    closet_analysis_cost: CLOSET_ANALYSIS_CREDIT_COST,
     try_on_cost: TRY_ON_CREDIT_COST,
     source: "memory"
   };

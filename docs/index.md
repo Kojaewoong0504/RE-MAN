@@ -39,6 +39,7 @@
 - [reliability.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/reliability.md)
 - [save-gate.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/save-gate.md)
 - [verification-matrix.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/verification-matrix.md)
+- [deployment-readiness.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/deployment-readiness.md)
 - [required-checks.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/required-checks.md)
 - [hook-verification.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/hook-verification.md)
 - [codex-orchestrator.md](/Users/gojaewoong/Desktop/ko/nerd/docs/engineering/codex-orchestrator.md)
