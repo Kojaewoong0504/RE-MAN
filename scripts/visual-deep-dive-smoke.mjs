@@ -162,7 +162,7 @@ async function captureScenario(browser, scenario) {
   const page = await context.newPage();
   const artifacts = [
     `${outputDir}/${scenario.id}-01-result.png`,
-    `${outputDir}/${scenario.id}-02-improvements-open.png`
+    `${outputDir}/${scenario.id}-02-feedback-saved.png`
   ];
 
   await setupDeterministicRoutes(page);
@@ -173,10 +173,15 @@ async function captureScenario(browser, scenario) {
     await expect(page.getByText(/^provider:/)).toHaveCount(0);
     await expect(page.getByRole("button", { name: /핏 더 보기/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /레퍼런스\/실착 보기/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /바꿀 점 3개 보기/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /조합 느낌 보기/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /사이즈 후보 보기/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /계정 저장 열기/ })).toHaveCount(0);
     await page.screenshot({ fullPage: true, path: artifacts[0] });
 
-    await page.getByRole("button", { name: /바꿀 점 3개 보기/ }).click();
-    await expect(page.getByText("검정 슬랙스 주름을 줄이면 훨씬 단정해 보입니다.")).toBeVisible();
+    await page.getByRole("button", { name: /도움됨/ }).click();
+    await page.getByRole("button", { name: "추천 반응 저장" }).click();
+    await expect(page.getByText("다음 스타일 체크에 이 반응을 함께 반영합니다.")).toBeVisible();
     await page.screenshot({ fullPage: true, path: artifacts[1] });
 
     return {
@@ -184,7 +189,7 @@ async function captureScenario(browser, scenario) {
       artifacts,
       verified: [
         `${scenario.label}: result page renders seeded feedback`,
-        `${scenario.label}: improvements expand without server traffic controls`,
+        `${scenario.label}: recommendation feedback saves without extra feature panels`,
         `${scenario.label}: deep-dive and try-on entry points are hidden`,
         `${scenario.label}: developer provider label is hidden`
       ]
