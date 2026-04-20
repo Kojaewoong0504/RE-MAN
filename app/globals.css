@@ -321,16 +321,18 @@ a {
 
   .result-next-action {
     @apply rounded-2xl p-4;
-    border-color: var(--color-line);
-    background: var(--color-surface-raised);
+    background: var(--color-ink);
+    color: var(--color-bg);
   }
 
   .result-next-action span {
-    @apply text-[10px] font-black uppercase tracking-[0.2em] text-muted;
+    @apply text-[10px] font-black uppercase tracking-[0.2em];
+    color: rgba(248, 249, 250, 0.58);
   }
 
   .result-next-action p {
-    @apply mt-2 text-[22px] font-black leading-7 tracking-[-0.05em] text-ink;
+    @apply mt-2 text-[22px] font-black leading-7 tracking-[-0.05em];
+    color: var(--color-bg);
   }
 
   .result-action-plan {
@@ -339,19 +341,23 @@ a {
 
   .result-action-plan li {
     @apply grid grid-cols-[32px_1fr] items-start gap-3 rounded-xl p-3;
-    background: var(--color-bg);
+    background: rgba(248, 249, 250, 0.1);
   }
 
   .result-action-plan b {
-    @apply flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-ink)] text-xs font-black text-[var(--color-bg)];
+    @apply flex h-8 w-8 items-center justify-center rounded-full text-xs font-black;
+    background: var(--color-bg);
+    color: var(--color-ink);
   }
 
   .result-action-plan strong {
-    @apply block text-sm font-black leading-5 text-ink;
+    @apply block text-sm font-black leading-5;
+    color: var(--color-bg);
   }
 
   .result-action-plan small {
-    @apply mt-1 block text-xs font-bold leading-5 text-muted;
+    @apply mt-1 block text-xs font-bold leading-5;
+    color: rgba(248, 249, 250, 0.66);
   }
 
   .result-closet-basis {

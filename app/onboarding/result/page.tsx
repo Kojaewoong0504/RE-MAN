@@ -259,6 +259,24 @@ export default function ResultPage() {
             </div>
           </section>
 
+          {todayPlan ? (
+            <section className="result-next-action">
+              <span>오늘 실행 3단계</span>
+              <p>{compactUiText(todayPlan.summary, 50)}</p>
+              <ol className="result-action-plan">
+                {todayPlan.steps.map((step, index) => (
+                  <li key={step.title}>
+                    <b>{index + 1}</b>
+                    <span>
+                      <strong>{step.title}</strong>
+                      <small>{step.detail}</small>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
+
           <section aria-label="추천에 사용된 옷" className="result-closet-basis">
             <div className="result-section-heading">
               <p className="poster-kicker">Closet Basis</p>
@@ -290,24 +308,6 @@ export default function ResultPage() {
               </div>
             )}
           </section>
-
-          {todayPlan ? (
-            <section className="result-next-action">
-              <span>오늘 실행 3단계</span>
-              <p>{compactUiText(todayPlan.summary, 50)}</p>
-              <ol className="result-action-plan">
-                {todayPlan.steps.map((step, index) => (
-                  <li key={step.title}>
-                    <b>{index + 1}</b>
-                    <span>
-                      <strong>{step.title}</strong>
-                      <small>{step.detail}</small>
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          ) : null}
 
           <section className="result-collapsible-panel">
             <div className="space-y-1">
