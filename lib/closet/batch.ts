@@ -120,6 +120,22 @@ export function selectAnalyzableDrafts(drafts: ClosetItemDraft[]) {
   );
 }
 
+export function getClosetBatchSummary(drafts: ClosetItemDraft[]) {
+  const visibleDrafts = drafts.filter((draft) => !draft.deleted);
+  const reviewDrafts = visibleDrafts.filter(
+    (draft) => draft.analysis_status === "needs_review"
+  );
+
+  return {
+    selectedCount: drafts.length,
+    visibleCount: visibleDrafts.length,
+    analyzableCount: selectAnalyzableDrafts(drafts).length,
+    reviewCount: reviewDrafts.length,
+    saveableCount: selectSaveableDrafts(drafts).length,
+    deletedCount: drafts.length - visibleDrafts.length
+  };
+}
+
 export function getClosetDraftAnalysisIdempotencyKey(draftId: string) {
   const normalizedId = draftId
     .trim()

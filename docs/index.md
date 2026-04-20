@@ -80,6 +80,8 @@
 - [2026-04-20-stitch-sartorial-slate-redesign.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-20-stitch-sartorial-slate-redesign.md)
 - [2026-04-20-closet-batch-capture-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-20-closet-batch-capture-design.md)
 - [2026-04-20-closet-batch-capture.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-20-closet-batch-capture.md)
+- [2026-04-20-closet-batch-ux-v2-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-20-closet-batch-ux-v2-design.md)
+- [2026-04-20-closet-batch-ux-v2.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-20-closet-batch-ux-v2.md)
 
 ### Incidents
 

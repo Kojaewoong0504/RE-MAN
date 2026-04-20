@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   draftToClosetItem,
+  getClosetBatchSummary,
   selectSaveableDrafts,
   type ClosetItemDraft
 } from "@/lib/closet/batch";
@@ -145,6 +146,7 @@ export function ClosetDraftReviewClient() {
   }
 
   const visibleDrafts = drafts.filter((draft) => !draft.deleted);
+  const summary = getClosetBatchSummary(drafts);
 
   return (
     <section className="closet-review-screen">
@@ -152,6 +154,21 @@ export function ClosetDraftReviewClient() {
         <p className="poster-kicker">Review</p>
         <h1>저장 전 확인</h1>
         <p>AI 초안은 확정 전까지 추천 근거로 쓰지 않습니다.</p>
+      </div>
+
+      <div aria-label="옷장 저장 검토 상태" className="closet-batch-summary">
+        <div>
+          <span>저장 가능</span>
+          <strong>{summary.saveableCount}</strong>
+        </div>
+        <div>
+          <span>확인 필요</span>
+          <strong>{summary.reviewCount}</strong>
+        </div>
+        <div>
+          <span>제외</span>
+          <strong>{summary.deletedCount}</strong>
+        </div>
       </div>
 
       {visibleDrafts.length > 0 ? (

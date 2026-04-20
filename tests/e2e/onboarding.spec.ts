@@ -180,6 +180,49 @@ test("closet batch analysis sends idempotency keys and skips reviewed drafts", a
   });
 });
 
+test("closet batch shows progress summary for bulk capture", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-batch-summary-user");
+
+  await page.addInitScript(({ image }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {},
+        closet_item_drafts: [
+          {
+            id: "draft-pending",
+            photo_data_url: image,
+            analysis_status: "pending"
+          },
+          {
+            id: "draft-review",
+            photo_data_url: image,
+            analysis_status: "needs_review",
+            category: "tops",
+            name: "셔츠"
+          },
+          {
+            id: "draft-deleted",
+            photo_data_url: image,
+            analysis_status: "confirmed",
+            deleted: true,
+            category: "shoes",
+            name: "삭제한 신발"
+          }
+        ]
+      })
+    );
+  }, { image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
+
+  await page.goto("/closet/batch");
+
+  await expect(page.getByLabel("옷장 대량 등록 상태").getByText("선택됨")).toBeVisible();
+  await expect(page.getByLabel("옷장 대량 등록 상태").getByText("3")).toBeVisible();
+  await expect(page.getByLabel("옷장 대량 등록 상태").getByText("분석 대기")).toBeVisible();
+  await expect(page.getByLabel("옷장 대량 등록 상태").getByText("확인 필요")).toBeVisible();
+  await expect(page.getByLabel("옷장 대량 등록 상태").getByText("제외")).toBeVisible();
+});
+
 test("closet review saves confirmed drafts and ignores deleted drafts", async ({ page }) => {
   await addTryOnSession(page, "e2e-closet-review-user");
   const closetSyncRequests: unknown[] = [];
@@ -288,6 +331,49 @@ test("closet review saves confirmed drafts and ignores deleted drafts", async ({
   expect(savedState.closet_items[0].image_url).toBe(
     "https://storage.example.com/closet-draft-top.jpg"
   );
+});
+
+test("closet review shows saveable and review summary", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-review-summary-user");
+
+  await page.addInitScript(({ image }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {},
+        closet_item_drafts: [
+          {
+            id: "draft-saveable",
+            photo_data_url: image,
+            analysis_status: "confirmed",
+            category: "tops",
+            name: "저장할 셔츠"
+          },
+          {
+            id: "draft-review",
+            photo_data_url: image,
+            analysis_status: "needs_review",
+            category: "bottoms",
+            name: "확인할 바지"
+          },
+          {
+            id: "draft-deleted",
+            photo_data_url: image,
+            analysis_status: "confirmed",
+            deleted: true,
+            category: "shoes",
+            name: "제외한 신발"
+          }
+        ]
+      })
+    );
+  }, { image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
+
+  await page.goto("/closet/review");
+
+  await expect(page.getByLabel("옷장 저장 검토 상태").getByText("저장 가능")).toBeVisible();
+  await expect(page.getByLabel("옷장 저장 검토 상태").getByText("확인 필요")).toBeVisible();
+  await expect(page.getByLabel("옷장 저장 검토 상태").getByText("제외")).toBeVisible();
 });
 
 test("closet review can confirm draft categories without opening text edit", async ({ page }) => {

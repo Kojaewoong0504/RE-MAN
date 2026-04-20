@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   getClosetDraftAnalysisIdempotencyKey,
+  getClosetBatchSummary,
   normalizeClosetDraft,
   selectAnalyzableDrafts,
   type ClosetItemDraft
@@ -152,12 +153,34 @@ export function BatchCaptureClient() {
     router.push("/closet/review");
   }
 
+  const summary = getClosetBatchSummary(drafts);
+  const canReview = summary.analyzableCount === 0 && summary.reviewCount + summary.saveableCount > 0;
+
   return (
     <section className="closet-batch-screen">
       <div className="closet-batch-hero">
         <p className="poster-kicker">Batch Capture</p>
         <h1>빠른 옷장 등록</h1>
         <p>여러 장을 한 번에 추가하세요. AI가 초안을 만들고 저장 전 확인만 합니다.</p>
+      </div>
+
+      <div aria-label="옷장 대량 등록 상태" className="closet-batch-summary">
+        <div>
+          <span>선택됨</span>
+          <strong>{summary.selectedCount}</strong>
+        </div>
+        <div>
+          <span>분석 대기</span>
+          <strong>{summary.analyzableCount}</strong>
+        </div>
+        <div>
+          <span>확인 필요</span>
+          <strong>{summary.reviewCount}</strong>
+        </div>
+        <div>
+          <span>제외</span>
+          <strong>{summary.deletedCount}</strong>
+        </div>
       </div>
 
       <label className="closet-batch-dropzone">
@@ -209,10 +232,10 @@ export function BatchCaptureClient() {
       <button
         className="ui-button-accent h-14 w-full"
         disabled={drafts.length === 0 || isAnalyzing}
-        onClick={() => void analyzeDrafts()}
+        onClick={() => (canReview ? router.push("/closet/review") : void analyzeDrafts())}
         type="button"
       >
-        {isAnalyzing ? "분석 중" : "AI 초안 만들기"}
+        {isAnalyzing ? "분석 중" : canReview ? "검토하러 가기" : "AI 초안 만들기"}
       </button>
     </section>
   );

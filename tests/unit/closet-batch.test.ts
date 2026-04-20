@@ -3,6 +3,7 @@ import {
   CONFIDENCE_REVIEW_THRESHOLD,
   draftToClosetItem,
   getClosetDraftAnalysisIdempotencyKey,
+  getClosetBatchSummary,
   normalizeClosetDraft,
   selectAnalyzableDrafts,
   selectSaveableDrafts
@@ -129,5 +130,46 @@ describe("closet batch drafts", () => {
     expect(getClosetDraftAnalysisIdempotencyKey("  draft with spaces  ")).toBe(
       "closet-analyze:draft-with-spaces"
     );
+  });
+
+  it("summarizes batch registration progress for fast review", () => {
+    const summary = getClosetBatchSummary([
+      {
+        id: "draft-pending",
+        photo_data_url: photo,
+        analysis_status: "pending"
+      },
+      {
+        id: "draft-review",
+        photo_data_url: photo,
+        analysis_status: "needs_review",
+        category: "tops",
+        name: "셔츠"
+      },
+      {
+        id: "draft-confirmed",
+        photo_data_url: photo,
+        analysis_status: "confirmed",
+        category: "shoes",
+        name: "스니커즈"
+      },
+      {
+        id: "draft-deleted",
+        photo_data_url: photo,
+        analysis_status: "confirmed",
+        deleted: true,
+        category: "bottoms",
+        name: "삭제한 바지"
+      }
+    ]);
+
+    expect(summary).toEqual({
+      selectedCount: 4,
+      visibleCount: 3,
+      analyzableCount: 1,
+      reviewCount: 1,
+      saveableCount: 1,
+      deletedCount: 1
+    });
   });
 });
