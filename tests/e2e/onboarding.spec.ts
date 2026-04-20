@@ -345,7 +345,9 @@ test("upload step rejects unsupported photos and requires useful text fallback",
   await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
 
   await page.locator("#photo-upload").setInputFiles(invalidGif);
-  await expect(page.getByText("PNG, JPG, WEBP 이미지만 업로드할 수 있습니다.")).toBeVisible();
+  await expect(
+    page.getByText("모바일 사진 앱의 이미지 파일만 업로드할 수 있습니다.")
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "사진 없이 옷 설명으로 진행하기" }).click();
   await fillUploadContext(page);
