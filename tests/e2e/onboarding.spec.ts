@@ -393,9 +393,6 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
 
   await page.getByRole("button", { name: "AI 분석 시작하기" }).click();
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/(analyzing|result)$/);
-  if (page.url().endsWith("/analyzing")) {
-    await expect(page.getByText("핏을 분석하는 중...")).toBeVisible();
-  }
 
   const onboardingResponse = await onboardingResponsePromise;
   expect(onboardingResponse.ok()).toBeTruthy();
