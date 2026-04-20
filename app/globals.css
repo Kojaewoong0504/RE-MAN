@@ -4,16 +4,19 @@
 
 :root {
   color-scheme: light;
-  --color-bg: #f2eee3;
-  --color-bg-soft: #e7dfd0;
-  --color-surface: #ddd4c2;
-  --color-surface-raised: #faf6ed;
-  --color-ink: #15130f;
-  --color-muted: #6f6654;
-  --color-line: rgba(21, 19, 15, 0.16);
-  --color-line-strong: rgba(21, 19, 15, 0.32);
-  --color-accent: #6f5f2d;
-  --color-accent-ink: #f9f2df;
+  --color-bg: #f8f9fa;
+  --color-bg-soft: #f3f4f5;
+  --color-surface: #edeeef;
+  --color-surface-raised: #ffffff;
+  --color-surface-high: #e1e3e4;
+  --color-ink: #051125;
+  --color-muted: #45474d;
+  --color-line: rgba(69, 71, 77, 0.18);
+  --color-line-strong: rgba(5, 17, 37, 0.28);
+  --color-accent: #1b263b;
+  --color-accent-ink: #ffffff;
+  --color-success: #002d1c;
+  --color-success-ink: #b1f0ce;
   --shell-width: 480px;
   --bottom-cta-height: 96px;
   --bottom-tab-height: 76px;
@@ -23,16 +26,15 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(111, 95, 45, 0.16), transparent 28%),
-    radial-gradient(circle at top right, rgba(47, 58, 46, 0.08), transparent 24%),
+    radial-gradient(circle at top left, rgba(27, 38, 59, 0.08), transparent 30%),
     linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-soft) 100%);
   color: var(--color-ink);
-  font-family: Pretendard, Inter, system-ui, sans-serif;
+  font-family: Manrope, Pretendard, Inter, system-ui, sans-serif;
   text-rendering: optimizeLegibility;
 }
 
 body::selection {
-  background: rgba(111, 95, 45, 0.9);
+  background: rgba(5, 17, 37, 0.92);
   color: var(--color-accent-ink);
 }
 
@@ -50,7 +52,7 @@ a {
   width: 100%;
   max-width: var(--shell-width);
   margin: 0 auto;
-  padding: 20px 18px calc(var(--bottom-cta-height) + var(--bottom-tab-height) + 48px);
+  padding: 22px 18px calc(var(--bottom-cta-height) + var(--bottom-tab-height) + 48px);
 }
 
 .poster-grid {
@@ -78,17 +80,26 @@ a {
 
 @layer components {
   .app-header {
-    @apply sticky top-0 z-30 flex items-center justify-between border-b py-4;
-    border-color: var(--color-line);
-    background: var(--color-bg);
+    @apply sticky top-0 z-30 flex items-center justify-between rounded-xl px-1 py-4 backdrop-blur-xl;
+    background: rgba(248, 249, 250, 0.78);
   }
 
   .app-header-actions {
     @apply flex items-center gap-2;
   }
 
+  .account-access-pill {
+    @apply flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-black uppercase tracking-[0.08em] transition active:translate-y-px;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.92), rgba(237, 238, 239, 0.82));
+    color: var(--color-ink);
+    box-shadow:
+      inset 0 0 0 1px rgba(5, 17, 37, 0.12),
+      0 10px 24px rgba(5, 17, 37, 0.08);
+  }
+
   .app-brand {
-    @apply text-sm font-black tracking-tight;
+    @apply text-sm font-black tracking-[0.08em];
     color: var(--color-ink);
   }
 
@@ -108,54 +119,46 @@ a {
   }
 
   .ui-section {
-    @apply space-y-4 border-t pt-6;
-    border-color: var(--color-line);
+    @apply space-y-4 pt-6;
   }
 
   .ui-panel {
-    @apply border p-5;
-    border-color: var(--color-line);
+    @apply rounded-2xl p-5;
     background: var(--color-surface-raised);
   }
 
   .ui-panel-muted {
-    @apply border p-5;
-    border-color: var(--color-line);
+    @apply rounded-2xl p-5;
     background: var(--color-surface);
   }
 
   .ui-panel-accent {
-    @apply border p-5;
-    border-color: var(--color-ink);
-    background: var(--color-accent);
+    @apply rounded-2xl p-5;
+    background: linear-gradient(135deg, var(--color-ink), var(--color-accent));
     color: var(--color-accent-ink);
   }
 
   .ui-button {
-    @apply flex min-h-12 items-center justify-center px-4 text-center text-sm font-black tracking-tight transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
-    border: 1px solid var(--color-ink);
-    background: var(--color-ink);
+    @apply flex min-h-12 items-center justify-center rounded-xl px-4 text-center text-sm font-black tracking-tight transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
+    background: linear-gradient(135deg, var(--color-ink), var(--color-accent));
     color: var(--color-bg);
   }
 
   .ui-button-secondary {
-    @apply flex min-h-12 items-center justify-center px-4 text-center text-sm font-black tracking-tight transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
-    border: 1px solid var(--color-line-strong);
+    @apply flex min-h-12 items-center justify-center rounded-xl px-4 text-center text-sm font-black tracking-tight transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
     background: var(--color-surface-raised);
     color: var(--color-ink);
   }
 
   .ui-button-accent {
-    @apply flex min-h-12 items-center justify-center px-4 text-center text-sm font-black tracking-tight transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
-    border: 1px solid var(--color-ink);
-    background: var(--color-accent);
+    @apply flex min-h-12 items-center justify-center rounded-xl px-4 text-center text-sm font-black tracking-tight transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
+    background: linear-gradient(135deg, var(--color-ink), var(--color-accent));
     color: var(--color-accent-ink);
   }
 
   .ui-choice {
-    @apply border px-4 py-3 text-left font-bold tracking-tight transition;
-    border-color: var(--color-line);
-    background: var(--color-surface-raised);
+    @apply rounded-xl px-4 py-3 text-left font-bold tracking-tight transition;
+    background: rgba(237, 238, 239, 0.72);
     color: var(--color-ink);
   }
 
@@ -172,20 +175,31 @@ a {
   }
 
   .ui-choice-selected {
-    border-color: var(--color-ink);
-    background: var(--color-ink);
+    background: linear-gradient(135deg, var(--color-ink), var(--color-accent));
     color: var(--color-bg);
   }
 
+  .bottom-cta-bar {
+    @apply pointer-events-none fixed inset-x-0 z-20 flex justify-center px-5 pb-4 pt-3 backdrop-blur-xl;
+    bottom: var(--bottom-tab-height);
+    background:
+      linear-gradient(180deg, rgba(248, 249, 250, 0), rgba(248, 249, 250, 0.94) 42%, rgba(248, 249, 250, 0.98));
+  }
+
+  .bottom-cta-bar .ui-button-accent,
+  .bottom-cta-bar .ui-button-secondary {
+    @apply rounded-2xl;
+    box-shadow: 0 18px 40px rgba(5, 17, 37, 0.18);
+  }
+
   .ui-input {
-    @apply min-h-12 border px-3 text-sm font-semibold outline-none transition placeholder:text-black/35;
-    border-color: var(--color-line-strong);
+    @apply min-h-12 rounded-xl border-0 px-3 text-sm font-semibold outline-none transition placeholder:text-black/35;
     background: var(--color-surface-raised);
     color: var(--color-ink);
   }
 
   .ui-input:focus {
-    border-color: var(--color-ink);
+    box-shadow: inset 0 -2px 0 var(--color-ink);
   }
 
   .screen-hero {
@@ -194,7 +208,7 @@ a {
   }
 
   .screen-title {
-    @apply text-[34px] font-black leading-[1.03] tracking-[-0.06em] text-ink;
+    @apply text-[36px] font-black leading-[1.02] tracking-[-0.06em] text-ink;
   }
 
   .screen-copy {
@@ -261,11 +275,11 @@ a {
   }
 
   .result-hero-card {
-    @apply space-y-3 border p-3;
-    border-color: var(--color-ink);
+    @apply space-y-3 rounded-2xl p-3;
     background:
-      linear-gradient(135deg, rgba(21, 19, 15, 0.05), transparent 44%),
-      var(--color-surface-raised);
+      radial-gradient(circle at top right, rgba(187, 198, 226, 0.18), transparent 40%),
+      linear-gradient(135deg, var(--color-ink), var(--color-accent));
+    color: var(--color-accent-ink);
   }
 
   .result-hero-grid {
@@ -273,8 +287,7 @@ a {
   }
 
   .result-photo-thumb {
-    @apply h-32 w-full shrink-0 overflow-hidden border bg-[var(--color-surface)];
-    border-color: var(--color-ink);
+    @apply h-32 w-full shrink-0 overflow-hidden rounded-xl bg-[var(--color-surface)];
   }
 
   .result-hero-copy {
@@ -282,11 +295,13 @@ a {
   }
 
   .result-hero-copy h2 {
-    @apply mt-2 text-[30px] font-black leading-[0.98] tracking-[-0.07em] text-ink;
+    @apply mt-2 text-[26px] font-black leading-[1.02] tracking-[-0.06em];
+    color: var(--color-accent-ink);
   }
 
   .result-hero-copy > p {
-    @apply text-[15px] font-black leading-6 text-muted;
+    @apply text-[15px] font-black leading-6;
+    color: rgba(255, 255, 255, 0.72);
   }
 
   .result-outfit-block {
@@ -299,14 +314,15 @@ a {
   }
 
   .result-item-strip span {
-    @apply flex min-h-14 items-center justify-center border px-2 text-center text-[14px] font-black leading-5 text-ink;
-    border-color: var(--color-line);
-    background: var(--color-bg);
+    @apply flex min-h-14 items-center justify-center rounded-xl px-2 text-center text-[14px] font-black leading-5;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-accent-ink);
   }
 
   .result-next-action {
-    @apply border-t pt-4;
+    @apply rounded-2xl p-4;
     border-color: var(--color-line);
+    background: var(--color-surface-raised);
   }
 
   .result-next-action span {
@@ -322,8 +338,7 @@ a {
   }
 
   .result-action-plan li {
-    @apply grid grid-cols-[32px_1fr] items-start gap-3 border p-3;
-    border-color: var(--color-line);
+    @apply grid grid-cols-[32px_1fr] items-start gap-3 rounded-xl p-3;
     background: var(--color-bg);
   }
 
@@ -340,7 +355,8 @@ a {
   }
 
   .result-closet-basis {
-    @apply space-y-3;
+    @apply space-y-3 rounded-2xl p-4;
+    background: var(--color-surface);
   }
 
   .result-section-heading h2 {
@@ -352,9 +368,8 @@ a {
   }
 
   .result-basis-summary {
-    @apply border p-4;
-    border-color: var(--color-line);
-    background: var(--color-bg);
+    @apply rounded-2xl p-4;
+    background: var(--color-surface-raised);
   }
 
   .result-basis-summary span {
@@ -370,8 +385,7 @@ a {
   }
 
   .result-basis-chip {
-    @apply min-w-0 border p-3;
-    border-color: var(--color-line);
+    @apply min-w-0 rounded-2xl p-3;
     background: var(--color-surface-raised);
   }
 
@@ -384,9 +398,8 @@ a {
   }
 
   .result-basis-chip span {
-    @apply mt-3 inline-flex rounded-full border px-2 py-1 text-[10px] font-black;
-    border-color: var(--color-line);
-    background: var(--color-bg);
+    @apply mt-3 inline-flex rounded-full px-2 py-1 text-[10px] font-black;
+    background: var(--color-surface);
   }
 
   .result-inline-action {
@@ -396,8 +409,7 @@ a {
   }
 
   .result-basis-card {
-    @apply space-y-3 border p-4;
-    border-color: var(--color-line);
+    @apply space-y-3 rounded-2xl p-4;
     background: var(--color-surface-raised);
   }
 
@@ -442,9 +454,8 @@ a {
   }
 
   .result-action-dock {
-    @apply grid grid-cols-3 border text-center;
-    border-color: var(--color-ink);
-    background: var(--color-ink);
+    @apply grid grid-cols-3 overflow-hidden rounded-2xl text-center;
+    background: linear-gradient(135deg, var(--color-ink), var(--color-accent));
   }
 
   .result-action-dock a,
@@ -458,7 +469,7 @@ a {
   }
 
   .result-tools {
-    @apply divide-y border;
+    @apply divide-y overflow-hidden rounded-2xl;
     border-color: var(--color-line);
     background: var(--color-surface-raised);
   }
@@ -731,9 +742,90 @@ a {
   }
 
   .home-hero {
-    @apply relative overflow-hidden border;
-    border-color: var(--color-line);
+    @apply relative overflow-hidden rounded-3xl;
     background: var(--color-ink);
+  }
+
+  .home-slate-hero {
+    @apply grid gap-3 rounded-[28px] p-4;
+    background:
+      radial-gradient(circle at top right, rgba(187, 198, 226, 0.2), transparent 38%),
+      linear-gradient(145deg, var(--color-ink), var(--color-accent));
+    color: var(--color-accent-ink);
+  }
+
+  .home-slate-copy {
+    @apply grid gap-2 p-1;
+  }
+
+  .home-slate-copy h1 {
+    @apply text-[42px] font-black leading-[0.9] tracking-[-0.08em];
+  }
+
+  .home-slate-copy p:not(.poster-kicker) {
+    @apply max-w-[280px] text-sm font-bold leading-6;
+    color: rgba(255, 255, 255, 0.74);
+  }
+
+  .home-slate-score {
+    @apply grid grid-cols-[1fr_auto] items-end gap-3 rounded-2xl p-3;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .home-slate-score span {
+    @apply text-xs font-black text-white/60;
+  }
+
+  .home-slate-score strong {
+    @apply row-span-2 text-[42px] font-black leading-none tracking-[-0.08em];
+  }
+
+  .home-slate-score small {
+    @apply text-sm font-bold text-white/80;
+  }
+
+  .home-slate-figure {
+    @apply relative min-h-[170px] overflow-hidden rounded-3xl;
+    background: var(--color-surface);
+  }
+
+  .home-slate-figure::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 45%, rgba(5, 17, 37, 0.34));
+  }
+
+  .home-slate-badge {
+    @apply absolute bottom-4 right-4 z-10 rounded-full px-4 py-2 text-xs font-black;
+    background: var(--color-success);
+    color: var(--color-success-ink);
+  }
+
+  .home-recommendation {
+    @apply mt-5 grid gap-4 rounded-3xl p-5;
+    background: var(--color-surface-raised);
+  }
+
+  .home-recommendation h2 {
+    @apply mt-2 text-2xl font-black tracking-[-0.05em] text-ink;
+  }
+
+  .home-course-list {
+    @apply grid gap-2;
+  }
+
+  .home-course-list a {
+    @apply grid grid-cols-[42px_1fr] items-center rounded-2xl p-4;
+    background: var(--color-bg-soft);
+  }
+
+  .home-course-list span {
+    @apply text-xs font-black text-muted;
+  }
+
+  .home-course-list strong {
+    @apply text-lg font-black tracking-[-0.04em] text-ink;
   }
 
   .home-status {
@@ -757,9 +849,8 @@ a {
   }
 
   .home-action-primary {
-    @apply flex min-h-16 items-center justify-between border px-4 text-lg font-black;
-    border-color: var(--color-ink);
-    background: var(--color-accent);
+    @apply flex min-h-14 items-center justify-between rounded-xl px-4 text-base font-black;
+    background: linear-gradient(135deg, var(--color-success), #0e5138);
     color: var(--color-accent-ink);
   }
 
@@ -768,8 +859,7 @@ a {
   }
 
   .home-icon-card {
-    @apply flex min-h-28 flex-col justify-between border p-3;
-    border-color: var(--color-line);
+    @apply flex min-h-28 flex-col justify-between rounded-2xl p-3;
     background: var(--color-surface-raised);
   }
 
@@ -779,8 +869,8 @@ a {
 
   .home-icon-mark {
     @apply flex h-9 w-9 items-center justify-center rounded-full text-xs font-black tracking-[-0.02em];
-    background: var(--color-ink);
-    color: var(--color-bg);
+    background: var(--color-surface);
+    color: var(--color-ink);
   }
 
   .home-icon-label {
@@ -792,8 +882,7 @@ a {
   }
 
   .home-strip {
-    @apply grid grid-cols-[1fr_auto] items-center gap-4 border p-4;
-    border-color: var(--color-line);
+    @apply grid grid-cols-[1fr_auto] items-center gap-4 rounded-2xl p-4;
     background: var(--color-surface);
   }
 
@@ -816,9 +905,8 @@ a {
   }
 
   .credit-status > div:last-child {
-    @apply flex min-h-14 min-w-20 flex-col items-center justify-center border px-3;
-    border-color: var(--color-ink);
-    background: var(--color-accent);
+    @apply flex min-h-14 min-w-20 flex-col items-center justify-center rounded-xl px-3;
+    background: linear-gradient(135deg, var(--color-ink), var(--color-accent));
     color: var(--color-accent-ink);
   }
 
@@ -839,9 +927,8 @@ a {
   }
 
   .credit-status-badge {
-    @apply flex min-h-9 items-center justify-center border px-3 text-xs font-black shadow-sm backdrop-blur;
-    border-color: var(--color-ink);
-    background: rgba(21, 19, 15, 0.92);
+    @apply flex min-h-9 items-center justify-center rounded-full px-3 text-xs font-black shadow-sm backdrop-blur;
+    background: rgba(5, 17, 37, 0.9);
     color: var(--color-bg);
     pointer-events: auto;
   }
@@ -851,8 +938,7 @@ a {
   }
 
   .closet-readiness-panel {
-    @apply space-y-3 border p-4;
-    border-color: var(--color-line);
+    @apply space-y-3 rounded-2xl p-4;
     background: var(--color-surface-raised);
   }
 
@@ -869,16 +955,14 @@ a {
   }
 
   .closet-readiness span {
-    @apply flex min-h-11 items-center justify-center border px-2 text-center text-xs font-black text-muted;
-    border-color: var(--color-line);
+    @apply flex min-h-11 items-center justify-center rounded-xl px-2 text-center text-xs font-black text-muted;
     background: var(--color-bg);
   }
 
   .closet-readiness .closet-readiness-ready {
     @apply text-ink;
-    border-color: var(--color-ink);
-    background: var(--color-accent);
-    color: var(--color-accent-ink);
+    background: var(--color-success);
+    color: var(--color-success-ink);
   }
 
   .credit-ledger {
@@ -927,6 +1011,57 @@ a {
 
   .credit-ledger-empty {
     @apply p-4 text-sm font-bold text-muted;
+  }
+
+  .survey-proof-strip {
+    @apply grid grid-cols-3 gap-2 rounded-2xl p-2 text-center;
+    background: var(--color-surface-raised);
+  }
+
+  .survey-proof-strip p {
+    @apply rounded-xl px-2 py-3 text-[12px] font-black tracking-[-0.02em] text-ink;
+    background: var(--color-surface);
+  }
+
+  .survey-section {
+    @apply space-y-4 rounded-3xl p-4;
+    background: rgba(255, 255, 255, 0.48);
+  }
+
+  .survey-option-list {
+    @apply grid gap-2;
+  }
+
+  .survey-option {
+    @apply min-h-[58px] rounded-2xl px-4 text-left text-[15px] font-black tracking-[-0.02em] transition active:translate-y-px;
+    background: rgba(237, 238, 239, 0.9);
+    color: var(--color-ink);
+    box-shadow: inset 0 0 0 1px rgba(5, 17, 37, 0.04);
+  }
+
+  .survey-option > div {
+    @apply flex items-center justify-between gap-4;
+  }
+
+  .survey-option span:last-child {
+    @apply rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em];
+    background: rgba(5, 17, 37, 0.08);
+    color: var(--color-muted);
+  }
+
+  .survey-option-selected {
+    background: linear-gradient(135deg, var(--color-ink), var(--color-accent));
+    color: var(--color-accent-ink);
+  }
+
+  .survey-option-selected span:last-child {
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--color-accent-ink);
+  }
+
+  .survey-note-panel {
+    @apply space-y-3 rounded-3xl p-5 pb-28;
+    background: var(--color-surface-raised);
   }
 
   .profile-card {
@@ -984,6 +1119,40 @@ a {
     @apply space-y-4;
   }
 
+  .closet-slate-hero {
+    @apply rounded-3xl p-5;
+    background:
+      radial-gradient(circle at top right, rgba(187, 198, 226, 0.2), transparent 40%),
+      linear-gradient(145deg, var(--color-ink), var(--color-accent));
+    color: var(--color-accent-ink);
+  }
+
+  .closet-slate-hero h1 {
+    @apply mt-3 text-[44px] font-black leading-[0.96] tracking-[-0.07em];
+  }
+
+  .closet-slate-hero p:not(.poster-kicker) {
+    @apply mt-4 max-w-sm text-sm font-bold leading-6;
+    color: rgba(255, 255, 255, 0.74);
+  }
+
+  .closet-metric-strip {
+    @apply grid grid-cols-4 rounded-2xl p-2 text-center;
+    background: var(--color-surface-raised);
+  }
+
+  .closet-metric-strip div {
+    @apply rounded-xl p-3;
+  }
+
+  .closet-metric-strip div:first-child {
+    background: var(--color-surface);
+  }
+
+  .closet-metric-strip p:last-child {
+    @apply mt-2 text-2xl font-black text-ink;
+  }
+
   .closet-toolbar {
     @apply flex items-end justify-between gap-4;
   }
@@ -994,19 +1163,17 @@ a {
   }
 
   .closet-add-button {
-    @apply flex h-14 w-14 items-center justify-center rounded-full border text-3xl font-black leading-none;
-    border-color: var(--color-ink);
-    background: var(--color-accent);
+    @apply flex h-14 w-14 items-center justify-center rounded-full text-3xl font-black leading-none;
+    background: linear-gradient(135deg, var(--color-success), #0e5138);
     color: var(--color-accent-ink);
   }
 
   .closet-cabinet {
-    @apply relative overflow-hidden border p-3;
-    border-color: var(--color-ink);
+    @apply relative overflow-hidden rounded-3xl p-3;
     background:
-      linear-gradient(90deg, rgba(21, 19, 15, 0.08), transparent 14%, transparent 86%, rgba(21, 19, 15, 0.08)),
-      linear-gradient(180deg, #d8cdb7, #b7aa8f);
-    box-shadow: inset 0 0 0 6px rgba(21, 19, 15, 0.08);
+      linear-gradient(90deg, rgba(5, 17, 37, 0.22), transparent 13%, transparent 87%, rgba(5, 17, 37, 0.22)),
+      linear-gradient(180deg, #eef0f2, #c9ced6);
+    box-shadow: inset 0 0 0 6px rgba(5, 17, 37, 0.1);
   }
 
   .closet-cabinet::before,
@@ -1016,8 +1183,7 @@ a {
     top: 14px;
     bottom: 14px;
     width: 14px;
-    border: 1px solid rgba(21, 19, 15, 0.25);
-    background: linear-gradient(180deg, rgba(249, 242, 223, 0.28), rgba(21, 19, 15, 0.08));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(5, 17, 37, 0.08));
     pointer-events: none;
   }
 
@@ -1030,27 +1196,24 @@ a {
   }
 
   .closet-cabinet-top {
-    @apply relative z-10 mb-3 flex items-center justify-between border px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em];
-    border-color: rgba(21, 19, 15, 0.35);
-    background: linear-gradient(180deg, #efe4cd, #c7b99b);
-    color: rgba(21, 19, 15, 0.75);
+    @apply relative z-10 mb-3 flex items-center justify-between rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em];
+    background: rgba(255, 255, 255, 0.7);
+    color: rgba(5, 17, 37, 0.75);
   }
 
   .closet-cabinet-body {
-    @apply relative z-10 grid gap-3 border p-3;
-    border-color: rgba(21, 19, 15, 0.35);
+    @apply relative z-10 grid gap-3 rounded-2xl p-3;
     background:
-      linear-gradient(90deg, transparent calc(50% - 1px), rgba(21, 19, 15, 0.16) calc(50% - 1px), rgba(21, 19, 15, 0.16) calc(50% + 1px), transparent calc(50% + 1px)),
-      rgba(249, 242, 223, 0.48);
+      linear-gradient(90deg, transparent calc(50% - 1px), rgba(5, 17, 37, 0.12) calc(50% - 1px), rgba(5, 17, 37, 0.12) calc(50% + 1px), transparent calc(50% + 1px)),
+      rgba(255, 255, 255, 0.56);
   }
 
   .closet-shelf {
-    @apply relative overflow-hidden border;
-    border-color: rgba(21, 19, 15, 0.26);
+    @apply relative overflow-hidden rounded-2xl;
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 26%),
-      rgba(249, 242, 223, 0.52);
-    box-shadow: inset 0 -8px 0 rgba(21, 19, 15, 0.06);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 30%),
+      rgba(237, 238, 239, 0.78);
+    box-shadow: inset 0 -8px 0 rgba(5, 17, 37, 0.05);
   }
 
   .closet-shelf-tops,
@@ -1070,21 +1233,20 @@ a {
 
   .closet-shelf-bottoms {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 24%),
-      repeating-linear-gradient(180deg, rgba(21, 19, 15, 0.04), rgba(21, 19, 15, 0.04) 1px, transparent 1px, transparent 38px),
-      rgba(249, 242, 223, 0.54);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.48), transparent 28%),
+      repeating-linear-gradient(180deg, rgba(5, 17, 37, 0.045), rgba(5, 17, 37, 0.045) 1px, transparent 1px, transparent 38px),
+      rgba(237, 238, 239, 0.82);
   }
 
   .closet-shelf-shoes {
     background:
-      linear-gradient(90deg, transparent 33%, rgba(21, 19, 15, 0.09) 33%, rgba(21, 19, 15, 0.09) 34%, transparent 34%, transparent 66%, rgba(21, 19, 15, 0.09) 66%, rgba(21, 19, 15, 0.09) 67%, transparent 67%),
-      rgba(249, 242, 223, 0.56);
+      linear-gradient(90deg, transparent 33%, rgba(5, 17, 37, 0.08) 33%, rgba(5, 17, 37, 0.08) 34%, transparent 34%, transparent 66%, rgba(5, 17, 37, 0.08) 66%, rgba(5, 17, 37, 0.08) 67%, transparent 67%),
+      rgba(237, 238, 239, 0.82);
   }
 
   .closet-shelf-header {
-    @apply relative z-10 flex w-full items-center justify-between border-b px-4 py-3 text-left;
-    border-color: rgba(21, 19, 15, 0.18);
-    background: rgba(21, 19, 15, 0.045);
+    @apply relative z-10 flex w-full items-center justify-between px-4 py-3 text-left;
+    background: rgba(5, 17, 37, 0.07);
   }
 
   .closet-shelf-header div {
@@ -1100,24 +1262,24 @@ a {
   }
 
   .closet-shelf-toggle {
-    @apply rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em];
-    border-color: rgba(21, 19, 15, 0.35);
-    background: var(--color-bg);
+    @apply rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em];
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--color-ink);
   }
 
   .closet-closed-face {
     @apply relative grid min-h-12 grid-cols-[1fr_auto] items-center gap-3 px-4 py-4 text-xs font-black;
-    color: rgba(21, 19, 15, 0.62);
+    color: rgba(5, 17, 37, 0.58);
   }
 
   .closet-closed-face::before {
     content: "";
     position: absolute;
     inset: 8px 12px;
-    border: 1px solid rgba(21, 19, 15, 0.12);
+    border: 1px solid rgba(5, 17, 37, 0.1);
     background:
-      linear-gradient(90deg, transparent calc(50% - 1px), rgba(21, 19, 15, 0.12) calc(50% - 1px), rgba(21, 19, 15, 0.12) calc(50% + 1px), transparent calc(50% + 1px)),
-      rgba(249, 242, 223, 0.16);
+      linear-gradient(90deg, transparent calc(50% - 1px), rgba(5, 17, 37, 0.1) calc(50% - 1px), rgba(5, 17, 37, 0.1) calc(50% + 1px), transparent calc(50% + 1px)),
+      rgba(255, 255, 255, 0.22);
     pointer-events: none;
   }
 
@@ -1169,9 +1331,8 @@ a {
   }
 
   .closet-item-photo {
-    @apply block aspect-[3/4] overflow-hidden border bg-[var(--color-bg)];
-    border-color: rgba(21, 19, 15, 0.26);
-    box-shadow: 0 6px 14px rgba(21, 19, 15, 0.08);
+    @apply block aspect-[3/4] overflow-hidden rounded-xl bg-[var(--color-bg)];
+    box-shadow: 0 10px 24px rgba(5, 17, 37, 0.08);
   }
 
   .closet-item-photo > span {
@@ -1183,9 +1344,27 @@ a {
   }
 
   .closet-empty-slot {
-    @apply flex min-h-24 min-w-28 items-center justify-center border border-dashed px-4 text-xs font-black text-muted;
-    border-color: rgba(21, 19, 15, 0.26);
-    background: rgba(249, 242, 223, 0.42);
+    @apply relative flex min-h-24 min-w-28 flex-col items-center justify-center overflow-hidden rounded-2xl px-4 text-center text-[11px] font-black text-muted;
+    background:
+      linear-gradient(180deg, rgba(248, 249, 250, 0.7), rgba(220, 224, 226, 0.86));
+    box-shadow:
+      inset 0 0 0 1px rgba(5, 17, 37, 0.08),
+      inset 0 18px 34px rgba(255, 255, 255, 0.42);
+  }
+
+  .closet-empty-slot::before {
+    content: "";
+    @apply absolute left-4 right-4 top-5 h-1 rounded-full;
+    background: rgba(5, 17, 37, 0.22);
+  }
+
+  .closet-empty-slot > span {
+    @apply mb-3 h-7 w-12 rounded-b-full border-2 border-t-0;
+    border-color: rgba(5, 17, 37, 0.22);
+  }
+
+  .closet-empty-slot > p {
+    @apply relative z-10;
   }
 
   .closet-detail-drawer {
@@ -1433,27 +1612,27 @@ a {
   }
 
   .style-start-hero {
-    @apply relative min-h-[520px] overflow-hidden border;
-    border-color: var(--color-line);
+    @apply relative min-h-[520px] overflow-hidden rounded-[30px];
     background: var(--color-ink);
   }
 
   .hero-inline-cta {
-    @apply flex min-h-14 items-center justify-between border px-4 text-base font-black;
-    border-color: rgba(249, 242, 223, 0.5);
-    background: rgba(249, 242, 223, 0.12);
+    @apply flex min-h-14 items-center justify-between rounded-xl px-4 text-base font-black backdrop-blur;
+    background: rgba(255, 255, 255, 0.14);
     color: var(--color-bg);
   }
 
   .style-start-strip {
-    @apply grid grid-cols-3 border text-center;
-    border-color: var(--color-line);
+    @apply grid grid-cols-3 rounded-2xl p-2 text-center;
     background: var(--color-surface-raised);
   }
 
   .style-start-strip div {
-    @apply border-r p-4 last:border-r-0;
-    border-color: var(--color-line);
+    @apply rounded-xl p-4;
+  }
+
+  .style-start-strip div:first-child {
+    background: var(--color-surface);
   }
 
   .style-start-strip p {
@@ -1465,10 +1644,9 @@ a {
   }
 
   .bottom-tab-nav {
-    @apply fixed inset-x-0 bottom-0 z-30 flex justify-center border-t px-3 pb-3 pt-2 backdrop-blur-md;
+    @apply fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-3 pt-2 backdrop-blur-xl;
     min-height: var(--bottom-tab-height);
-    border-color: var(--color-line);
-    background: rgba(250, 246, 237, 0.94);
+    background: rgba(248, 249, 250, 0.82);
   }
 
   .bottom-tab-nav-inner {
@@ -1486,6 +1664,48 @@ a {
 
   .bottom-tab-item-active {
     color: var(--color-ink);
-    background: rgba(21, 19, 15, 0.06);
+    background: rgba(5, 17, 37, 0.08);
+    border-radius: 14px;
+  }
+
+  .closet-batch-screen {
+    @apply space-y-6 pb-28;
+  }
+
+  .closet-batch-hero {
+    @apply rounded-[2rem] p-6 text-white;
+    background: linear-gradient(135deg, var(--color-ink), var(--color-accent));
+  }
+
+  .closet-batch-hero h1 {
+    @apply mt-3 text-4xl font-black leading-none tracking-[-0.06em];
+  }
+
+  .closet-batch-hero p:last-child {
+    @apply mt-3 text-sm font-bold leading-6 text-white/75;
+  }
+
+  .closet-batch-dropzone {
+    @apply flex min-h-40 cursor-pointer items-center justify-center rounded-[2rem] text-sm font-black;
+    background: var(--color-surface-raised);
+    box-shadow: inset 0 0 0 1px rgba(5, 17, 37, 0.08);
+  }
+
+  .closet-batch-grid {
+    @apply grid grid-cols-3 gap-3;
+  }
+
+  .closet-batch-tile {
+    @apply overflow-hidden rounded-2xl text-center text-[11px] font-black uppercase text-muted;
+    background: var(--color-surface-raised);
+  }
+
+  .closet-batch-tile img,
+  .closet-batch-tile > div {
+    @apply aspect-[3/4] w-full object-cover;
+  }
+
+  .closet-batch-tile p {
+    @apply px-2 py-2;
   }
 }

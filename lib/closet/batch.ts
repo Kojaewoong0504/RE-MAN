@@ -71,7 +71,9 @@ export function normalizeClosetDraft(input: Partial<ClosetItemDraft>): ClosetIte
   const analysisStatus: ClosetAnalysisStatus =
     explicitStatus === "failed"
       ? "failed"
-      : explicitStatus === "pending" || explicitStatus === "analyzing"
+      : explicitStatus === "pending"
+        ? "pending"
+        : explicitStatus === "analyzing"
         ? confidence >= CONFIDENCE_REVIEW_THRESHOLD
           ? "confirmed"
           : "needs_review"

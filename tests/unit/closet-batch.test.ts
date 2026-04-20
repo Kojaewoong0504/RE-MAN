@@ -9,6 +9,16 @@ import {
 const photo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB";
 
 describe("closet batch drafts", () => {
+  it("keeps initial pending drafts pending before analysis", () => {
+    const draft = normalizeClosetDraft({
+      id: "draft-0",
+      photo_data_url: photo,
+      analysis_status: "pending"
+    });
+
+    expect(draft.analysis_status).toBe("pending");
+  });
+
   it("keeps low confidence drafts in needs_review", () => {
     const draft = normalizeClosetDraft({
       id: "draft-1",

@@ -91,6 +91,14 @@ async function addTryOnSession(
   ]);
 }
 
+test("closet batch capture accepts multiple photos and creates review drafts", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-batch-user");
+  await page.goto("/closet/batch");
+
+  await expect(page.getByRole("heading", { name: "빠른 옷장 등록" })).toBeVisible();
+  await expect(page.getByText("여러 장을 한 번에 추가하세요")).toBeVisible();
+});
+
 test("onboarding flow captures input and renders feedback", async ({ page }) => {
   await addTryOnSession(page, "e2e-feedback-flow-user");
   await page.goto("/");
@@ -184,7 +192,7 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
 
   await page.waitForURL(/\/programs\/style\/onboarding\/result$/);
   await expect(
-    page.getByRole("heading", { name: "오늘 바꿀 조합만 먼저 봅니다" })
+    page.getByRole("heading", { name: "오늘 조합" })
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "내 옷장에서 쓴 것" })).toBeVisible();
   await expect(page.getByText(/상의 · 하의 · 신발 중 \d개 반영/)).toBeVisible();
@@ -239,7 +247,7 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(page.getByText(/^개발 설정 누락:/)).toHaveCount(0);
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "오늘 바꿀 조합만 먼저 봅니다" })
+    page.getByRole("heading", { name: "오늘 조합" })
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "원하면 루틴 모드로 이어가기" })).toHaveCount(0);
   await page.getByLabel("주요 메뉴").getByRole("link", { name: "홈" }).click();
@@ -377,7 +385,7 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
   await addTryOnSession(page);
   await page.goto("/programs/style/onboarding/result");
   await expect(
-    page.getByRole("heading", { name: "오늘 바꿀 조합만 먼저 봅니다" })
+    page.getByRole("heading", { name: "오늘 조합" })
   ).toBeVisible();
   await expect(page.getByText("텍스트 기준")).toBeVisible();
   await expect(page.getByText("비슷한 후보")).toBeVisible();
@@ -780,6 +788,15 @@ test("protected history redirects to login when no session is present", async ({
   await page.goto("/history");
   await expect(page).toHaveURL(/\/login\?returnTo=%2Fhistory$/);
   await expect(page.getByRole("button", { name: "Google로 계속하기" })).toBeVisible();
+});
+
+test("local dev login opens protected app pages for browser review", async ({ page }) => {
+  await page.goto("/login?returnTo=/closet");
+  await page.getByRole("button", { name: "개발용으로 계속하기" }).click();
+
+  await expect(page).toHaveURL(/\/closet$/);
+  await expect(page.getByRole("heading", { name: "옷장 사진 저장" })).toBeVisible();
+  await expect(page.getByText("체크 3회").first()).toBeVisible();
 });
 
 test("closet page renders local closet before remote profile sync", async ({ page }) => {
