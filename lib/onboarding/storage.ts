@@ -13,6 +13,10 @@ import type {
   SurveyInput
 } from "@/lib/agents/contracts";
 import {
+  normalizeClosetDraft,
+  type ClosetItemDraft
+} from "@/lib/closet/batch";
+import {
   buildClosetBasisMatches,
   type ClosetBasisItem
 } from "@/lib/product/closet-basis";
@@ -83,6 +87,7 @@ export type OnboardingState = OnboardingInput & {
   user_id?: string;
   email?: string;
   size_profile?: SizeProfile;
+  closet_item_drafts?: ClosetItemDraft[];
   feedback?: OnboardingAgentResponse;
   daily_feedbacks?: Record<string, DailyAgentResponse>;
   deep_dive_feedbacks?: Partial<Record<DeepDiveModule, DeepDiveResponse>>;
@@ -629,6 +634,9 @@ export function readOnboardingState(): OnboardingState {
         ...parsed.closet_profile
       },
       closet_items: normalizeClosetItems(parsed.closet_items),
+      closet_item_drafts: Array.isArray(parsed.closet_item_drafts)
+        ? parsed.closet_item_drafts.map((draft) => normalizeClosetDraft(draft))
+        : [],
       size_profile: normalizeSizeProfile(parsed.size_profile),
       user_id: parsed.user_id,
       email: parsed.email,
@@ -673,6 +681,10 @@ export function patchOnboardingState(patch: Partial<OnboardingState>) {
       patch.closet_items !== undefined
         ? normalizeClosetItems(patch.closet_items)
         : normalizeClosetItems(current.closet_items),
+    closet_item_drafts:
+      patch.closet_item_drafts !== undefined
+        ? patch.closet_item_drafts.map((draft) => normalizeClosetDraft(draft))
+        : current.closet_item_drafts?.map((draft) => normalizeClosetDraft(draft)) ?? [],
     size_profile:
       patch.size_profile !== undefined
         ? normalizeSizeProfile(patch.size_profile)
