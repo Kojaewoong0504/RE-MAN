@@ -1707,7 +1707,8 @@ test("profile can start a fresh photo check without losing closet context", asyn
 
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/upload$/);
   await expect(page.getByRole("heading", { name: "사진이 기준입니다" })).toBeVisible();
-  await expect(page.getByText("사진 선택하기")).toBeVisible();
+  await expect(page.getByText("사진 선택", { exact: true })).toBeVisible();
+  await expect(page.getByText("카메라 촬영", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
   await expect(
     page.getByRole("region", { name: "분석 준비 상태" }).getByText("상의, 하의, 신발 준비됨")
