@@ -347,7 +347,8 @@ test("closet review shows saveable and review summary", async ({ page }) => {
             photo_data_url: image,
             analysis_status: "confirmed",
             category: "tops",
-            name: "저장할 셔츠"
+            name: "저장할 셔츠",
+            analysis_confidence: 0.86
           },
           {
             id: "draft-review",
@@ -362,7 +363,8 @@ test("closet review shows saveable and review summary", async ({ page }) => {
             analysis_status: "confirmed",
             deleted: true,
             category: "shoes",
-            name: "제외한 신발"
+            name: "제외한 신발",
+            analysis_confidence: 0.9
           }
         ]
       })
@@ -374,6 +376,62 @@ test("closet review shows saveable and review summary", async ({ page }) => {
   await expect(page.getByLabel("옷장 저장 검토 상태").getByText("저장 가능")).toBeVisible();
   await expect(page.getByLabel("옷장 저장 검토 상태").getByText("확인 필요")).toBeVisible();
   await expect(page.getByLabel("옷장 저장 검토 상태").getByText("제외")).toBeVisible();
+});
+
+test("closet review filters drafts by review status", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-review-filter-user");
+
+  await page.addInitScript(({ image }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {},
+        closet_item_drafts: [
+          {
+            id: "draft-saveable",
+            photo_data_url: image,
+            analysis_status: "confirmed",
+            category: "tops",
+            name: "저장할 셔츠",
+            analysis_confidence: 0.86
+          },
+          {
+            id: "draft-review",
+            photo_data_url: image,
+            analysis_status: "needs_review",
+            category: "bottoms",
+            name: "확인할 바지"
+          },
+          {
+            id: "draft-deleted",
+            photo_data_url: image,
+            analysis_status: "confirmed",
+            deleted: true,
+            category: "shoes",
+            name: "제외한 신발",
+            analysis_confidence: 0.9
+          }
+        ]
+      })
+    );
+  }, { image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
+
+  await page.goto("/closet/review");
+
+  await expect(page.getByText("저장할 셔츠")).toBeVisible();
+  await expect(page.getByText("확인할 바지")).toBeVisible();
+
+  await page.getByRole("button", { name: "확인 필요만" }).click();
+  await expect(page.getByText("저장할 셔츠")).toHaveCount(0);
+  await expect(page.getByText("확인할 바지")).toBeVisible();
+
+  await page.getByRole("button", { name: "저장 가능만" }).click();
+  await expect(page.getByText("저장할 셔츠")).toBeVisible();
+  await expect(page.getByText("확인할 바지")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "전체" }).click();
+  await expect(page.getByText("저장할 셔츠")).toBeVisible();
+  await expect(page.getByText("확인할 바지")).toBeVisible();
 });
 
 test("closet review can confirm draft categories without opening text edit", async ({ page }) => {

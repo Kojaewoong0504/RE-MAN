@@ -18,6 +18,8 @@ import {
 import { syncClosetItemsToServer } from "@/lib/firebase/firestore";
 import type { ClosetItemCategory } from "@/lib/onboarding/storage";
 
+type DraftReviewFilter = "all" | "needs_review" | "saveable";
+
 function getStatusLabel(status: ClosetItemDraft["analysis_status"]) {
   return status === "confirmed" ? "확인됨" : "확인 필요";
 }
@@ -55,6 +57,7 @@ export function ClosetDraftReviewClient() {
   const [editName, setEditName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [filter, setFilter] = useState<DraftReviewFilter>("all");
 
   useEffect(() => {
     setDrafts(readOnboardingState().closet_item_drafts ?? []);
@@ -145,8 +148,22 @@ export function ClosetDraftReviewClient() {
     }
   }
 
-  const visibleDrafts = drafts.filter((draft) => !draft.deleted);
   const summary = getClosetBatchSummary(drafts);
+  const visibleDrafts = drafts.filter((draft) => {
+    if (draft.deleted) {
+      return false;
+    }
+
+    if (filter === "needs_review") {
+      return draft.analysis_status === "needs_review";
+    }
+
+    if (filter === "saveable") {
+      return selectSaveableDrafts([draft]).length === 1;
+    }
+
+    return true;
+  });
 
   return (
     <section className="closet-review-screen">
@@ -169,6 +186,30 @@ export function ClosetDraftReviewClient() {
           <span>제외</span>
           <strong>{summary.deletedCount}</strong>
         </div>
+      </div>
+
+      <div aria-label="검토 필터" className="closet-review-filter">
+        <button
+          aria-pressed={filter === "all"}
+          onClick={() => setFilter("all")}
+          type="button"
+        >
+          전체
+        </button>
+        <button
+          aria-pressed={filter === "needs_review"}
+          onClick={() => setFilter("needs_review")}
+          type="button"
+        >
+          확인 필요만
+        </button>
+        <button
+          aria-pressed={filter === "saveable"}
+          onClick={() => setFilter("saveable")}
+          type="button"
+        >
+          저장 가능만
+        </button>
       </div>
 
       {visibleDrafts.length > 0 ? (

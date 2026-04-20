@@ -1852,6 +1852,20 @@ a {
     @apply grid gap-4;
   }
 
+  .closet-review-filter {
+    @apply grid grid-cols-3 gap-2 rounded-[1.25rem] p-2;
+    background: rgba(5, 17, 37, 0.05);
+  }
+
+  .closet-review-filter button {
+    @apply min-h-11 rounded-2xl text-xs font-black text-muted;
+  }
+
+  .closet-review-filter button[aria-pressed="true"] {
+    background: var(--color-ink);
+    color: var(--color-bg);
+  }
+
   .closet-review-card {
     @apply grid grid-cols-[96px_1fr] gap-4 rounded-[1.75rem] p-4;
     background: var(--color-surface-raised);
