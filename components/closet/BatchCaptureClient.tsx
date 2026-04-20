@@ -3,7 +3,12 @@
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { normalizeClosetDraft, type ClosetItemDraft } from "@/lib/closet/batch";
+import {
+  getClosetDraftAnalysisIdempotencyKey,
+  normalizeClosetDraft,
+  selectAnalyzableDrafts,
+  type ClosetItemDraft
+} from "@/lib/closet/batch";
 import { patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
 import { normalizePhotoForBrowserUpload } from "@/lib/upload/browser-normalize";
 import {
@@ -101,9 +106,10 @@ export function BatchCaptureClient() {
     setIsAnalyzing(true);
     setError("");
     const analyzed: ClosetItemDraft[] = [];
+    const analyzableIds = new Set(selectAnalyzableDrafts(drafts).map((draft) => draft.id));
 
     for (const draft of drafts) {
-      if (!draft.photo_data_url || draft.analysis_status === "failed") {
+      if (!analyzableIds.has(draft.id)) {
         analyzed.push(draft);
         continue;
       }
@@ -111,7 +117,10 @@ export function BatchCaptureClient() {
       try {
         const response = await fetch("/api/closet/analyze", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": getClosetDraftAnalysisIdempotencyKey(draft.id)
+          },
           body: JSON.stringify({ image: draft.photo_data_url })
         });
 

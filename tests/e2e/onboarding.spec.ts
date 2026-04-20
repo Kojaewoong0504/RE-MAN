@@ -107,6 +107,67 @@ test("closet batch capture accepts multiple photos and creates review drafts", a
   await expect(page.getByText("카메라로 한 장씩 추가")).toBeVisible();
 });
 
+test("closet batch analysis sends idempotency keys and skips reviewed drafts", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-batch-idempotency-user");
+  const analyzeRequests: Array<{ idempotencyKey: string | null; body: unknown }> = [];
+
+  await page.addInitScript(({ image }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {},
+        closet_item_drafts: [
+          {
+            id: "draft-pending",
+            photo_data_url: image,
+            analysis_status: "pending"
+          },
+          {
+            id: "draft-reviewed",
+            photo_data_url: image,
+            analysis_status: "needs_review",
+            category: "tops",
+            name: "이미 확인한 셔츠",
+            analysis_confidence: 0.62,
+            size_source: "unknown",
+            size_confidence: 0
+          }
+        ]
+      })
+    );
+  }, { image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
+
+  await page.route("**/api/closet/analyze", async (route) => {
+    analyzeRequests.push({
+      idempotencyKey: route.request().headers()["idempotency-key"] ?? null,
+      body: route.request().postDataJSON()
+    });
+
+    await route.fulfill({
+      contentType: "application/json",
+      status: 200,
+      body: JSON.stringify({
+        category: "tops",
+        name: "분석된 셔츠",
+        color: "네이비",
+        detected_type: "셔츠",
+        analysis_confidence: 0.8,
+        size_source: "unknown",
+        size_confidence: 0
+      })
+    });
+  });
+
+  await page.goto("/closet/batch");
+  await page.getByRole("button", { name: "AI 초안 만들기" }).click();
+  await expect(page).toHaveURL(/\/closet\/review$/);
+
+  expect(analyzeRequests).toHaveLength(1);
+  expect(analyzeRequests[0]).toMatchObject({
+    idempotencyKey: "closet-analyze:draft-pending"
+  });
+});
+
 test("closet review saves confirmed drafts and ignores deleted drafts", async ({ page }) => {
   await addTryOnSession(page, "e2e-closet-review-user");
   const closetSyncRequests: unknown[] = [];

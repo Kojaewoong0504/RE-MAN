@@ -44,6 +44,7 @@ npm run check:deploy:vercel
 - `AI_PROVIDER=gemini`과 `npm run smoke:feedback:gemini` 통과 전에는 배포 스타일 분석이 실제 Gemini로 동작한다고 말하지 않는다.
 - `CLOSET_ANALYSIS_PROVIDER=mock` 상태에서는 옷장 대량 등록이 실제 옷 인식이라고 말하지 않는다.
 - `/api/closet/analyze`는 `Idempotency-Key`, 원장 기록, 실패 환불을 포함한 크레딧 경로를 사용한다.
+- `/api/closet/analyze`를 호출하는 클라이언트는 draft별 안정적인 `Idempotency-Key`를 반드시 전송해야 한다. 이미 `needs_review` 또는 `confirmed` 상태인 draft를 다시 분석 호출하면 중복 차감 위험이므로 실패다.
 - 배포 확인은 `npm run check:deploy:strict`와 배포 URL 대상 smoke test를 분리해서 보고한다.
 
 ## Required Next Step For Paid Closet AI

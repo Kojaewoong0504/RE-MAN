@@ -111,6 +111,25 @@ export function selectSaveableDrafts(drafts: ClosetItemDraft[]) {
   );
 }
 
+export function selectAnalyzableDrafts(drafts: ClosetItemDraft[]) {
+  return drafts.filter(
+    (draft) =>
+      !draft.deleted &&
+      Boolean(draft.photo_data_url) &&
+      (draft.analysis_status === "pending" || draft.analysis_status === "failed")
+  );
+}
+
+export function getClosetDraftAnalysisIdempotencyKey(draftId: string) {
+  const normalizedId = draftId
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9:._-]/g, "")
+    .slice(0, 120);
+
+  return `closet-analyze:${normalizedId || "draft"}`;
+}
+
 export function draftToClosetItem(draft: ClosetItemDraft): ClosetItem {
   const sizeSource = normalizeSizeSource(draft.size_source);
 

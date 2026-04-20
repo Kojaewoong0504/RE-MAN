@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   CONFIDENCE_REVIEW_THRESHOLD,
   draftToClosetItem,
+  getClosetDraftAnalysisIdempotencyKey,
   normalizeClosetDraft,
+  selectAnalyzableDrafts,
   selectSaveableDrafts
 } from "@/lib/closet/batch";
 
@@ -87,5 +89,45 @@ describe("closet batch drafts", () => {
     ]);
 
     expect(drafts.map((draft) => draft.id)).toEqual(["draft-1"]);
+  });
+
+  it("only analyzes pending or failed drafts and skips reviewed drafts", () => {
+    const drafts = selectAnalyzableDrafts([
+      {
+        id: "draft-pending",
+        photo_data_url: photo,
+        analysis_status: "pending"
+      },
+      {
+        id: "draft-failed",
+        photo_data_url: photo,
+        analysis_status: "failed"
+      },
+      {
+        id: "draft-review",
+        photo_data_url: photo,
+        analysis_status: "needs_review",
+        category: "tops",
+        name: "셔츠"
+      },
+      {
+        id: "draft-confirmed",
+        photo_data_url: photo,
+        analysis_status: "confirmed",
+        category: "shoes",
+        name: "스니커즈"
+      }
+    ]);
+
+    expect(drafts.map((draft) => draft.id)).toEqual(["draft-pending", "draft-failed"]);
+  });
+
+  it("builds stable idempotency keys per draft", () => {
+    expect(getClosetDraftAnalysisIdempotencyKey("draft-1")).toBe(
+      "closet-analyze:draft-1"
+    );
+    expect(getClosetDraftAnalysisIdempotencyKey("  draft with spaces  ")).toBe(
+      "closet-analyze:draft-with-spaces"
+    );
   });
 });
