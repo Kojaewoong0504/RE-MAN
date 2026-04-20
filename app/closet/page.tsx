@@ -16,8 +16,8 @@ import {
   getClosetCategoryLabel,
   getMinimumClosetReadiness,
   normalizeClosetItems,
-  patchOnboardingState,
   readOnboardingState,
+  saveClosetContextToOnboardingState,
   type ClosetItem
 } from "@/lib/onboarding/storage";
 import type { ClosetProfile } from "@/lib/agents/contracts";
@@ -126,13 +126,13 @@ export default function ClosetPage() {
     setIsSaving(true);
     setStatus("idle");
 
-    const closetProfile = buildClosetProfileFromItems(items, avoid);
-    const nextState = patchOnboardingState({
+    const nextState = saveClosetContextToOnboardingState({
       user_id: user.uid,
       email: user.email ?? undefined,
-      closet_items: items,
-      closet_profile: closetProfile
+      items,
+      avoid
     });
+    const closetProfile = nextState.closet_profile ?? buildClosetProfileFromItems(items, avoid);
 
     try {
       await updateCurrentUserProfile(user.uid, {

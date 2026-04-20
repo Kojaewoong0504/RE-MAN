@@ -23,6 +23,7 @@ import {
   normalizeSizeProfile,
   patchOnboardingState,
   readOnboardingState,
+  saveClosetContextToOnboardingState,
   type ClosetItem,
   type SizeProfile
 } from "@/lib/onboarding/storage";
@@ -152,12 +153,11 @@ export default function UploadPage() {
     const currentState = readOnboardingState();
     const nextUserId = user?.uid ?? currentState.user_id;
     const nextEmail = user?.email ?? currentState.email;
-    const nextClosetProfile = buildClosetProfileFromItems(nextItems, nextAvoid);
-    const nextState = patchOnboardingState({
+    const nextState = saveClosetContextToOnboardingState({
       user_id: nextUserId,
       email: nextEmail ?? undefined,
-      closet_items: nextItems,
-      closet_profile: nextClosetProfile,
+      items: nextItems,
+      avoid: nextAvoid,
       size_profile: sizeProfile
     });
 
@@ -430,6 +430,13 @@ export default function UploadPage() {
             closetItems,
             nextAvoid
           );
+          saveClosetContextToOnboardingState({
+            user_id: currentState.user_id,
+            email: currentState.email,
+            items: closetItems,
+            avoid: nextAvoid,
+            size_profile: sizeProfile
+          });
           const nextState = patchOnboardingState({
             survey: {
               ...currentState.survey,

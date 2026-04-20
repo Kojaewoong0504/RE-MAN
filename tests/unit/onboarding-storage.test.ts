@@ -12,6 +12,7 @@ import {
   normalizeClosetItems,
   normalizeRecommendationFeedback,
   normalizeSizeProfile,
+  saveClosetContextToOnboardingState,
   type OnboardingState
 } from "@/lib/onboarding/storage";
 
@@ -391,6 +392,37 @@ describe("closet item modeling", () => {
         }
       ]).isReady
     ).toBe(true);
+  });
+
+  it("saves closet items and profile through one shared local-state helper", () => {
+    const nextState = saveClosetContextToOnboardingState({
+      user_id: "user-closet",
+      email: "closet@example.com",
+      avoid: "너무 큰 후드티",
+      items: [
+        {
+          id: "top-shared",
+          category: "tops",
+          name: "옥스포드 셔츠",
+          color: "하늘색",
+          size: "L",
+          wear_state: "잘 맞음"
+        }
+      ],
+      size_profile: {
+        top_size: "L"
+      }
+    });
+
+    expect(nextState.user_id).toBe("user-closet");
+    expect(nextState.email).toBe("closet@example.com");
+    expect(nextState.closet_items).toHaveLength(1);
+    expect(nextState.closet_items?.[0].id).toBe("top-shared");
+    expect(nextState.closet_profile?.tops).toContain("하늘색 옥스포드 셔츠");
+    expect(nextState.closet_profile?.tops).toContain("[L]");
+    expect(nextState.closet_profile?.tops).toContain("{잘 맞음}");
+    expect(nextState.closet_profile?.avoid).toBe("너무 큰 후드티");
+    expect(nextState.size_profile?.top_size).toBe("L");
   });
 });
 

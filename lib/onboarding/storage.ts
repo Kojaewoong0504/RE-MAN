@@ -382,6 +382,31 @@ export function buildClosetProfileFromItems(
   };
 }
 
+export function saveClosetContextToOnboardingState(input: {
+  items: ClosetItem[];
+  avoid?: string;
+  user_id?: string;
+  email?: string | null;
+  size_profile?: SizeProfile;
+}) {
+  const current = readOnboardingState();
+  const closetItems = normalizeClosetItems(input.items);
+
+  return patchOnboardingState({
+    user_id: input.user_id ?? current.user_id,
+    email: input.email ?? current.email,
+    closet_items: closetItems,
+    closet_profile: buildClosetProfileFromItems(
+      closetItems,
+      input.avoid !== undefined ? input.avoid : current.closet_profile?.avoid
+    ),
+    size_profile:
+      input.size_profile !== undefined
+        ? input.size_profile
+        : normalizeSizeProfile(current.size_profile)
+  });
+}
+
 export function buildClosetItemsFromProfile(profile: ClosetProfile | undefined): ClosetItem[] {
   if (!profile) {
     return [];
