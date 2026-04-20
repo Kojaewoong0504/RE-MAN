@@ -171,6 +171,7 @@
 - `npm run smoke:feedback:gemini` 통과는 `실제 Gemini API 계약 통과`로 보고한다.
 - `npm run smoke:feedback:browser` 통과는 `브라우저 업로드와 실제 Gemini 경계 통과`로 보고한다.
 - `npm run smoke:closet:gemini` 통과는 `실제 옷장 AI+크레딧 smoke 통과`로 보고한다.
+- `npm run smoke:production:mvp` 통과는 `배포 MVP golden path 통과`로 보고한다.
 - `npm run visual:app` 산출물을 확인한 경우에만 `UI 배치 확인`으로 보고한다.
 - `npm run build` 통과는 `build 통과`로 보고한다.
 - 실패가 발생하면 "테스트 통과"로 덮지 말고 provider, timeout, storage, image input 중 어느 경계에서 실패했는지 분리해 보고한다.
@@ -193,9 +194,10 @@
 - 실제 옷장 AI 초안과 크레딧 차감이 된다고 말하려면 `CLOSET_ANALYSIS_PROVIDER=gemini` 상태에서 `npm run smoke:closet:gemini` 성공 결과를 확인해야 한다.
 - 옷장 대량 등록의 AI 추정값은 사용자가 확인하기 전까지 추천 핵심 근거로 쓰지 않는다.
 - 옷장 대량 등록을 수정하면 3장 업로드, 1장 수정, 1장 삭제, 1장 저장 E2E와 `/closet/batch`, `/closet/review` visual smoke를 확인해야 한다.
-- 배포 버전에서 실제 AI와 크레딧 소모가 시나리오대로 동작한다고 말하려면 `npm run check:deploy:strict`로 real provider/env readiness를 확인해야 한다.
+- 배포 버전에서 실제 AI와 크레딧 소모가 시나리오대로 동작한다고 말하려면 `npm run check:deploy:strict`로 real provider/env readiness를 확인하고, 배포 URL을 대상으로 `npm run smoke:production:mvp`까지 성공해야 한다.
 - Vercel production 배포 상태를 말하려면 `npm run check:deploy:vercel` 또는 동등한 Vercel env pull + strict 검증을 먼저 실행해야 한다.
 - `npm run check:deploy`에서 mock provider 또는 미구현 provider 경고가 나오면 "배포 UI는 가능하지만 실제 AI/크레딧 기능은 준비되지 않았다"고 보고한다.
+- 크레딧 원장이 memory 기반이면 배포 크레딧 원장으로 보고하지 않는다. 서버리스 배포에서는 영속 저장소 기반 원장 또는 그에 준하는 저장소가 필요하다.
 - `/api/closet/analyze`는 유료 AI 경로다. 수정 시 크레딧 예약, `Idempotency-Key`, 실패 환불, route 통합 테스트가 유지되는지 확인한다.
 
 ---

@@ -203,6 +203,37 @@ function checkCreditLedger(env) {
   );
 }
 
+function checkCreditLedgerPersistence() {
+  const creditsServerPath = path.resolve(process.cwd(), "lib/credits/server.ts");
+
+  if (!fs.existsSync(creditsServerPath)) {
+    return statusLine(
+      "FAIL",
+      "credit-ledger-persistence",
+      "크레딧 원장 구현 파일을 찾을 수 없습니다."
+    );
+  }
+
+  const source = fs.readFileSync(creditsServerPath, "utf8");
+  const usesMemoryStore =
+    source.includes("globalThis.__remanCreditAccounts") ||
+    source.includes('source: "memory"');
+
+  if (usesMemoryStore) {
+    return failWhenStrict(
+      "credit-ledger-persistence",
+      "크레딧 원장이 memory 기반입니다. 서버리스 배포에서는 실제 사용량 원장으로 보고할 수 없습니다.",
+      "크레딧 원장이 memory 기반이라 배포에서 AI+크레딧 MVP 보장으로 보고할 수 없습니다."
+    );
+  }
+
+  return statusLine(
+    "PASS",
+    "credit-ledger-persistence",
+    "크레딧 원장이 배포용 영속 저장소 기반으로 보입니다."
+  );
+}
+
 function checkTryOn(env) {
   const provider = providerValue(env, "TRY_ON_PROVIDER");
 
@@ -241,6 +272,7 @@ const results = [
   checkStyleFeedback(env),
   checkClosetBatch(env),
   checkCreditLedger(env),
+  checkCreditLedgerPersistence(),
   checkTryOn(env)
 ];
 
