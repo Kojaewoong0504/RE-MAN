@@ -40,6 +40,11 @@ export function inferPhotoMimeType(input: { type?: string; name?: string }) {
   return extension ? EXTENSION_IMAGE_TYPES[extension] : undefined;
 }
 
+export function isHeicLikePhoto(input: { type?: string; name?: string }) {
+  const mimeType = inferPhotoMimeType(input);
+  return mimeType === "image/heic" || mimeType === "image/heif";
+}
+
 export function isBrowserPreviewableImageDataUrl(value: string | undefined) {
   if (!value) {
     return false;

@@ -2,14 +2,11 @@
 
 import { useState } from "react";
 import NextImage from "next/image";
+import { normalizePhotoForBrowserUpload } from "@/lib/upload/browser-normalize";
 import {
-  ANALYSIS_IMAGE_QUALITY,
-  ensureImageDataUrlMimeType,
   IMAGE_INPUT_ACCEPT,
-  inferPhotoMimeType,
   isBrowserPreviewableImageDataUrl,
   isValidTextDescription,
-  MAX_ANALYSIS_IMAGE_EDGE,
   MIN_TEXT_DESCRIPTION_LENGTH,
   normalizeTextDescription,
   validatePhotoFile
@@ -20,64 +17,6 @@ type PhotoUploaderProps = {
   textDescription?: string;
   onChange: (value: { image?: string; text_description?: string }) => void;
 };
-
-function readImage(file: File) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("image_load_failed"));
-    };
-    image.src = url;
-  });
-}
-
-function canvasToDataUrl(canvas: HTMLCanvasElement) {
-  return canvas.toDataURL("image/jpeg", ANALYSIS_IMAGE_QUALITY);
-}
-
-function readAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () =>
-      resolve(
-        ensureImageDataUrlMimeType(
-          String(reader.result ?? ""),
-          inferPhotoMimeType(file)
-        )
-      );
-    reader.onerror = () => reject(new Error("file_read_failed"));
-    reader.readAsDataURL(file);
-  });
-}
-
-async function normalizeImageForAnalysis(file: File) {
-  const image = await readImage(file);
-  const scale = Math.min(
-    1,
-    MAX_ANALYSIS_IMAGE_EDGE / Math.max(image.naturalWidth, image.naturalHeight)
-  );
-  const width = Math.max(1, Math.round(image.naturalWidth * scale));
-  const height = Math.max(1, Math.round(image.naturalHeight * scale));
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    throw new Error("canvas_context_unavailable");
-  }
-
-  canvas.width = width;
-  canvas.height = height;
-  context.drawImage(image, 0, 0, width, height);
-
-  return canvasToDataUrl(canvas);
-}
 
 export function PhotoUploader({
   image,
@@ -99,19 +38,11 @@ export function PhotoUploader({
     }
 
     try {
-      const dataUrl = await normalizeImageForAnalysis(file);
+      const dataUrl = await normalizePhotoForBrowserUpload(file);
       onChange({ image: dataUrl, text_description: undefined });
     } catch {
-      const dataUrl = await readAsDataUrl(file).catch(() => "");
-
-      if (!dataUrl) {
-        setError("사진을 읽지 못했습니다.");
-        onChange({ image: undefined, text_description: undefined });
-        return;
-      }
-
-      setError("미리보기는 어렵지만 분석은 가능합니다.");
-      onChange({ image: dataUrl, text_description: undefined });
+      setError("사진을 처리하지 못했습니다. JPG 또는 PNG 사진을 다시 선택해주세요.");
+      onChange({ image: undefined, text_description: undefined });
     }
   }
 
@@ -141,7 +72,7 @@ export function PhotoUploader({
                   사진 선택 완료
                 </p>
                 <p className="mt-3 max-w-xs text-sm font-bold leading-6 text-muted">
-                  이 형식은 미리보기가 제한될 수 있지만 분석은 진행합니다.
+                  분석할 사진이 준비되었습니다.
                 </p>
               </div>
             ) : (

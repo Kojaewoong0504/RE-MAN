@@ -5,72 +5,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { normalizeClosetDraft, type ClosetItemDraft } from "@/lib/closet/batch";
 import { patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
+import { normalizePhotoForBrowserUpload } from "@/lib/upload/browser-normalize";
 import {
-  ANALYSIS_IMAGE_QUALITY,
-  ensureImageDataUrlMimeType,
   IMAGE_INPUT_ACCEPT,
-  inferPhotoMimeType,
   isBrowserPreviewableImageDataUrl,
-  MAX_ANALYSIS_IMAGE_EDGE,
   validatePhotoFile
 } from "@/lib/upload/photo-input";
 
 function createDraftId() {
   return `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function readImage(file: File) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("image_load_failed"));
-    };
-    image.src = url;
-  });
-}
-
-async function normalizeImageForDraft(file: File) {
-  const image = await readImage(file);
-  const scale = Math.min(
-    1,
-    MAX_ANALYSIS_IMAGE_EDGE / Math.max(image.naturalWidth, image.naturalHeight)
-  );
-  const width = Math.max(1, Math.round(image.naturalWidth * scale));
-  const height = Math.max(1, Math.round(image.naturalHeight * scale));
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    throw new Error("canvas_context_unavailable");
-  }
-
-  canvas.width = width;
-  canvas.height = height;
-  context.drawImage(image, 0, 0, width, height);
-
-  return canvas.toDataURL("image/jpeg", ANALYSIS_IMAGE_QUALITY);
-}
-
-function readAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () =>
-      resolve(
-        ensureImageDataUrlMimeType(
-          String(reader.result ?? ""),
-          inferPhotoMimeType(file)
-        )
-      );
-    reader.onerror = () => reject(new Error("file_read_failed"));
-    reader.readAsDataURL(file);
-  });
 }
 
 function getDraftStatusLabel(status: ClosetItemDraft["analysis_status"]) {
@@ -131,13 +74,24 @@ export function BatchCaptureClient() {
         continue;
       }
 
-      nextDrafts.push(
-        normalizeClosetDraft({
-          id: createDraftId(),
-          photo_data_url: await normalizeImageForDraft(file).catch(() => readAsDataUrl(file)),
-          analysis_status: "pending"
-        })
-      );
+      try {
+        nextDrafts.push(
+          normalizeClosetDraft({
+            id: createDraftId(),
+            photo_data_url: await normalizePhotoForBrowserUpload(file),
+            analysis_status: "pending"
+          })
+        );
+      } catch {
+        nextDrafts.push(
+          normalizeClosetDraft({
+            id: createDraftId(),
+            photo_data_url: "",
+            analysis_status: "failed",
+            error_message: "사진 처리 실패"
+          })
+        );
+      }
     }
 
     persist([...drafts, ...nextDrafts]);

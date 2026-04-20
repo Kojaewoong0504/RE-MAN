@@ -7,6 +7,7 @@ import {
   ensureImageDataUrlMimeType,
   inferPhotoMimeType,
   isBrowserPreviewableImageDataUrl,
+  isHeicLikePhoto,
   validatePhotoFile
 } from "@/lib/upload/photo-input";
 
@@ -28,6 +29,12 @@ describe("photo input validation", () => {
   it("marks only browser-previewable data URLs for direct preview", () => {
     expect(isBrowserPreviewableImageDataUrl("data:image/jpeg;base64,abcd")).toBe(true);
     expect(isBrowserPreviewableImageDataUrl("data:image/heic;base64,abcd")).toBe(false);
+  });
+
+  it("identifies HEIC-like mobile photos as transcode candidates", () => {
+    expect(isHeicLikePhoto({ type: "image/heic", name: "style.heic" })).toBe(true);
+    expect(isHeicLikePhoto({ type: "", name: "style.HEIF" })).toBe(true);
+    expect(isHeicLikePhoto({ type: "image/jpeg", name: "style.jpg" })).toBe(false);
   });
 
   it("patches empty FileReader data URL MIME types when the filename identifies the image", () => {
