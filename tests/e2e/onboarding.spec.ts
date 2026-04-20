@@ -99,6 +99,69 @@ test("closet batch capture accepts multiple photos and creates review drafts", a
   await expect(page.getByText("여러 장을 한 번에 추가하세요")).toBeVisible();
 });
 
+test("closet review saves confirmed drafts and ignores deleted drafts", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-review-user");
+  await page.goto("/closet/review");
+
+  await page.evaluate(() => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {},
+        closet_item_drafts: [
+          {
+            id: "draft-top",
+            photo_data_url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB",
+            analysis_status: "confirmed",
+            category: "tops",
+            name: "네이비 셔츠",
+            color: "네이비",
+            analysis_confidence: 0.82,
+            size_source: "unknown",
+            size_confidence: 0
+          },
+          {
+            id: "draft-bottom",
+            photo_data_url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB",
+            analysis_status: "needs_review",
+            category: "bottoms",
+            name: "청바지",
+            color: "블루",
+            analysis_confidence: 0.52,
+            size_source: "unknown",
+            size_confidence: 0
+          },
+          {
+            id: "draft-shoes",
+            photo_data_url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB",
+            analysis_status: "confirmed",
+            category: "shoes",
+            name: "흰색 스니커즈",
+            color: "흰색",
+            analysis_confidence: 0.8,
+            size_source: "unknown",
+            size_confidence: 0
+          }
+        ]
+      })
+    );
+  });
+  await page.reload();
+
+  await page.getByRole("button", { name: "청바지 수정" }).click();
+  await page.getByLabel("이름").fill("연청 데님");
+  await page.getByRole("button", { name: "수정 저장" }).click();
+  await page.getByRole("button", { name: "흰색 스니커즈 삭제" }).click();
+  await page.getByRole("button", { name: "옷장에 저장" }).click();
+
+  await expect(page).toHaveURL(/\/closet$/);
+  await page.getByRole("button", { name: /상의/ }).click();
+  await expect(page.getByText("네이비 셔츠")).toBeVisible();
+  await page.getByRole("button", { name: /하의/ }).click();
+  await expect(page.getByText("연청 데님")).toBeVisible();
+  await expect(page.getByText("흰색 스니커즈")).toHaveCount(0);
+});
+
 test("onboarding flow captures input and renders feedback", async ({ page }) => {
   await addTryOnSession(page, "e2e-feedback-flow-user");
   await page.goto("/");
