@@ -11,8 +11,10 @@ import {
 import {
   normalizeClosetItems,
   patchOnboardingState,
-  readOnboardingState
+  readOnboardingState,
+  saveClosetContextToOnboardingState
 } from "@/lib/onboarding/storage";
+import { syncClosetItemsToServer } from "@/lib/firebase/firestore";
 
 function getStatusLabel(status: ClosetItemDraft["analysis_status"]) {
   return status === "confirmed" ? "확인됨" : "확인 필요";
@@ -23,6 +25,8 @@ export function ClosetDraftReviewClient() {
   const [drafts, setDrafts] = useState<ClosetItemDraft[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     setDrafts(readOnboardingState().closet_item_drafts ?? []);
@@ -57,19 +61,44 @@ export function ClosetDraftReviewClient() {
     persist(drafts.map((draft) => (draft.id === id ? { ...draft, deleted: true } : draft)));
   }
 
-  function saveToCloset() {
+  async function saveToCloset() {
+    setIsSaving(true);
+    setSaveError("");
     const current = readOnboardingState();
     const existingItems = normalizeClosetItems(current.closet_items);
     const nextItems = [
       ...existingItems,
       ...selectSaveableDrafts(drafts).map(draftToClosetItem)
     ];
-
-    patchOnboardingState({
-      closet_items: nextItems,
-      closet_item_drafts: []
+    const localState = saveClosetContextToOnboardingState({
+      items: nextItems,
+      avoid: current.closet_profile?.avoid,
+      size_profile: current.size_profile
     });
-    router.push("/closet");
+
+    patchOnboardingState({ closet_item_drafts: [] });
+
+    try {
+      const synced = await syncClosetItemsToServer({
+        items: localState.closet_items ?? nextItems,
+        closet_profile: localState.closet_profile,
+        size_profile: localState.size_profile
+      });
+
+      if (synced.closet_items.length > 0) {
+        saveClosetContextToOnboardingState({
+          items: synced.closet_items,
+          avoid: synced.closet_profile?.avoid ?? localState.closet_profile?.avoid,
+          size_profile: localState.size_profile
+        });
+      }
+
+      patchOnboardingState({ closet_item_drafts: [] });
+      router.push("/closet");
+    } catch {
+      setSaveError("로컬에는 저장됨. 계정 동기화는 실패했습니다.");
+      setIsSaving(false);
+    }
   }
 
   const visibleDrafts = drafts.filter((draft) => !draft.deleted);
@@ -154,13 +183,15 @@ export function ClosetDraftReviewClient() {
         </div>
       )}
 
+      {saveError ? <p className="text-sm font-black text-red-700">{saveError}</p> : null}
+
       <button
         className="ui-button-accent h-14 w-full"
-        disabled={selectSaveableDrafts(drafts).length === 0}
-        onClick={saveToCloset}
+        disabled={selectSaveableDrafts(drafts).length === 0 || isSaving}
+        onClick={() => void saveToCloset()}
         type="button"
       >
-        옷장에 저장
+        {isSaving ? "저장 중" : "옷장에 저장"}
       </button>
     </section>
   );

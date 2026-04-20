@@ -109,6 +109,28 @@ test("closet batch capture accepts multiple photos and creates review drafts", a
 
 test("closet review saves confirmed drafts and ignores deleted drafts", async ({ page }) => {
   await addTryOnSession(page, "e2e-closet-review-user");
+  const closetSyncRequests: unknown[] = [];
+
+  await page.route("**/api/closet/items", async (route) => {
+    const payload = route.request().postDataJSON();
+    closetSyncRequests.push(payload);
+
+    await route.fulfill({
+      contentType: "application/json",
+      status: 200,
+      body: JSON.stringify({
+        closet_items: payload.items.map((item: Record<string, unknown>) => ({
+          ...item,
+          photo_data_url: "",
+          image_url: `https://storage.example.com/${item.id}.jpg`,
+          storage_bucket: "uploads",
+          storage_path: `closet/${item.id}.jpg`
+        })),
+        closet_profile: payload.closet_profile
+      })
+    });
+  });
+
   await page.goto("/closet/review");
 
   await page.evaluate(() => {
@@ -168,6 +190,31 @@ test("closet review saves confirmed drafts and ignores deleted drafts", async ({
   await page.getByRole("button", { name: /하의/ }).click();
   await expect(page.getByText("연청 데님")).toBeVisible();
   await expect(page.getByText("흰색 스니커즈")).toHaveCount(0);
+
+  expect(closetSyncRequests).toHaveLength(1);
+  expect(closetSyncRequests[0]).toMatchObject({
+    items: [
+      expect.objectContaining({
+        id: "closet-draft-top",
+        category: "tops",
+        name: "네이비 셔츠"
+      }),
+      expect.objectContaining({
+        id: "closet-draft-bottom",
+        category: "bottoms",
+        name: "연청 데님"
+      })
+    ]
+  });
+
+  const savedState = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}")
+  );
+
+  expect(savedState.closet_items[0].photo_data_url).toBe("");
+  expect(savedState.closet_items[0].image_url).toBe(
+    "https://storage.example.com/closet-draft-top.jpg"
+  );
 });
 
 test("closet add button opens batch-first mode chooser", async ({ page }) => {
