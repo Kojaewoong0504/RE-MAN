@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import NextImage from "next/image";
+import { useRouter } from "next/navigation";
 import type { ClosetItem, ClosetItemCategory } from "@/lib/onboarding/storage";
 import { validatePhotoFile } from "@/lib/upload/photo-input";
 
@@ -98,6 +99,7 @@ export function ClosetInventoryEditor({
   items: ClosetItem[];
   onChange: (items: ClosetItem[]) => void;
 }) {
+  const router = useRouter();
   const [category, setCategory] = useState<ClosetItemCategory>("tops");
   const [name, setName] = useState("");
   const [color, setColor] = useState("");
@@ -111,6 +113,7 @@ export function ClosetInventoryEditor({
   const [photoDataUrl, setPhotoDataUrl] = useState("");
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isModeChoosing, setIsModeChoosing] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [openCategories, setOpenCategories] = useState<ClosetItemCategory[]>([]);
@@ -138,7 +141,17 @@ export function ClosetInventoryEditor({
     resetForm();
     setEditingItemId(null);
     setShowOptionalDetails(false);
+    setIsModeChoosing(false);
     setIsAdding(true);
+  }
+
+  function openAddChooser() {
+    setIsModeChoosing(true);
+  }
+
+  function openBatchCapture() {
+    setIsModeChoosing(false);
+    router.push("/closet/batch");
   }
 
   function openEditModal(item: ClosetItem) {
@@ -243,7 +256,7 @@ export function ClosetInventoryEditor({
         <button
           aria-label="옷 추가"
           className="closet-add-button"
-          onClick={openAddModal}
+          onClick={openAddChooser}
           type="button"
         >
           +
@@ -315,13 +328,14 @@ export function ClosetInventoryEditor({
                     ))
                   ) : (
                     <div className="closet-empty-slot">
-                      <span>비어 있음</span>
+                      <span aria-hidden="true" />
+                      <p>첫 옷을 걸어두세요</p>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="closet-closed-face">
-                  <span>{categoryItems.length > 0 ? `${categoryItems.length}개 보관` : "비어 있음"}</span>
+                  <span>{categoryItems.length > 0 ? `${categoryItems.length}개 보관` : "추가 필요"}</span>
                   <span>탭해서 열기</span>
                 </div>
               )}
@@ -370,8 +384,28 @@ export function ClosetInventoryEditor({
       {items.length === 0 ? (
         <div className="closet-empty-state">
           <p>아직 옷장 사진이 없습니다.</p>
-          <button onClick={openAddModal} type="button">
+          <button onClick={openAddChooser} type="button">
             첫 옷 추가
+          </button>
+        </div>
+      ) : null}
+
+      {isModeChoosing ? (
+        <div aria-label="옷 추가 방식" className="closet-mode-sheet" role="dialog">
+          <button className="closet-mode-primary" onClick={openBatchCapture} type="button">
+            <span>빠른 촬영</span>
+            <small>여러 벌을 한 번에 추가</small>
+          </button>
+          <button className="closet-mode-secondary" onClick={openAddModal} type="button">
+            <span>한 벌 직접 등록</span>
+            <small>사진 1장과 메모를 직접 입력</small>
+          </button>
+          <button
+            className="text-sm font-black text-muted underline underline-offset-4"
+            onClick={() => setIsModeChoosing(false)}
+            type="button"
+          >
+            닫기
           </button>
         </div>
       ) : null}

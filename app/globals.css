@@ -1739,4 +1739,35 @@ a {
   .closet-review-card p {
     @apply text-sm font-bold leading-5 text-muted;
   }
+
+  .closet-mode-sheet {
+    @apply fixed inset-x-5 bottom-[calc(var(--bottom-tab-height)+1rem)] z-40 grid gap-3 rounded-[2rem] p-4;
+    background: rgba(248, 249, 250, 0.96);
+    box-shadow: 0 24px 60px rgba(5, 17, 37, 0.22);
+  }
+
+  .closet-mode-primary,
+  .closet-mode-secondary {
+    @apply grid gap-1 rounded-2xl p-4 text-left;
+  }
+
+  .closet-mode-primary {
+    background: var(--color-ink);
+    color: var(--color-accent-ink);
+  }
+
+  .closet-mode-secondary {
+    background: var(--color-surface-raised);
+    color: var(--color-ink);
+  }
+
+  .closet-mode-primary span,
+  .closet-mode-secondary span {
+    @apply text-base font-black;
+  }
+
+  .closet-mode-primary small,
+  .closet-mode-secondary small {
+    @apply text-xs font-bold opacity-70;
+  }
 }

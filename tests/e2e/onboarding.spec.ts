@@ -19,6 +19,7 @@ const invalidGif = {
 
 async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
+  await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
   await page.getByRole("button", { name: /선택 정보 열기/ }).click();
@@ -32,6 +33,7 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByLabel("상태").selectOption("깨끗함");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
+  await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("bottoms");
   await page.getByRole("button", { name: /선택 정보 열기/ }).click();
@@ -42,6 +44,7 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByLabel("상태").selectOption("깨끗함");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
+  await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("shoes");
   await page.getByRole("button", { name: /선택 정보 열기/ }).click();
@@ -160,6 +163,15 @@ test("closet review saves confirmed drafts and ignores deleted drafts", async ({
   await page.getByRole("button", { name: /하의/ }).click();
   await expect(page.getByText("연청 데님")).toBeVisible();
   await expect(page.getByText("흰색 스니커즈")).toHaveCount(0);
+});
+
+test("closet add button opens batch-first mode chooser", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-mode-user");
+  await page.goto("/closet");
+
+  await page.getByLabel("옷 추가").click();
+  await expect(page.getByText("빠른 촬영")).toBeVisible();
+  await expect(page.getByText("한 벌 직접 등록")).toBeVisible();
 });
 
 test("onboarding flow captures input and renders feedback", async ({ page }) => {
