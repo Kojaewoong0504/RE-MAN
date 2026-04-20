@@ -295,7 +295,7 @@ test("closet review saves confirmed drafts and ignores deleted drafts", async ({
   await page.reload();
 
   await page.getByRole("button", { name: "청바지 수정" }).click();
-  await page.getByLabel("이름").fill("연청 데님");
+  await page.getByRole("textbox", { name: "이름", exact: true }).fill("연청 데님");
   await page.getByRole("button", { name: "수정 저장" }).click();
   await page.getByRole("button", { name: "흰색 스니커즈 삭제" }).click();
   await page.getByRole("button", { name: "옷장에 저장" }).click();
