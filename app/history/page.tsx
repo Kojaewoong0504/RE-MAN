@@ -373,7 +373,7 @@ export default function HistoryPage() {
                                     <em>{basis.statusLabel}</em>
                                   </span>
                                   <strong>{basis.itemName}</strong>
-                                  <small>{basis.signalLabel}</small>
+                                  <small>{basis.verificationLabel}</small>
                                 </div>
                               ))}
                             </div>

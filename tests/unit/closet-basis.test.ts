@@ -166,16 +166,19 @@ describe("closet recommendation basis", () => {
     expect(basis[0]).toMatchObject({
       statusLabel: "추천에 사용",
       signalLabel: "자주 입고 잘 맞음",
+      verificationLabel: "옷장 ID 검증",
       detailLabel: "L · 잘 맞음"
     });
     expect(basis[1]).toMatchObject({
       statusLabel: "추천에 사용",
       signalLabel: "핏/상태 확인",
+      verificationLabel: "옷장 ID 검증",
       detailLabel: "32 · 작음"
     });
     expect(basis[2]).toMatchObject({
       statusLabel: "비슷한 후보",
-      signalLabel: "후보"
+      signalLabel: "후보",
+      verificationLabel: "텍스트 후보"
     });
   });
 
@@ -189,6 +192,7 @@ describe("closet recommendation basis", () => {
         matchStatus: "matched",
         statusLabel: "추천에 사용",
         signalLabel: "자주 입고 잘 맞음",
+        verificationLabel: "옷장 ID 검증",
         detailLabel: "L · 잘 맞음"
       },
       {
@@ -199,6 +203,7 @@ describe("closet recommendation basis", () => {
         matchStatus: "matched",
         statusLabel: "추천에 사용",
         signalLabel: "후보",
+        verificationLabel: "옷장 ID 검증",
         detailLabel: "32"
       },
       {
@@ -209,6 +214,7 @@ describe("closet recommendation basis", () => {
         matchStatus: "fallback",
         statusLabel: "비슷한 후보",
         signalLabel: "후보",
+        verificationLabel: "텍스트 후보",
         detailLabel: "270"
       }
     ]);

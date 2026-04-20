@@ -19,6 +19,7 @@ export type ClosetBasisItem = {
   matchStatus: ClosetBasisMatchStatus;
   statusLabel: string;
   signalLabel: string;
+  verificationLabel: string;
   detailLabel: string;
   size?: string;
   wearState?: string;
@@ -59,6 +60,12 @@ const strategySignalLabels: Record<ClosetBasisStrategyRole, string> = {
   core: "자주 입고 잘 맞음",
   use_with_care: "핏/상태 확인",
   optional: "후보"
+};
+
+const verificationLabels: Record<ClosetBasisMatchStatus, string> = {
+  matched: "옷장 ID 검증",
+  fallback: "텍스트 후보",
+  optional: "선택 후보"
 };
 
 function normalizeText(value: string) {
@@ -112,6 +119,7 @@ function toBasisItem(
     signalLabel: strategyItem
       ? strategySignalLabels[strategyItem.role]
       : matchStatusLabels[matchStatus],
+    verificationLabel: verificationLabels[matchStatus],
     detailLabel:
       detailParts.length > 0
         ? detailParts.join(" · ")

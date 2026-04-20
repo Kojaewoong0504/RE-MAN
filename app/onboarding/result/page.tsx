@@ -259,7 +259,7 @@ export default function ResultPage() {
             </div>
           </section>
 
-          <section className="result-closet-basis">
+          <section aria-label="추천에 사용된 옷" className="result-closet-basis">
             <div className="result-section-heading">
               <p className="poster-kicker">Closet Basis</p>
               <h2>내 옷장에서 쓴 것</h2>
@@ -279,6 +279,7 @@ export default function ResultPage() {
                       <p>{item.label}</p>
                       <h3>{compactUiText(item.itemName, 18)}</h3>
                       <span>{item.statusLabel}</span>
+                      <small>{item.verificationLabel}</small>
                     </article>
                   ))}
                 </div>

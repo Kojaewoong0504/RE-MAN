@@ -508,10 +508,13 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
     page.getByRole("heading", { name: "오늘 조합" })
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "내 옷장에서 쓴 것" })).toBeVisible();
+  const resultBasisRegion = page.getByRole("region", { name: "추천에 사용된 옷" });
+  await expect(resultBasisRegion).toBeVisible();
   await expect(page.getByText(/상의 · 하의 · 신발 중 \d개 반영/)).toBeVisible();
   await expect(page.getByText(/흰색 무지 티셔츠 중심으로 시작/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "흰색 무지 티셔츠" })).toBeVisible();
-  await expect(page.getByText(/추천에 사용|비슷한 후보/).first()).toBeVisible();
+  await expect(resultBasisRegion.getByRole("heading", { name: "흰색 무지 티셔츠" })).toBeVisible();
+  await expect(resultBasisRegion.getByText("추천에 사용").first()).toBeVisible();
+  await expect(resultBasisRegion.getByText("옷장 ID 검증").first()).toBeVisible();
   await expect(page.getByText("자주 입고 잘 맞음").first()).toHaveCount(0);
   await expect(page.getByRole("link", { name: "크레딧 확인" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /핏 더 보기/ })).toHaveCount(0);
@@ -1385,6 +1388,7 @@ test("profile shows saved style check context for signed-in users", async ({ pag
   await expect(page.getByText("핏 체크")).toBeVisible();
   await expect(page.getByText("Records")).toBeVisible();
   await page.getByRole("button", { name: /기본 조합/ }).click();
+  await expect(page.getByText("옷장 ID 검증").first()).toBeVisible();
   await expect(page.getByText("옷장 유지")).toBeVisible();
   await expect(page.getByText("반응 유지")).toBeVisible();
   await expect(page.getByText("사진만 새로")).toBeVisible();

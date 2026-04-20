@@ -402,6 +402,10 @@ a {
     background: var(--color-surface);
   }
 
+  .result-basis-chip small {
+    @apply mt-2 block text-[10px] font-black text-muted;
+  }
+
   .result-inline-action {
     @apply border;
     border-color: var(--color-line);
