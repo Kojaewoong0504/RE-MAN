@@ -6,6 +6,7 @@ const strictRealAiEnv = {
   ...process.env,
   AI_PROVIDER: "gemini",
   CLOSET_ANALYSIS_PROVIDER: "gemini",
+  CREDIT_LEDGER_PROVIDER: "memory",
   TRY_ON_PROVIDER: "mock",
   GOOGLE_API_KEY: "test-google-key",
   AUTH_JWT_SECRET: "test-auth-secret",

@@ -141,6 +141,14 @@ async function getJson(request, route) {
   return body;
 }
 
+async function selectClosetOptionalField(page, label, value) {
+  await page
+    .locator("label")
+    .filter({ hasText: new RegExp(`^${label}`) })
+    .locator("select")
+    .selectOption(value);
+}
+
 async function addClosetItem(page, item) {
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
 
@@ -180,7 +188,7 @@ async function addClosetItem(page, item) {
   }
 
   if (item.condition) {
-    await page.getByLabel("상태").selectOption(item.condition);
+    await selectClosetOptionalField(page, "상태", item.condition);
   }
 
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
