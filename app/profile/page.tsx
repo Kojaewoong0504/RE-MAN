@@ -154,13 +154,28 @@ export default function ProfilePage() {
           <div className="profile-avatar">{(displayName[0] ?? "R").toUpperCase()}</div>
           <div className="min-w-0">
             <p className="truncate text-2xl font-black leading-tight tracking-[-0.04em] text-ink">
-              {isLoading ? "불러오는 중" : displayName}
+              {user ? displayName : "불러오는 중"}
             </p>
             <p className="truncate text-sm font-bold text-muted">
               {user?.email ?? "이메일 없음"}
             </p>
           </div>
         </div>
+      </section>
+
+      <section aria-label="주요 행동" className="profile-primary-actions mt-4">
+        <Link
+          className="profile-primary-action profile-primary-action-strong"
+          href="/programs/style/onboarding/upload?reset=photo"
+        >
+          <span>새 체크</span>
+        </Link>
+        <Link className="profile-primary-action" href="/closet">
+          <span>옷장</span>
+        </Link>
+        <Link className="profile-primary-action" href="/history">
+          <span>기록</span>
+        </Link>
       </section>
 
       <section className="profile-mini-grid mt-4">
@@ -205,39 +220,27 @@ export default function ProfilePage() {
         <CreditLedger />
       </div>
 
-      <section className="mt-7 space-y-3">
+      <section aria-label="계정 관리" className="mt-7 space-y-3">
         <div className="section-heading">
-          <p className="poster-kicker">Manage</p>
-          <h2>관리</h2>
+          <p className="poster-kicker">Account</p>
+          <h2>계정 관리</h2>
         </div>
         <div className="profile-action-grid">
           <Link className="profile-action-card" href="/settings">
             <span>설정</span>
-            <span>→</span>
+            <span>프로필</span>
           </Link>
-          <Link className="profile-action-card" href="/closet">
-            <span>옷장</span>
-            <span>→</span>
-          </Link>
-          <Link className="profile-action-card" href="/history">
-            <span>기록</span>
-            <span>→</span>
-          </Link>
-          <Link className="profile-action-card" href="/programs/style/onboarding/upload?reset=photo">
-            <span>새 체크</span>
-            <span>→</span>
-          </Link>
+          <button
+            className="profile-action-card"
+            disabled={isLoggingOut}
+            onClick={() => void handleLogout()}
+            type="button"
+          >
+            <span>{isLoggingOut ? "로그아웃 중" : "로그아웃"}</span>
+            <span>계정</span>
+          </button>
         </div>
       </section>
-
-      <button
-        className="ui-button-secondary mt-7 h-12 w-full"
-        disabled={isLoggingOut}
-        onClick={() => void handleLogout()}
-        type="button"
-      >
-        {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
-      </button>
     </main>
   );
 }

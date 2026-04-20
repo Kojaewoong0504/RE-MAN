@@ -1164,12 +1164,28 @@ a {
     @apply mt-3 text-xl font-black tracking-[-0.04em] text-ink;
   }
 
+  .profile-primary-actions {
+    @apply grid grid-cols-[1.4fr_1fr_1fr] gap-2;
+  }
+
+  .profile-primary-action {
+    @apply flex h-16 items-center justify-center rounded-2xl border text-base font-black tracking-[-0.04em];
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+    color: var(--color-ink);
+  }
+
+  .profile-primary-action-strong {
+    background: var(--color-ink);
+    color: var(--color-accent-ink);
+  }
+
   .profile-action-grid {
     @apply grid grid-cols-2 gap-3;
   }
 
   .profile-action-card {
-    @apply flex min-h-20 items-center justify-between border p-4 text-lg font-black tracking-[-0.04em];
+    @apply flex min-h-16 items-center justify-between border p-4 text-base font-black tracking-[-0.04em];
     border-color: var(--color-line);
     background: var(--color-surface-raised);
   }

@@ -1510,11 +1510,14 @@ test("profile shows saved style check context for signed-in users", async ({ pag
   await expect(page.getByText("최근 스타일 체크 진단")).toHaveCount(0);
   await expect(page.getByText("Saved Feedback")).toHaveCount(0);
   await expect(page.getByText("Deep Dive")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "기록 →" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "옷장 →" })).toBeVisible();
+  const primaryActions = page.getByRole("region", { name: "주요 행동" });
+  await expect(primaryActions.getByRole("link", { name: "새 체크" })).toBeVisible();
+  await expect(primaryActions.getByRole("link", { name: "옷장" })).toBeVisible();
+  await expect(primaryActions.getByRole("link", { name: "기록" })).toBeVisible();
+  await expect(primaryActions.getByRole("link", { name: "설정" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "계정 관리" })).toBeVisible();
   await expect(page.getByRole("link", { name: /크레딧 확인/ })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /새 체크/ })).toBeVisible();
-  await page.getByRole("link", { name: "기록 →" }).click();
+  await page.getByRole("region", { name: "주요 행동" }).getByRole("link", { name: "기록" }).click();
   await expect(page).toHaveURL(/\/history$/);
   await expect(page.getByRole("heading", { name: "기록" })).toBeVisible();
   await expect(page.getByText("불러오는 중")).toHaveCount(0);
