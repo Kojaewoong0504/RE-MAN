@@ -7,10 +7,10 @@ import {
 } from "@/lib/agents/try-on";
 import { getAuthenticatedSessionUser } from "@/lib/auth/session-user";
 import {
-  getCreditBalance,
+  getCreditBalanceAsync,
   InsufficientCreditsError,
-  refundCredits,
-  reserveCredits,
+  refundCreditsAsync,
+  reserveCreditsAsync,
   TRY_ON_CREDIT_COST
 } from "@/lib/credits/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     const runtimeStatus = getTryOnRuntimeStatus();
 
     if (runtimeStatus.real_generation_enabled) {
-      const reservation = reserveCredits(user.uid, TRY_ON_CREDIT_COST, {
+      const reservation = await reserveCreditsAsync(user.uid, TRY_ON_CREDIT_COST, {
         reason: "try_on_generation",
         referenceId: creditReferenceId,
         idempotencyKey
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
       ...payload,
       user_id: user.uid
     });
-    const credits = getCreditBalance(user.uid);
+    const credits = await getCreditBalanceAsync(user.uid);
 
     return NextResponse.json(
       {
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
     }
 
     if (reservedCredits && userId) {
-      refundCredits(userId, TRY_ON_CREDIT_COST, {
+      await refundCreditsAsync(userId, TRY_ON_CREDIT_COST, {
         reason: "try_on_failed_refund",
         referenceId: creditReferenceId,
         idempotencyKey

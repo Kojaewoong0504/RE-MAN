@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedSessionUser } from "@/lib/auth/session-user";
-import { getCreditTransactions } from "@/lib/credits/server";
+import { getCreditTransactionsAsync } from "@/lib/credits/server";
 
 export async function GET(request: Request) {
   try {
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
       : 50;
 
     return NextResponse.json({
-      transactions: getCreditTransactions(user.uid, limit)
+      transactions: await getCreditTransactionsAsync(user.uid, limit)
     });
   } catch (error) {
     if (error instanceof Error && error.message.endsWith("access_token")) {

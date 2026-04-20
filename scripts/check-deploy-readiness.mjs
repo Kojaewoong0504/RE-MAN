@@ -204,6 +204,7 @@ function checkCreditLedger(env) {
 }
 
 function checkCreditLedgerPersistence() {
+  const provider = providerValue(env, "CREDIT_LEDGER_PROVIDER");
   const creditsServerPath = path.resolve(process.cwd(), "lib/credits/server.ts");
 
   if (!fs.existsSync(creditsServerPath)) {
@@ -215,22 +216,45 @@ function checkCreditLedgerPersistence() {
   }
 
   const source = fs.readFileSync(creditsServerPath, "utf8");
-  const usesMemoryStore =
-    source.includes("globalThis.__remanCreditAccounts") ||
-    source.includes('source: "memory"');
+  if (provider === "firestore") {
+    const required = [
+      "FIREBASE_ADMIN_PROJECT_ID",
+      "FIREBASE_CLIENT_EMAIL",
+      "FIREBASE_PRIVATE_KEY"
+    ];
+    const missingKeys = missing(env, required);
 
-  if (usesMemoryStore) {
-    return failWhenStrict(
+    if (missingKeys.length > 0) {
+      return statusLine(
+        "FAIL",
+        "credit-ledger-persistence",
+        `CREDIT_LEDGER_PROVIDER=firestore 이지만 필수 env가 없습니다: ${missingKeys.join(", ")}`
+      );
+    }
+
+    if (!source.includes("getFirebaseAdminFirestore")) {
+      return statusLine(
+        "FAIL",
+        "credit-ledger-persistence",
+        "Firestore provider가 설정됐지만 크레딧 원장이 Firebase Admin Firestore를 사용하지 않습니다."
+      );
+    }
+
+    return statusLine(
+      "PASS",
       "credit-ledger-persistence",
-      "크레딧 원장이 memory 기반입니다. 서버리스 배포에서는 실제 사용량 원장으로 보고할 수 없습니다.",
-      "크레딧 원장이 memory 기반이라 배포에서 AI+크레딧 MVP 보장으로 보고할 수 없습니다."
+      "크레딧 원장이 Firestore 영속 저장소 provider로 설정되어 있습니다."
     );
   }
 
-  return statusLine(
-    "PASS",
+  if (provider !== "mock" && provider !== "memory") {
+    return statusLine("FAIL", "credit-ledger-persistence", `지원하지 않는 CREDIT_LEDGER_PROVIDER=${provider}`);
+  }
+
+  return failWhenStrict(
     "credit-ledger-persistence",
-    "크레딧 원장이 배포용 영속 저장소 기반으로 보입니다."
+    "크레딧 원장이 memory 기반입니다. 서버리스 배포에서는 실제 사용량 원장으로 보고할 수 없습니다.",
+    "크레딧 원장이 memory 기반이라 배포에서 AI+크레딧 MVP 보장으로 보고할 수 없습니다."
   );
 }
 

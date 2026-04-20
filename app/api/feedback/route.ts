@@ -21,8 +21,8 @@ import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getAuthenticatedSessionUser } from "@/lib/auth/session-user";
 import {
   InsufficientCreditsError,
-  refundCredits,
-  reserveEntitledUsage,
+  refundCreditsAsync,
+  reserveEntitledUsageAsync,
   STYLE_FEEDBACK_CREDIT_COST
 } from "@/lib/credits/server";
 
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
   const idempotencyKey = getIdempotencyKey(request);
 
   try {
-    const entitlement = reserveEntitledUsage(user.uid, STYLE_FEEDBACK_CREDIT_COST, {
+    const entitlement = await reserveEntitledUsageAsync(user.uid, STYLE_FEEDBACK_CREDIT_COST, {
       reason: "style_feedback",
       referenceId: creditReferenceId,
       idempotencyKey
@@ -166,7 +166,7 @@ export async function POST(request: Request) {
     }
 
     if (chargedCredits) {
-      refundCredits(user.uid, STYLE_FEEDBACK_CREDIT_COST, {
+      await refundCreditsAsync(user.uid, STYLE_FEEDBACK_CREDIT_COST, {
         reason: "style_feedback_failed_refund",
         referenceId: creditReferenceId,
         idempotencyKey

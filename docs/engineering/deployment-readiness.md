@@ -26,6 +26,7 @@ SMOKE_BASE_URL=https://<deployment-url> npm run smoke:production:mvp
 - 실착 이미지는 현재 MVP 필수 경로가 아니므로 `TRY_ON_PROVIDER=mock`이면 경고만 낸다.
 - `check:deploy:vercel`은 Vercel production env를 `.env.vercel.local`로 pull한 뒤 strict 검사를 실행한다.
 - `smoke:production:mvp`는 배포 URL에서 로그인 세션, 크레딧 잔액, 옷장 등록, 스타일 분석, 반응 저장, 기록 이동을 한 번에 확인한다.
+- 배포에서 크레딧 원장을 실제 원장으로 보고하려면 `CREDIT_LEDGER_PROVIDER=firestore`가 필요하다. 값이 없으면 memory fallback이며 strict readiness는 실패한다.
 - Vercel production env를 로컬에서 확인할 때는 secret 값을 출력하지 말고 env를 pull한 뒤 검사한다.
 
 ```bash
@@ -56,5 +57,6 @@ npm run check:deploy:vercel
 
 1. Vercel production에 `CLOSET_ANALYSIS_PROVIDER=gemini` 설정
 2. Vercel production에 `GOOGLE_API_KEY`, `AUTH_JWT_SECRET`, Firebase server env 설정
-3. `npm run check:deploy:vercel` 통과
-4. 배포 URL에서 `npm run smoke:production:mvp`와 옷장 대량 등록 smoke 수행
+3. Vercel production에 `CREDIT_LEDGER_PROVIDER=firestore` 설정
+4. `npm run check:deploy:vercel` 통과
+5. 배포 URL에서 `npm run smoke:production:mvp`와 옷장 대량 등록 smoke 수행

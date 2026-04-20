@@ -4,8 +4,8 @@ import { analyzeClosetImage } from "@/lib/closet/analysis-provider";
 import {
   CLOSET_ANALYSIS_CREDIT_COST,
   InsufficientCreditsError,
-  refundCredits,
-  reserveEntitledUsage
+  refundCreditsAsync,
+  reserveEntitledUsageAsync
 } from "@/lib/credits/server";
 
 export const maxDuration = 60;
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const idempotencyKey = getIdempotencyKey(request);
 
   try {
-    const entitlement = reserveEntitledUsage(user.uid, CLOSET_ANALYSIS_CREDIT_COST, {
+    const entitlement = await reserveEntitledUsageAsync(user.uid, CLOSET_ANALYSIS_CREDIT_COST, {
       reason: "closet_analysis",
       referenceId: creditReferenceId,
       idempotencyKey
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     }
 
     if (chargedCredits) {
-      refundCredits(user.uid, CLOSET_ANALYSIS_CREDIT_COST, {
+      await refundCreditsAsync(user.uid, CLOSET_ANALYSIS_CREDIT_COST, {
         reason: "closet_analysis_failed_refund",
         referenceId: creditReferenceId,
         idempotencyKey

@@ -39,6 +39,25 @@ describe("deployment readiness", () => {
     expect(result.stdout).toContain("memory");
   });
 
+  it("allows strict readiness when the credit ledger provider is Firestore", () => {
+    const result = spawnSync(
+      "node",
+      ["scripts/check-deploy-readiness.mjs", "--strict"],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...strictRealAiEnv,
+          CREDIT_LEDGER_PROVIDER: "firestore"
+        },
+        encoding: "utf-8"
+      }
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("PASS credit-ledger-persistence");
+    expect(result.stdout).toContain("Firestore");
+  });
+
   it("documents a production MVP golden path smoke command", () => {
     const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
     const matrix = fs.readFileSync("docs/engineering/verification-matrix.md", "utf8");

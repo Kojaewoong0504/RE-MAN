@@ -198,6 +198,7 @@
 - Vercel production 배포 상태를 말하려면 `npm run check:deploy:vercel` 또는 동등한 Vercel env pull + strict 검증을 먼저 실행해야 한다.
 - `npm run check:deploy`에서 mock provider 또는 미구현 provider 경고가 나오면 "배포 UI는 가능하지만 실제 AI/크레딧 기능은 준비되지 않았다"고 보고한다.
 - 크레딧 원장이 memory 기반이면 배포 크레딧 원장으로 보고하지 않는다. 서버리스 배포에서는 영속 저장소 기반 원장 또는 그에 준하는 저장소가 필요하다.
+- 배포 크레딧 원장은 `CREDIT_LEDGER_PROVIDER=firestore`와 Firebase Admin env가 있어야 Firestore 영속 저장소로 동작한다.
 - `/api/closet/analyze`는 유료 AI 경로다. 수정 시 크레딧 예약, `Idempotency-Key`, 실패 환불, route 통합 테스트가 유지되는지 확인한다.
 
 ---

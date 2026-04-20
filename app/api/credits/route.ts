@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedSessionUser } from "@/lib/auth/session-user";
-import { getCreditAuditSnapshot } from "@/lib/credits/server";
+import { getCreditAuditSnapshotAsync } from "@/lib/credits/server";
 
 export async function GET() {
   try {
     const user = await getAuthenticatedSessionUser();
-    const audit = getCreditAuditSnapshot(user.uid);
+    const audit = await getCreditAuditSnapshotAsync(user.uid);
 
     if (!audit.ok) {
       return NextResponse.json(
