@@ -55,7 +55,7 @@ export async function syncSurveyToFirestore(state: OnboardingState) {
   await setDoc(
     doc(db, "users", state.user_id),
     {
-      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
       email: state.email ?? null,
       survey: state.survey,
       closet_profile: state.closet_profile ?? null,

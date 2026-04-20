@@ -592,6 +592,35 @@ test("upload requires top bottom and shoes closet context before analysis", asyn
   await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
 });
 
+test("style upload closet edits persist before analysis starts", async ({ page }) => {
+  await addTryOnSession(page, "e2e-upload-closet-sync-user");
+  await page.goto("/programs/style/onboarding/survey");
+  await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
+  await page.getByRole("button", { name: "소개팅 / 이성 만남" }).click();
+  await page.getByRole("button", { name: "15~30만원" }).click();
+  await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
+  await expect(page.getByRole("heading", { name: "사진이 기준입니다" })).toBeVisible();
+
+  await page.getByRole("button", { name: "옷 추가", exact: true }).click();
+  await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
+  await expect(page.locator("#closet-photo-camera")).toHaveAttribute("capture", "environment");
+  await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
+  await page.getByLabel("종류").selectOption("tops");
+  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
+  await page.getByLabel("아이템 이름").fill("업로드 단계 셔츠");
+  await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
+
+  await expect(page.getByText(/계정 옷장에 저장됨|계정 저장 실패/)).toBeVisible();
+
+  const savedState = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}")
+  );
+
+  expect(savedState.closet_items).toHaveLength(1);
+  expect(savedState.closet_items[0].name).toBe("업로드 단계 셔츠");
+  expect(savedState.closet_profile.tops).toContain("업로드 단계 셔츠");
+});
+
 test("onboarding shows a specific message when feedback is rate limited", async ({ page }) => {
   await addTryOnSession(page);
   await page.route("**/api/feedback", async (route) => {

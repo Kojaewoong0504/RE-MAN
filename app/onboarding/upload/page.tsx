@@ -8,6 +8,8 @@ import { ClosetInventoryEditor } from "@/components/closet/ClosetInventoryEditor
 import { SizeProfileEditor } from "@/components/profile/SizeProfileEditor";
 import { PhotoUploader } from "@/components/upload/PhotoUploader";
 import type { ClosetProfile } from "@/lib/agents/contracts";
+import { fetchAuthSession } from "@/lib/auth/client";
+import type { AuthUser } from "@/lib/auth/types";
 import { syncSurveyToFirestore } from "@/lib/firebase/firestore";
 import {
   buildHistoryFromState,
@@ -75,6 +77,9 @@ export default function UploadPage() {
   const [isClosetEditing, setIsClosetEditing] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isMemoryOpen, setIsMemoryOpen] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [closetSyncStatus, setClosetSyncStatus] =
+    useState<"idle" | "saving" | "saved" | "error">("idle");
   const [memoryPreview, setMemoryPreview] = useState<string[]>([]);
   const [feedbackMemoryRows, setFeedbackMemoryRows] = useState<
     ReturnType<typeof buildRecommendationFeedbackMemory>
@@ -127,7 +132,48 @@ export default function UploadPage() {
     setConfidenceLevel(state.survey.confidence_level || defaultConfidenceLevel);
     setMemoryPreview(getRecentHistoryPreview(state, 2));
     setFeedbackMemoryRows(buildRecommendationFeedbackMemory(state.recommendation_feedback));
+
+    void fetchAuthSession().then((sessionUser) => {
+      setUser(sessionUser);
+
+      if (sessionUser) {
+        patchOnboardingState({
+          user_id: sessionUser.uid,
+          email: sessionUser.email ?? undefined
+        });
+      }
+    });
   }, [router]);
+
+  async function persistClosetContext(
+    nextItems: ClosetItem[],
+    nextAvoid = closetProfile.avoid ?? ""
+  ) {
+    const currentState = readOnboardingState();
+    const nextUserId = user?.uid ?? currentState.user_id;
+    const nextEmail = user?.email ?? currentState.email;
+    const nextClosetProfile = buildClosetProfileFromItems(nextItems, nextAvoid);
+    const nextState = patchOnboardingState({
+      user_id: nextUserId,
+      email: nextEmail ?? undefined,
+      closet_items: nextItems,
+      closet_profile: nextClosetProfile,
+      size_profile: sizeProfile
+    });
+
+    if (!nextState.user_id) {
+      return;
+    }
+
+    setClosetSyncStatus("saving");
+
+    try {
+      await syncSurveyToFirestore(nextState);
+      setClosetSyncStatus("saved");
+    } catch {
+      setClosetSyncStatus("error");
+    }
+  }
 
   const hasPhotoInput = Boolean(image || isValidTextDescription(textDescription));
   const closetReadiness = getMinimumClosetReadiness(closetItems);
@@ -265,12 +311,22 @@ export default function UploadPage() {
               );
             })}
           </div>
+          {closetSyncStatus !== "idle" ? (
+            <p className="text-xs font-black text-muted">
+              {closetSyncStatus === "saving"
+                ? "옷장 저장 중"
+                : closetSyncStatus === "saved"
+                  ? "계정 옷장에 저장됨"
+                  : "계정 저장 실패"}
+            </p>
+          ) : null}
           {isClosetEditing || !hasClosetInput ? (
             <ClosetInventoryEditor
               items={closetItems}
               onChange={(nextItems) => {
                 setClosetItems(nextItems);
                 setIsClosetEditing(true);
+                void persistClosetContext(nextItems);
               }}
             />
           ) : null}
