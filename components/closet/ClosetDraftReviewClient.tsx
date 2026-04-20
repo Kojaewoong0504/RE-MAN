@@ -15,9 +15,36 @@ import {
   saveClosetContextToOnboardingState
 } from "@/lib/onboarding/storage";
 import { syncClosetItemsToServer } from "@/lib/firebase/firestore";
+import type { ClosetItemCategory } from "@/lib/onboarding/storage";
 
 function getStatusLabel(status: ClosetItemDraft["analysis_status"]) {
   return status === "confirmed" ? "확인됨" : "확인 필요";
+}
+
+const categoryOptions: Array<{ value: ClosetItemCategory; label: string }> = [
+  { value: "tops", label: "상의" },
+  { value: "bottoms", label: "하의" },
+  { value: "shoes", label: "신발" },
+  { value: "outerwear", label: "겉옷" }
+];
+
+const categoryLabels: Record<ClosetItemCategory, string> = {
+  tops: "상의",
+  bottoms: "하의",
+  shoes: "신발",
+  outerwear: "겉옷"
+};
+
+function getDraftName(draft: ClosetItemDraft) {
+  if (draft.name?.trim()) {
+    return draft.name.trim();
+  }
+
+  if (draft.category) {
+    return `${categoryLabels[draft.category]} 사진`;
+  }
+
+  return "이름 확인 필요";
 }
 
 export function ClosetDraftReviewClient() {
@@ -59,6 +86,21 @@ export function ClosetDraftReviewClient() {
 
   function removeDraft(id: string) {
     persist(drafts.map((draft) => (draft.id === id ? { ...draft, deleted: true } : draft)));
+  }
+
+  function confirmCategory(id: string, category: ClosetItemCategory) {
+    persist(
+      drafts.map((draft) =>
+        draft.id === id
+          ? {
+              ...draft,
+              category,
+              name: draft.name?.trim() || `${categoryLabels[category]} 사진`,
+              analysis_status: "confirmed" as const
+            }
+          : draft
+      )
+    );
   }
 
   async function saveToCloset() {
@@ -117,7 +159,7 @@ export function ClosetDraftReviewClient() {
             <article className="closet-review-card" key={draft.id}>
               {draft.photo_data_url ? (
                 <Image
-                  alt={`${draft.name ?? "옷"} 후보`}
+                  alt={`${getDraftName(draft)} 후보`}
                   height={160}
                   src={draft.photo_data_url}
                   unoptimized
@@ -129,13 +171,27 @@ export function ClosetDraftReviewClient() {
               <div className="space-y-3">
                 <div>
                   <p className="poster-kicker">{getStatusLabel(draft.analysis_status)}</p>
-                  <h2>{draft.name || "이름 확인 필요"}</h2>
+                  <h2>{getDraftName(draft)}</h2>
                   <p>
                     {[draft.color, draft.detected_type, draft.season]
                       .filter(Boolean)
                       .join(" · ") || "정보 확인 필요"}
                   </p>
                   <p>사이즈: {draft.size_source === "unknown" ? "확인 필요" : draft.size}</p>
+                </div>
+
+                <div className="closet-review-category-grid" aria-label={`${getDraftName(draft)} 종류`}>
+                  {categoryOptions.map((option) => (
+                    <button
+                      aria-pressed={draft.category === option.value}
+                      className={draft.category === option.value ? "closet-review-category-selected" : ""}
+                      key={option.value}
+                      onClick={() => confirmCategory(draft.id, option.value)}
+                      type="button"
+                    >
+                      {option.label}로 분류
+                    </button>
+                  ))}
                 </div>
 
                 {editingId === draft.id ? (

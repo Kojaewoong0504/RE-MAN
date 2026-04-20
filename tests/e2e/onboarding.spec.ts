@@ -278,6 +278,62 @@ test("closet review saves confirmed drafts and ignores deleted drafts", async ({
   );
 });
 
+test("closet review can confirm draft categories without opening text edit", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-review-category-user");
+  const closetSyncRequests: unknown[] = [];
+
+  await page.route("**/api/closet/items", async (route) => {
+    const payload = route.request().postDataJSON();
+    closetSyncRequests.push(payload);
+
+    await route.fulfill({
+      contentType: "application/json",
+      status: 200,
+      body: JSON.stringify({
+        closet_items: payload.items,
+        closet_profile: payload.closet_profile
+      })
+    });
+  });
+
+  await page.addInitScript(({ image }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {},
+        closet_item_drafts: [
+          {
+            id: "draft-quick-bottom",
+            photo_data_url: image,
+            analysis_status: "needs_review",
+            detected_type: "바지",
+            analysis_confidence: 0.44,
+            size_source: "unknown",
+            size_confidence: 0
+          }
+        ]
+      })
+    );
+  }, { image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
+
+  await page.goto("/closet/review");
+  await page.getByRole("button", { name: "하의로 분류" }).click();
+  await expect(page.getByText("하의 사진")).toBeVisible();
+  await expect(page.getByRole("button", { name: "옷장에 저장" })).toBeEnabled();
+  await page.getByRole("button", { name: "옷장에 저장" }).click();
+
+  expect(closetSyncRequests).toHaveLength(1);
+  expect(closetSyncRequests[0]).toMatchObject({
+    items: [
+      expect.objectContaining({
+        id: "closet-draft-quick-bottom",
+        category: "bottoms",
+        name: "하의 사진"
+      })
+    ]
+  });
+});
+
 test("closet add button opens batch-first mode chooser", async ({ page }) => {
   await addTryOnSession(page, "e2e-closet-mode-user");
   await page.goto("/closet");

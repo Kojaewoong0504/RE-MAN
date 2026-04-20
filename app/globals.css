@@ -1754,6 +1754,20 @@ a {
     @apply text-sm font-bold leading-5 text-muted;
   }
 
+  .closet-review-category-grid {
+    @apply grid grid-cols-2 gap-2;
+  }
+
+  .closet-review-category-grid button {
+    @apply min-h-10 rounded-2xl px-2 text-xs font-black text-muted;
+    background: var(--color-bg);
+  }
+
+  .closet-review-category-grid .closet-review-category-selected {
+    background: var(--color-ink);
+    color: var(--color-bg);
+  }
+
   .closet-mode-sheet {
     @apply fixed inset-x-5 bottom-[calc(var(--bottom-tab-height)+1rem)] z-40 grid gap-3 rounded-[2rem] p-4;
     background: rgba(248, 249, 250, 0.96);
