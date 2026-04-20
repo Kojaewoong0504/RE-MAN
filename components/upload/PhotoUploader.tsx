@@ -4,7 +4,10 @@ import { useState } from "react";
 import NextImage from "next/image";
 import {
   ANALYSIS_IMAGE_QUALITY,
+  ensureImageDataUrlMimeType,
   IMAGE_INPUT_ACCEPT,
+  inferPhotoMimeType,
+  isBrowserPreviewableImageDataUrl,
   isValidTextDescription,
   MAX_ANALYSIS_IMAGE_EDGE,
   MIN_TEXT_DESCRIPTION_LENGTH,
@@ -37,6 +40,21 @@ function readImage(file: File) {
 
 function canvasToDataUrl(canvas: HTMLCanvasElement) {
   return canvas.toDataURL("image/jpeg", ANALYSIS_IMAGE_QUALITY);
+}
+
+function readAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () =>
+      resolve(
+        ensureImageDataUrlMimeType(
+          String(reader.result ?? ""),
+          inferPhotoMimeType(file)
+        )
+      );
+    reader.onerror = () => reject(new Error("file_read_failed"));
+    reader.readAsDataURL(file);
+  });
 }
 
 async function normalizeImageForAnalysis(file: File) {
@@ -84,8 +102,16 @@ export function PhotoUploader({
       const dataUrl = await normalizeImageForAnalysis(file);
       onChange({ image: dataUrl, text_description: undefined });
     } catch {
-      setError("사진을 읽지 못했습니다.");
-      onChange({ image: undefined, text_description: undefined });
+      const dataUrl = await readAsDataUrl(file).catch(() => "");
+
+      if (!dataUrl) {
+        setError("사진을 읽지 못했습니다.");
+        onChange({ image: undefined, text_description: undefined });
+        return;
+      }
+
+      setError("미리보기는 어렵지만 분석은 가능합니다.");
+      onChange({ image: dataUrl, text_description: undefined });
     }
   }
 
@@ -100,7 +126,7 @@ export function PhotoUploader({
             </p>
           </div>
           <div className="work-surface overflow-hidden">
-            {image ? (
+            {image && isBrowserPreviewableImageDataUrl(image) ? (
               <NextImage
                 alt="업로드한 스타일 사진 미리보기"
                 className="aspect-[4/5] w-full object-cover"
@@ -109,6 +135,15 @@ export function PhotoUploader({
                 unoptimized
                 width={720}
               />
+            ) : image ? (
+              <div className="flex aspect-[4/5] flex-col justify-end bg-[linear-gradient(160deg,#eef1ed_0%,#fcf8ef_62%,#dfe5dc_100%)] p-6">
+                <p className="text-[34px] font-black leading-[1.02] tracking-[-0.06em] text-ink">
+                  사진 선택 완료
+                </p>
+                <p className="mt-3 max-w-xs text-sm font-bold leading-6 text-muted">
+                  이 형식은 미리보기가 제한될 수 있지만 분석은 진행합니다.
+                </p>
+              </div>
             ) : (
               <div className="flex aspect-[4/5] flex-col justify-end bg-[linear-gradient(160deg,#f4ecdd_0%,#fcf8ef_62%,#e8ddcc_100%)] p-6">
                 <p className="text-[34px] font-black leading-[1.02] tracking-[-0.06em] text-ink">

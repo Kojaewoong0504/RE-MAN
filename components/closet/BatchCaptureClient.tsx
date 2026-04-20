@@ -7,7 +7,10 @@ import { normalizeClosetDraft, type ClosetItemDraft } from "@/lib/closet/batch";
 import { patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
 import {
   ANALYSIS_IMAGE_QUALITY,
+  ensureImageDataUrlMimeType,
   IMAGE_INPUT_ACCEPT,
+  inferPhotoMimeType,
+  isBrowserPreviewableImageDataUrl,
   MAX_ANALYSIS_IMAGE_EDGE,
   validatePhotoFile
 } from "@/lib/upload/photo-input";
@@ -58,7 +61,13 @@ async function normalizeImageForDraft(file: File) {
 function readAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onload = () =>
+      resolve(
+        ensureImageDataUrlMimeType(
+          String(reader.result ?? ""),
+          inferPhotoMimeType(file)
+        )
+      );
     reader.onerror = () => reject(new Error("file_read_failed"));
     reader.readAsDataURL(file);
   });
@@ -216,7 +225,7 @@ export function BatchCaptureClient() {
       <div className="closet-batch-grid">
         {drafts.map((draft) => (
           <article className="closet-batch-tile" key={draft.id}>
-            {draft.photo_data_url ? (
+            {draft.photo_data_url && isBrowserPreviewableImageDataUrl(draft.photo_data_url) ? (
               <NextImage
                 alt="옷장 등록 후보"
                 height={180}
@@ -224,6 +233,8 @@ export function BatchCaptureClient() {
                 unoptimized
                 width={135}
               />
+            ) : draft.photo_data_url ? (
+              <div>선택 완료</div>
             ) : (
               <div>이미지 오류</div>
             )}

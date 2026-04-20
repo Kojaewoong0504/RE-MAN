@@ -4,6 +4,9 @@ import {
   MAX_UPLOAD_BYTES,
   normalizeTextDescription,
   validateImageDataUrl,
+  ensureImageDataUrlMimeType,
+  inferPhotoMimeType,
+  isBrowserPreviewableImageDataUrl,
   validatePhotoFile
 } from "@/lib/upload/photo-input";
 
@@ -15,6 +18,22 @@ describe("photo input validation", () => {
   it("accepts mobile HEIC and HEIF photos before client-side normalization", () => {
     expect(validatePhotoFile({ type: "image/heic", size: 1024 })).toEqual({ ok: true });
     expect(validatePhotoFile({ type: "image/heif", size: 1024 })).toEqual({ ok: true });
+  });
+
+  it("infers mobile image type from filename when browser omits MIME type", () => {
+    expect(inferPhotoMimeType({ name: "style.HEIC" })).toBe("image/heic");
+    expect(validatePhotoFile({ name: "style.HEIC", size: 1024 })).toEqual({ ok: true });
+  });
+
+  it("marks only browser-previewable data URLs for direct preview", () => {
+    expect(isBrowserPreviewableImageDataUrl("data:image/jpeg;base64,abcd")).toBe(true);
+    expect(isBrowserPreviewableImageDataUrl("data:image/heic;base64,abcd")).toBe(false);
+  });
+
+  it("patches empty FileReader data URL MIME types when the filename identifies the image", () => {
+    expect(ensureImageDataUrlMimeType("data:;base64,abcd", "image/heic")).toBe(
+      "data:image/heic;base64,abcd"
+    );
   });
 
   it("rejects unsupported image types", () => {

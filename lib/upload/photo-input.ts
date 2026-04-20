@@ -11,6 +11,15 @@ export const ALLOWED_IMAGE_TYPES = new Set([
   "image/heic",
   "image/heif"
 ]);
+export const BROWSER_PREVIEW_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const EXTENSION_IMAGE_TYPES: Record<string, string> = {
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  heic: "image/heic",
+  heif: "image/heif"
+};
 
 export type PhotoFileValidationResult =
   | { ok: true }
@@ -22,7 +31,37 @@ export type ImageDataUrlValidationResult =
 
 const imageDataUrlPattern = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/]+={0,2})$/;
 
-export function validatePhotoFile(input: { type?: string; size?: number }): PhotoFileValidationResult {
+export function inferPhotoMimeType(input: { type?: string; name?: string }) {
+  if (input.type) {
+    return input.type.toLowerCase();
+  }
+
+  const extension = input.name?.split(".").pop()?.toLowerCase();
+  return extension ? EXTENSION_IMAGE_TYPES[extension] : undefined;
+}
+
+export function isBrowserPreviewableImageDataUrl(value: string | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  const matched = /^data:(.+?);base64,/.exec(value);
+  return Boolean(matched && BROWSER_PREVIEW_IMAGE_TYPES.has(matched[1].toLowerCase()));
+}
+
+export function ensureImageDataUrlMimeType(value: string, mimeType?: string) {
+  if (!mimeType || !value.startsWith("data:;base64,")) {
+    return value;
+  }
+
+  return value.replace(/^data:;base64,/, `data:${mimeType};base64,`);
+}
+
+export function validatePhotoFile(input: {
+  type?: string;
+  name?: string;
+  size?: number;
+}): PhotoFileValidationResult {
   if (!input.size || input.size <= 0) {
     return {
       ok: false,
@@ -31,7 +70,9 @@ export function validatePhotoFile(input: { type?: string; size?: number }): Phot
     };
   }
 
-  if (!input.type || !ALLOWED_IMAGE_TYPES.has(input.type)) {
+  const mimeType = inferPhotoMimeType(input);
+
+  if (!mimeType || !ALLOWED_IMAGE_TYPES.has(mimeType)) {
     return {
       ok: false,
       reason: "unsupported_type",

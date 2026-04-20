@@ -5,7 +5,13 @@ type UploadedImageRef = {
   path: string;
 };
 
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif"
+]);
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
 function getSupabaseUrl() {
