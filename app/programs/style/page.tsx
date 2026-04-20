@@ -5,29 +5,86 @@ import Image from "next/image";
 import Link from "next/link";
 import { AccountAccessButton } from "@/components/common/AccountAccessButton";
 import {
-  getStyleProgramStatus,
+  buildClosetItemsFromProfile,
+  getClosetCategoryLabel,
+  getMinimumClosetReadiness,
+  normalizeClosetItems,
   readOnboardingState,
-  type StyleProgramStatus
+  type OnboardingState
 } from "@/lib/onboarding/storage";
 
 const styleProgramImage =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBXjlr_phAUclWIJo-qkMkFcmG3zCIdjIpsiMEM_ErBTrpJOH-9U0xs06cqtEyPgfvTPl9g46VApTGSEmu3l3G_vFT6CiJ4U84tj7KRzXqZZzjGMIrGd989FODL3dN9SCwyu_kUsMYyw6VYnwyrAHNdloZSBQrmrBGuIFcKODC-l8IyenNIcrqa27f_SG8fl9wwNgwP4kPz84bUSkUQIglmp3-B61ohSe7wVMf4g3LlkLBZ5CPzO7llJ1VCVxbnCZhQvU9_U5Ry8gfj";
 
+type StyleNextAction = {
+  eyebrow: string;
+  title: string;
+  body: string;
+  href: string;
+  cta: string;
+  steps: Array<{ label: string; ready: boolean }>;
+};
+
+function hasCompletedSurvey(state: OnboardingState) {
+  return Boolean(
+    state.survey.current_style.trim() &&
+      state.survey.motivation.trim() &&
+      state.survey.budget.trim()
+  );
+}
+
+function buildStyleNextAction(state: OnboardingState): StyleNextAction {
+  const closetItems = normalizeClosetItems(state.closet_items);
+  const usableClosetItems = closetItems.length
+    ? closetItems
+    : buildClosetItemsFromProfile(state.closet_profile);
+  const readiness = getMinimumClosetReadiness(usableClosetItems);
+  const steps = readiness.requiredCategories.map((category) => ({
+    label: getClosetCategoryLabel(category),
+    ready: readiness.presentCategories.includes(category)
+  }));
+
+  if (!readiness.isReady) {
+    const missingLabels = readiness.missingCategories.map(getClosetCategoryLabel);
+
+    return {
+      eyebrow: "Next",
+      title: "옷장부터 채우기",
+      body: `${missingLabels.join(", ")} 필요`,
+      href: "/closet",
+      cta: "옷장 채우기",
+      steps
+    };
+  }
+
+  if (!hasCompletedSurvey(state)) {
+    return {
+      eyebrow: "Next",
+      title: "기본 질문 3개",
+      body: "옷장은 준비됨. 스타일 기준만 고르면 됩니다.",
+      href: "/programs/style/onboarding/survey",
+      cta: "질문 답하기",
+      steps
+    };
+  }
+
+  return {
+    eyebrow: "Next",
+    title: "사진만 올리기",
+    body: "상의, 하의, 신발 준비됨",
+    href: "/programs/style/onboarding/upload?reset=photo",
+    cta: "사진 업로드",
+    steps
+  };
+}
+
 export default function StyleProgramPage() {
-  const [status, setStatus] = useState<StyleProgramStatus>("new");
+  const [nextAction, setNextAction] = useState<StyleNextAction | null>(null);
 
   useEffect(() => {
     const state = readOnboardingState();
-    setStatus(getStyleProgramStatus(state));
+    setNextAction(buildStyleNextAction(state));
   }, []);
-
-  const startPath =
-    status === "new"
-      ? "/programs/style/onboarding/survey"
-      : "/programs/style/onboarding/upload?reset=photo";
-  const startLabel = status === "new" ? "시작" : "새 체크";
-  const bottomLabel =
-    status === "new" ? "스타일 프로그램 시작하기" : "새 스타일 체크 시작하기";
 
   return (
     <main className="app-shell flex min-h-screen flex-col justify-between">
@@ -61,12 +118,29 @@ export default function StyleProgramPage() {
                 전신 사진과 옷장 기록을 기준으로 오늘 바꿀 조합 하나를 고릅니다.
               </p>
             </div>
-            <Link className="hero-inline-cta" href={startPath}>
-              <span>{bottomLabel}</span>
-              <span>→</span>
-            </Link>
           </div>
         </section>
+
+        {nextAction ? (
+          <section aria-label="스타일 체크 다음 행동" className="style-next-action">
+            <div>
+              <p className="poster-kicker">{nextAction.eyebrow}</p>
+              <h2>{nextAction.title}</h2>
+              <p>{nextAction.body}</p>
+            </div>
+            <div className="style-next-readiness" aria-label="스타일 체크 준비 상태">
+              {nextAction.steps.map((step) => (
+                <span className={step.ready ? "style-next-ready" : ""} key={step.label}>
+                  {step.label}
+                </span>
+              ))}
+            </div>
+            <Link className="hero-inline-cta" href={nextAction.href}>
+              <span>{nextAction.cta}</span>
+              <span>→</span>
+            </Link>
+          </section>
+        ) : null}
 
         <section className="style-start-strip">
           <div>

@@ -1066,6 +1066,87 @@ test("home stays a feature hub for finished style user", async ({ page }) => {
   await expect(page).toHaveURL(/\/programs$/);
 });
 
+test("style program sends missing closet users to one closet CTA", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원"
+        },
+        closet_items: [
+          {
+            id: "style-top-only",
+            category: "tops",
+            name: "흰색 티셔츠"
+          }
+        ]
+      })
+    );
+  });
+
+  await page.goto("/programs/style");
+
+  const nextAction = page.getByRole("region", { name: "스타일 체크 다음 행동" });
+  await expect(nextAction).toBeVisible();
+  await expect(nextAction.getByRole("heading", { name: "옷장부터 채우기" })).toBeVisible();
+  await expect(nextAction.getByText("하의, 신발 필요")).toBeVisible();
+  await expect(nextAction.getByRole("link", { name: "옷장 채우기" })).toHaveAttribute(
+    "href",
+    "/closet"
+  );
+  await expect(nextAction.getByRole("link", { name: /사진 업로드/ })).toHaveCount(0);
+});
+
+test("style program sends ready closet users directly to photo upload", async ({ page }) => {
+  await page.addInitScript(({ uploadedImage }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원"
+        },
+        closet_items: [
+          {
+            id: "style-ready-top",
+            category: "tops",
+            name: "네이비 셔츠",
+            photo_data_url: uploadedImage
+          },
+          {
+            id: "style-ready-bottom",
+            category: "bottoms",
+            name: "검정 슬랙스",
+            photo_data_url: uploadedImage
+          },
+          {
+            id: "style-ready-shoes",
+            category: "shoes",
+            name: "흰색 스니커즈",
+            photo_data_url: uploadedImage
+          }
+        ]
+      })
+    );
+  }, { uploadedImage: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
+
+  await page.goto("/programs/style");
+
+  const nextAction = page.getByRole("region", { name: "스타일 체크 다음 행동" });
+  await expect(nextAction).toBeVisible();
+  await expect(nextAction.getByRole("heading", { name: "사진만 올리기" })).toBeVisible();
+  await expect(nextAction.getByText("상의, 하의, 신발 준비됨")).toBeVisible();
+  await expect(nextAction.getByRole("link", { name: "사진 업로드" })).toHaveAttribute(
+    "href",
+    "/programs/style/onboarding/upload?reset=photo"
+  );
+  await expect(nextAction.getByRole("link", { name: /옷장 채우기/ })).toHaveCount(0);
+});
+
 test("program hub opens coming soon program placeholder", async ({ page }) => {
   await page.goto("/programs");
   await page.getByRole("link", { name: "헤어" }).click();
