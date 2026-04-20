@@ -36,6 +36,8 @@
 |---|---|---|---|
 | Closet batch capture | Unit + integration + E2E + visual + real provider smoke | `npm run test:unit -- tests/unit/closet-batch.test.ts`, `npm run test:integration -- tests/integration/closet-analyze-route.test.ts`, `npm run test:e2e`, `npm run visual:app`, `npm run smoke:closet:gemini` | mock provider only unless `CLOSET_ANALYSIS_PROVIDER=gemini` smoke passes |
 | Deployed real AI + credits | Env readiness + provider smoke + credit route tests + 배포 URL golden path | `npm run check:deploy:strict`, `npm run smoke:feedback:gemini`, `npm run smoke:production:mvp`, `npm run test:integration -- tests/integration/feedback-route.test.ts tests/integration/credit-transactions-route.test.ts` | `smoke:production:mvp` 전에는 로컬/환경 readiness까지만 보고 |
+| Google social login UI | 실제 브라우저 OAuth 완료 + 앱 세션 쿠키 발급 | 수동 브라우저 확인 또는 별도 OAuth E2E | `smoke:production:mvp`는 테스트 세션 우회이므로 Google OAuth 검증으로 보고 금지 |
+| Mobile photo input | 갤러리 선택 + 카메라 촬영 input 계약 | `npm run test:e2e -- --grep "style upload exposes gallery and camera inputs"` | `accept="image/*"`와 `capture="environment"` 없으면 모바일 사진 업로드 준비로 보고 금지 |
 
 ## Sequential Commands
 

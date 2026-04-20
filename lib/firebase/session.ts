@@ -27,6 +27,26 @@ export type GoogleSessionResult =
       status: "redirecting";
     };
 
+type GoogleSignInOptions = {
+  preferRedirect?: boolean;
+};
+
+function isRedirectFirstBrowser() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return (
+    /iphone|ipad|ipod|android|mobile/.test(userAgent) ||
+    userAgent.includes("; wv") ||
+    userAgent.includes("fban") ||
+    userAgent.includes("fbav") ||
+    userAgent.includes("instagram") ||
+    userAgent.includes("kakaotalk")
+  );
+}
+
 function isPopupBlockedError(error: unknown) {
   if (!error || typeof error !== "object") {
     return false;
@@ -86,9 +106,16 @@ export async function completeGoogleRedirectSession() {
   return normalizeCredential(credential);
 }
 
-export async function signInWithGoogleSession(): Promise<GoogleSessionResult> {
+export async function signInWithGoogleSession(
+  options: GoogleSignInOptions = {}
+): Promise<GoogleSessionResult> {
   const auth = await prepareGoogleAuth();
   const provider = createGoogleProvider();
+
+  if (options.preferRedirect || isRedirectFirstBrowser()) {
+    await signInWithRedirect(auth, provider);
+    return { status: "redirecting" };
+  }
 
   try {
     const credential = await signInWithPopup(auth, provider);

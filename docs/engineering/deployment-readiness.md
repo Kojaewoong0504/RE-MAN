@@ -26,6 +26,7 @@ SMOKE_BASE_URL=https://<deployment-url> npm run smoke:production:mvp
 - 실착 이미지는 현재 MVP 필수 경로가 아니므로 `TRY_ON_PROVIDER=mock`이면 경고만 낸다.
 - `check:deploy:vercel`은 Vercel production env를 `.env.vercel.local`로 pull한 뒤 strict 검사를 실행한다.
 - `smoke:production:mvp`는 배포 URL에서 로그인 세션, 크레딧 잔액, 옷장 등록, 스타일 분석, 반응 저장, 기록 이동을 한 번에 확인한다.
+- `smoke:production:mvp`는 테스트 세션을 발급하므로 실제 Google OAuth UI를 검증하지 않는다.
 - 배포에서 크레딧 원장을 실제 원장으로 보고하려면 `CREDIT_LEDGER_PROVIDER=firestore`가 필요하다. 값이 없으면 memory fallback이며 strict readiness는 실패한다.
 - Vercel production env를 로컬에서 확인할 때는 secret 값을 출력하지 말고 env를 pull한 뒤 검사한다.
 
@@ -49,6 +50,9 @@ npm run check:deploy:vercel
 - `/api/closet/analyze`는 `Idempotency-Key`, 원장 기록, 실패 환불을 포함한 크레딧 경로를 사용한다.
 - `/api/closet/analyze`를 호출하는 클라이언트는 draft별 안정적인 `Idempotency-Key`를 반드시 전송해야 한다. 이미 `needs_review` 또는 `confirmed` 상태인 draft를 다시 분석 호출하면 중복 차감 위험이므로 실패다.
 - 배포 확인은 `npm run check:deploy:strict`와 배포 URL 대상 `npm run smoke:production:mvp`를 분리해서 보고한다.
+- 배포 Google 소셜 로그인은 `smoke:production:mvp`와 별개로 실제 브라우저 OAuth 완료와 앱 세션 쿠키 발급을 확인해야 한다.
+- 모바일/IAB 로그인은 redirect 우선 흐름이어야 한다. popup fallback만으로는 모바일 로그인 검증으로 보지 않는다.
+- 사용자 사진 업로드 경로는 갤러리 선택과 카메라 촬영 input을 모두 제공해야 한다.
 - 크레딧 원장이 memory 기반이면 `check:deploy:strict`는 실패해야 한다. 서버리스 배포에서는 memory 원장을 실제 사용량 기록으로 보고하지 않는다.
 
 ## Required Next Step For Paid Closet AI

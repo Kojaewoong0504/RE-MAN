@@ -62,6 +62,16 @@ describe("firebase session", () => {
     expect(signInWithRedirectMock).toHaveBeenCalledTimes(1);
   });
 
+  it("uses redirect first when requested for mobile or in-app browsers", async () => {
+    const { signInWithGoogleSession } = await import("@/lib/firebase/session");
+
+    const result = await signInWithGoogleSession({ preferRedirect: true });
+
+    expect(result).toEqual({ status: "redirecting" });
+    expect(signInWithPopupMock).not.toHaveBeenCalled();
+    expect(signInWithRedirectMock).toHaveBeenCalledTimes(1);
+  });
+
   it("normalizes a completed redirect login into an authenticated session", async () => {
     getRedirectResultMock.mockResolvedValueOnce(credential);
 

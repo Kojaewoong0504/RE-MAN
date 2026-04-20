@@ -92,12 +92,20 @@ export function PhotoUploader({
             <span className="metric-cell">밝은 곳</span>
           </div>
           <div className="space-y-3">
-            <label
-              className="ui-button cursor-pointer py-4"
-              htmlFor="photo-upload"
-            >
-              {image ? "사진 다시 선택하기" : "사진 선택하기"}
-            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label
+                className="ui-button cursor-pointer py-4"
+                htmlFor="photo-upload"
+              >
+                {image ? "다시 선택" : "사진 선택"}
+              </label>
+              <label
+                className="ui-button-secondary cursor-pointer justify-center py-4"
+                htmlFor="photo-camera"
+              >
+                카메라 촬영
+              </label>
+            </div>
             <p className="text-center text-xs font-bold leading-5 text-muted">
               분석 후 삭제.
             </p>
@@ -116,6 +124,24 @@ export function PhotoUploader({
                 }
 
                 await handleFileChange(file);
+                event.target.value = "";
+              }}
+              type="file"
+            />
+            <input
+              className="sr-only"
+              accept={IMAGE_INPUT_ACCEPT}
+              capture="environment"
+              id="photo-camera"
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+
+                if (!file) {
+                  return;
+                }
+
+                await handleFileChange(file);
+                event.target.value = "";
               }}
               type="file"
             />

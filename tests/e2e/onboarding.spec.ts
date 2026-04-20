@@ -429,6 +429,19 @@ test("closet add button opens batch-first mode chooser", async ({ page }) => {
   await expect(page.getByText("한 벌 직접 등록")).toBeVisible();
 });
 
+test("style upload exposes gallery and camera inputs on mobile", async ({ page }) => {
+  await addTryOnSession(page, "e2e-style-mobile-camera-user");
+  await page.goto("/programs/style/onboarding/survey");
+  await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
+  await page.getByRole("button", { name: "소개팅 / 이성 만남" }).click();
+  await page.getByRole("button", { name: "15~30만원" }).click();
+  await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
+
+  await expect(page.locator("#photo-upload")).toHaveAttribute("accept", "image/*");
+  await expect(page.locator("#photo-camera")).toHaveAttribute("accept", "image/*");
+  await expect(page.locator("#photo-camera")).toHaveAttribute("capture", "environment");
+});
+
 test("onboarding flow captures input and renders feedback", async ({ page }) => {
   await addTryOnSession(page, "e2e-feedback-flow-user");
   await page.goto("/");
