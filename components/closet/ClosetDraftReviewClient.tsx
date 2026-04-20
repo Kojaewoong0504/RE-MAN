@@ -149,6 +149,11 @@ export function ClosetDraftReviewClient() {
   }
 
   const summary = getClosetBatchSummary(drafts);
+  const filterCounts = {
+    all: summary.visibleCount,
+    needs_review: summary.reviewCount,
+    saveable: summary.saveableCount
+  };
   const visibleDrafts = drafts.filter((draft) => {
     if (draft.deleted) {
       return false;
@@ -194,21 +199,21 @@ export function ClosetDraftReviewClient() {
           onClick={() => setFilter("all")}
           type="button"
         >
-          전체
+          전체 {filterCounts.all}
         </button>
         <button
           aria-pressed={filter === "needs_review"}
           onClick={() => setFilter("needs_review")}
           type="button"
         >
-          확인 필요만
+          확인 필요만 {filterCounts.needs_review}
         </button>
         <button
           aria-pressed={filter === "saveable"}
           onClick={() => setFilter("saveable")}
           type="button"
         >
-          저장 가능만
+          저장 가능만 {filterCounts.saveable}
         </button>
       </div>
 

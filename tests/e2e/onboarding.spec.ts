@@ -420,16 +420,19 @@ test("closet review filters drafts by review status", async ({ page }) => {
 
   await expect(page.getByText("저장할 셔츠")).toBeVisible();
   await expect(page.getByText("확인할 바지")).toBeVisible();
+  await expect(page.getByRole("button", { name: "전체 2" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "확인 필요만 1" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "저장 가능만 1" })).toBeVisible();
 
-  await page.getByRole("button", { name: "확인 필요만" }).click();
+  await page.getByRole("button", { name: "확인 필요만 1" }).click();
   await expect(page.getByText("저장할 셔츠")).toHaveCount(0);
   await expect(page.getByText("확인할 바지")).toBeVisible();
 
-  await page.getByRole("button", { name: "저장 가능만" }).click();
+  await page.getByRole("button", { name: "저장 가능만 1" }).click();
   await expect(page.getByText("저장할 셔츠")).toBeVisible();
   await expect(page.getByText("확인할 바지")).toHaveCount(0);
 
-  await page.getByRole("button", { name: "전체" }).click();
+  await page.getByRole("button", { name: "전체 2" }).click();
   await expect(page.getByText("저장할 셔츠")).toBeVisible();
   await expect(page.getByText("확인할 바지")).toBeVisible();
 });
