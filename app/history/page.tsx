@@ -379,6 +379,38 @@ export default function HistoryPage() {
                             </div>
                           </div>
                         ) : null}
+                        <div className="history-basis">
+                          <div className="history-section-head">
+                            <p className="poster-kicker">다시 체크</p>
+                            <small>유지 항목</small>
+                          </div>
+                          <div className="history-basis-grid">
+                            <div className="history-basis-chip">
+                              <span>
+                                <b>옷장</b>
+                                <em>유지</em>
+                              </span>
+                              <strong>옷장 유지</strong>
+                              <small>등록한 옷은 그대로 씁니다.</small>
+                            </div>
+                            <div className="history-basis-chip">
+                              <span>
+                                <b>반응</b>
+                                <em>유지</em>
+                              </span>
+                              <strong>반응 유지</strong>
+                              <small>좋아한 방향을 다음 추천에 반영합니다.</small>
+                            </div>
+                            <div className="history-basis-chip">
+                              <span>
+                                <b>사진</b>
+                                <em>새로</em>
+                              </span>
+                              <strong>사진만 새로</strong>
+                              <small>현재 사진과 결과만 비웁니다.</small>
+                            </div>
+                          </div>
+                        </div>
                         <button
                           className="history-repeat-button"
                           onClick={handleStartSimilarCheck}

@@ -1235,7 +1235,11 @@ test("profile shows saved style check context for signed-in users", async ({ pag
   await expect(page.getByText("시작 크레딧")).toBeVisible();
   await expect(page.getByText("+3")).toBeVisible();
   await expect(page.getByText("스타일", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("저장됨")).toBeVisible();
+  await expect(page.getByText("저장됨", { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "내 데이터" })).toBeVisible();
+  await expect(page.getByText("옷장 3개")).toBeVisible();
+  await expect(page.getByText("기록 3개")).toBeVisible();
+  await expect(page.getByText("반응 저장됨")).toBeVisible();
   await expect(page.getByText("최근 스타일 체크 진단")).toHaveCount(0);
   await expect(page.getByText("Saved Feedback")).toHaveCount(0);
   await expect(page.getByText("Deep Dive")).toHaveCount(0);
@@ -1252,6 +1256,9 @@ test("profile shows saved style check context for signed-in users", async ({ pag
   await expect(page.getByText("핏 체크")).toBeVisible();
   await expect(page.getByText("Records")).toBeVisible();
   await page.getByRole("button", { name: /기본 조합/ }).click();
+  await expect(page.getByText("옷장 유지")).toBeVisible();
+  await expect(page.getByText("반응 유지")).toBeVisible();
+  await expect(page.getByText("사진만 새로")).toBeVisible();
   await expect(page.getByRole("region", { name: "저장한 반응" })).toBeVisible();
   await expect(page.getByRole("region", { name: "다음 행동" })).toBeVisible();
   await expect(page.getByText("추천에 쓴 옷")).toBeVisible();

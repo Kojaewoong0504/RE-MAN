@@ -10,6 +10,8 @@ import { readCurrentUserProfile } from "@/lib/firebase/firestore";
 import { signOutFirebaseSession } from "@/lib/firebase/session";
 import {
   getStyleProgramSnapshot,
+  getStyleFeedbackTimeline,
+  normalizeClosetItems,
   patchOnboardingState,
   readOnboardingState,
   type StyleProgramSnapshot
@@ -33,6 +35,28 @@ const programLabels: Record<string, string> = {
   skin: "피부"
 };
 
+type ProfileDataSummary = {
+  closetCount: number;
+  historyCount: number;
+  hasRecommendationFeedback: boolean;
+};
+
+const emptyDataSummary: ProfileDataSummary = {
+  closetCount: 0,
+  historyCount: 0,
+  hasRecommendationFeedback: false
+};
+
+function getProfileDataSummary(): ProfileDataSummary {
+  const state = readOnboardingState();
+
+  return {
+    closetCount: normalizeClosetItems(state.closet_items).length,
+    historyCount: getStyleFeedbackTimeline(state).length,
+    hasRecommendationFeedback: Boolean(state.recommendation_feedback)
+  };
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -41,6 +65,7 @@ export default function ProfilePage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [programSnapshot, setProgramSnapshot] =
     useState<StyleProgramSnapshot>(emptyProgramSnapshot);
+  const [dataSummary, setDataSummary] = useState<ProfileDataSummary>(emptyDataSummary);
 
   useEffect(() => {
     let active = true;
@@ -61,6 +86,7 @@ export default function ProfilePage() {
 
       setUser(sessionUser);
       setProgramSnapshot(getStyleProgramSnapshot(readOnboardingState()));
+      setDataSummary(getProfileDataSummary());
 
       try {
         const nextProfile = await readCurrentUserProfile(sessionUser.uid);
@@ -153,6 +179,25 @@ export default function ProfilePage() {
         <div>
           <p className="poster-kicker">Data</p>
           <p>보호됨</p>
+        </div>
+      </section>
+
+      <section aria-label="내 데이터" className="profile-mini-grid mt-4">
+        <div>
+          <p className="poster-kicker">Closet</p>
+          <p>옷장 {dataSummary.closetCount}개</p>
+        </div>
+        <div>
+          <p className="poster-kicker">History</p>
+          <p>기록 {dataSummary.historyCount}개</p>
+        </div>
+        <div>
+          <p className="poster-kicker">Feedback</p>
+          <p>{dataSummary.hasRecommendationFeedback ? "반응 저장됨" : "반응 없음"}</p>
+        </div>
+        <div>
+          <p className="poster-kicker">Reuse</p>
+          <p>다음 체크 반영</p>
         </div>
       </section>
 
