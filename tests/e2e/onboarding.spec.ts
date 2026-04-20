@@ -17,6 +17,18 @@ const invalidGif = {
   buffer: Buffer.from("GIF89a")
 };
 
+async function selectClosetOptionalField(
+  page: import("@playwright/test").Page,
+  label: string,
+  value: string
+) {
+  await page
+    .locator("label")
+    .filter({ hasText: new RegExp(`^${label}`) })
+    .locator("select")
+    .selectOption(value);
+}
+
 async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
@@ -33,7 +45,7 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByLabel("착용감").selectOption("잘 맞음");
   await page.getByLabel("빈도").selectOption("자주 입음");
   await page.getByLabel("계절").selectOption("사계절");
-  await page.getByLabel("상태").selectOption("깨끗함");
+  await selectClosetOptionalField(page, "상태", "깨끗함");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
@@ -44,7 +56,7 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByLabel("색").fill("검정");
   await page.getByLabel("사이즈").fill("32");
   await page.getByLabel("빈도").selectOption("거의 안 입음");
-  await page.getByLabel("상태").selectOption("깨끗함");
+  await selectClosetOptionalField(page, "상태", "깨끗함");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
@@ -600,6 +612,30 @@ test("upload step rejects unsupported photos and requires useful text fallback",
   await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeEnabled();
 });
 
+test("upload step summarizes analysis readiness in one status card", async ({ page }) => {
+  await addTryOnSession(page, "e2e-upload-readiness-user");
+  await page.goto("/programs/style/onboarding/survey");
+  await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
+  await page.getByRole("button", { name: "소개팅 / 이성 만남" }).click();
+  await page.getByRole("button", { name: "15~30만원" }).click();
+  await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
+
+  const readiness = page.getByRole("region", { name: "분석 준비 상태" });
+  await expect(readiness).toBeVisible();
+  await expect(readiness.getByRole("heading", { name: "사진과 옷장 필요" })).toBeVisible();
+  await expect(readiness.getByText("사진 필요")).toBeVisible();
+  await expect(readiness.getByText("상의, 하의, 신발 필요")).toBeVisible();
+  await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
+
+  await page.locator("#photo-upload").setInputFiles(tinyPng);
+  await fillUploadContext(page);
+
+  await expect(readiness.getByRole("heading", { name: "분석 가능" })).toBeVisible();
+  await expect(readiness.getByText("사진 준비됨")).toBeVisible();
+  await expect(readiness.getByText("상의, 하의, 신발 준비됨")).toBeVisible();
+  await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeEnabled();
+});
+
 test("result action hub can start a new style check", async ({ page }) => {
   const uploadedImage = `data:image/png;base64,${tinyPng.buffer.toString("base64")}`;
 
@@ -816,7 +852,9 @@ test("upload requires top bottom and shoes closet context before analysis", asyn
   await expect(page.getByLabel("추천에 필요한 옷장").getByText("상의 ✓")).toBeVisible();
   await expect(page.getByLabel("추천에 필요한 옷장").getByText("하의 필요")).toBeVisible();
   await expect(page.getByLabel("추천에 필요한 옷장").getByText("신발 필요")).toBeVisible();
-  await expect(page.getByText("하의, 신발 필요")).toBeVisible();
+  await expect(
+    page.locator(".upload-closet-summary").getByText("하의, 신발 필요")
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
 
   await page.getByRole("button", { name: "하의 추가" }).click();
@@ -1289,13 +1327,13 @@ test("closet page saves items into the next style check context", async ({ page 
   await page.getByLabel("착용감").selectOption("잘 맞음");
   await page.getByLabel("빈도").selectOption("자주 입음");
   await page.getByLabel("계절").selectOption("봄/가을");
-  await page.getByLabel("상태").selectOption("깨끗함");
+  await selectClosetOptionalField(page, "상태", "깨끗함");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
   await page.getByRole("button", { name: "수정" }).click();
   await expect(page.getByRole("heading", { name: "옷 수정" })).toBeVisible();
   await page.getByLabel("빈도").selectOption("가끔 입음");
   await page.getByLabel("계절").selectOption("여름");
-  await page.getByLabel("상태").selectOption("수선 필요");
+  await selectClosetOptionalField(page, "상태", "수선 필요");
   await page.getByRole("button", { name: /변경 저장/ }).click();
   await expect(page.getByText("레귤러 · L · 잘 맞음 · 가끔 입음 · 여름 · 수선 필요")).toBeVisible();
 
@@ -1549,7 +1587,8 @@ test("history can restart a similar style check while preserving context", async
 
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/upload$/);
   await expect(page.getByRole("heading", { name: "사진이 기준입니다" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /이전 반응 반영/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /이전 기준 보기/ })).toBeVisible();
+  await expect(page.locator(".feedback-memory-summary")).toHaveCount(0);
 
   const resetState = await page.evaluate(() => JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}"));
 
@@ -1628,8 +1667,12 @@ test("profile can start a fresh photo check without losing closet context", asyn
   await expect(page.getByRole("heading", { name: "사진이 기준입니다" })).toBeVisible();
   await expect(page.getByText("사진 선택하기")).toBeVisible();
   await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
-  await expect(page.getByText("상의, 하의, 신발 준비됨")).toBeVisible();
-  await expect(page.getByRole("button", { name: /이전 반응 반영/ })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "분석 준비 상태" }).getByText("상의, 하의, 신발 준비됨")
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /이전 기준 보기/ })).toBeVisible();
+  await expect(page.locator(".feedback-memory-summary")).toHaveCount(0);
+  await page.getByRole("button", { name: /이전 기준 보기/ }).click();
   const uploadMemory = page.locator(".feedback-memory-summary").first();
   await expect(uploadMemory.getByText("다음 추천 기준", { exact: true })).toBeVisible();
   await expect(uploadMemory.getByText("좋아한 방향")).toBeVisible();

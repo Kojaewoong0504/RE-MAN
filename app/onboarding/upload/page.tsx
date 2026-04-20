@@ -212,6 +212,18 @@ export default function UploadPage() {
   const hasClosetInput = closetReadiness.isReady;
   const hasInput = hasPhotoInput && hasClosetInput;
   const missingClosetLabels = closetReadiness.missingCategories.map(getClosetCategoryLabel);
+  const photoStatusLabel = hasPhotoInput ? "사진 준비됨" : "사진 필요";
+  const closetStatusLabel = hasClosetInput
+    ? "상의, 하의, 신발 준비됨"
+    : `${missingClosetLabels.join(", ")} 필요`;
+  const readinessTitle = hasInput
+    ? "분석 가능"
+    : !hasPhotoInput && !hasClosetInput
+      ? "사진과 옷장 필요"
+      : !hasPhotoInput
+        ? "사진 필요"
+        : "옷장 필요";
+  const hasMemoryContext = memoryPreview.length > 0 || feedbackMemoryRows.length > 0;
 
   return (
     <main className="app-shell space-y-7">
@@ -242,6 +254,16 @@ export default function UploadPage() {
           <p className="screen-copy">전신, 정면, 밝은 곳.</p>
         </div>
       </div>
+      <section aria-label="분석 준비 상태" className="upload-readiness-card">
+        <div>
+          <p className="poster-kicker">Ready</p>
+          <h2>{readinessTitle}</h2>
+        </div>
+        <div className="upload-readiness-grid">
+          <span className={hasPhotoInput ? "upload-ready" : ""}>{photoStatusLabel}</span>
+          <span className={hasClosetInput ? "upload-ready" : ""}>{closetStatusLabel}</span>
+        </div>
+      </section>
       <section className="upload-step-card">
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -264,7 +286,7 @@ export default function UploadPage() {
         />
       </section>
       <div className="space-y-7 pb-24">
-        {memoryPreview.length > 0 ? (
+        {hasMemoryContext ? (
           <section className="upload-memory-card">
             <button
               aria-expanded={isMemoryOpen}
@@ -274,16 +296,16 @@ export default function UploadPage() {
             >
               <span>
                 <span className="poster-kicker">Memory</span>
-                <strong>이전 반응 반영</strong>
+                <strong>이전 기준 보기</strong>
                 <small>
                   {feedbackMemoryRows.length > 0
                     ? "다음 추천 기준을 함께 보냅니다"
                     : `${memoryPreview.length}개 기록을 참고합니다`}
                 </small>
               </span>
-              <span>{isMemoryOpen ? "접기" : "보기"}</span>
+              <span>{isMemoryOpen ? "닫기" : "보기"}</span>
             </button>
-            {feedbackMemoryRows.length > 0 ? (
+            {isMemoryOpen && feedbackMemoryRows.length > 0 ? (
               <div className="feedback-memory-summary">
                 <strong>다음 추천 기준</strong>
                 {feedbackMemoryRows.map((row) => (

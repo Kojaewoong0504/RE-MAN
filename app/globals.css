@@ -643,6 +643,35 @@ a {
     border-color: var(--color-line);
   }
 
+  .upload-readiness-card {
+    @apply grid gap-4 rounded-[26px] p-5;
+    background: var(--color-ink);
+    color: var(--color-bg);
+  }
+
+  .upload-readiness-card .poster-kicker {
+    color: rgba(248, 249, 250, 0.58);
+  }
+
+  .upload-readiness-card h2 {
+    @apply mt-2 text-[30px] font-black leading-none tracking-[-0.06em];
+  }
+
+  .upload-readiness-grid {
+    @apply grid grid-cols-2 gap-2;
+  }
+
+  .upload-readiness-grid span {
+    @apply rounded-xl px-3 py-3 text-center text-xs font-black;
+    background: rgba(248, 249, 250, 0.12);
+    color: rgba(248, 249, 250, 0.64);
+  }
+
+  .upload-readiness-grid .upload-ready {
+    background: var(--color-bg);
+    color: var(--color-ink);
+  }
+
   .upload-closet-summary {
     @apply grid grid-cols-[1fr_auto] items-center gap-4 border p-4;
     border-color: var(--color-line);
