@@ -9,9 +9,28 @@ const PROTECTED_PREFIXES = [
   "/credits",
   "/programs/style/onboarding"
 ];
+const CANONICAL_PRODUCTION_HOST = "re-man.vercel.app";
+
+function shouldRedirectToCanonicalHost(host: string) {
+  return (
+    host.endsWith(".vercel.app") &&
+    host !== CANONICAL_PRODUCTION_HOST &&
+    !host.startsWith("localhost") &&
+    !host.startsWith("127.0.0.1")
+  );
+}
 
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  const host = request.headers.get("host") ?? request.nextUrl.host;
+
+  if (shouldRedirectToCanonicalHost(host)) {
+    const canonicalUrl = request.nextUrl.clone();
+    canonicalUrl.protocol = "https:";
+    canonicalUrl.host = CANONICAL_PRODUCTION_HOST;
+    return NextResponse.redirect(canonicalUrl);
+  }
+
   const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (!isProtected) {

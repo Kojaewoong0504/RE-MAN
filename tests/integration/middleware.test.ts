@@ -4,6 +4,29 @@ import { middleware } from "@/middleware";
 import { SESSION_COOKIE_NAMES } from "@/lib/auth/constants";
 
 describe("auth middleware", () => {
+  it("redirects Vercel project aliases to the canonical production host", () => {
+    const request = new NextRequest(
+      "https://re-man-kojaewoong0504s-projects.vercel.app/login?returnTo=%2Fcloset"
+    );
+    const response = middleware(request);
+    const location = response.headers.get("location");
+
+    expect(response.status).toBe(307);
+    expect(location).not.toBeNull();
+    expect(new URL(location ?? "http://localhost").host).toBe("re-man.vercel.app");
+    expect(new URL(location ?? "http://localhost").pathname).toBe("/login");
+    expect(new URL(location ?? "http://localhost").searchParams.get("returnTo")).toBe(
+      "/closet"
+    );
+  });
+
+  it("does not redirect the canonical production host", () => {
+    const request = new NextRequest("https://re-man.vercel.app/login");
+    const response = middleware(request);
+
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
   it("redirects protected routes without session cookies", () => {
     const request = new NextRequest("http://127.0.0.1:3001/credits");
     const response = middleware(request);
