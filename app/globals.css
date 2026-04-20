@@ -1588,7 +1588,7 @@ a {
   }
 
   .history-detail-grid {
-    @apply grid grid-cols-2 gap-2;
+    @apply grid gap-2;
   }
 
   .history-detail-panel {

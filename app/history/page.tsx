@@ -341,21 +341,12 @@ export default function HistoryPage() {
                     {isExpanded ? (
                       <div className="history-card-detail">
                         <div className="history-detail-grid">
-                          <section aria-label="저장한 반응" className="history-detail-panel">
-                            <span>내 반응</span>
-                            <strong>
-                              {card.reaction
-                                ? compactUiText(
-                                    card.reactionNote
-                                      ? `${card.reaction} · ${card.reactionNote}`
-                                      : card.reaction,
-                                    34
-                                  )
-                                : "없음"}
-                            </strong>
+                          <section aria-label="추천 조합" className="history-detail-panel">
+                            <span>추천 조합</span>
+                            <strong>{compactUiText(card.title, 34)}</strong>
                           </section>
                           <section aria-label="다음 행동" className="history-detail-panel">
-                            <span>다음 행동</span>
+                            <span>오늘 실행</span>
                             <strong>{compactUiText(card.action ?? "다시 체크", 34)}</strong>
                           </section>
                         </div>
@@ -379,6 +370,19 @@ export default function HistoryPage() {
                             </div>
                           </div>
                         ) : null}
+                        <section aria-label="저장한 반응" className="history-detail-panel">
+                          <span>내 반응</span>
+                          <strong>
+                            {card.reaction
+                              ? compactUiText(
+                                  card.reactionNote
+                                    ? `${card.reaction} · ${card.reactionNote}`
+                                    : card.reaction,
+                                  54
+                                )
+                              : "없음"}
+                          </strong>
+                        </section>
                         <div className="history-basis">
                           <div className="history-section-head">
                             <p className="poster-kicker">다시 체크</p>

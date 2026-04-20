@@ -1524,6 +1524,21 @@ test("profile shows saved style check context for signed-in users", async ({ pag
   await expect(page.getByText("Records")).toBeVisible();
   await page.getByRole("button", { name: /기본 조합/ }).click();
   await expect(page.getByText("옷장 ID 검증").first()).toBeVisible();
+  await expect(page.getByText("추천 조합")).toBeVisible();
+  await expect(page.getByText("오늘 실행")).toBeVisible();
+  const historyRecommendationBox = await page.getByText("추천 조합").boundingBox();
+  const historyActionBox = await page.getByText("오늘 실행").boundingBox();
+  const historyBasisBox = await page.getByText("추천에 쓴 옷").boundingBox();
+  const historyReactionBox = await page.getByText("내 반응", { exact: true }).boundingBox();
+  expect(historyRecommendationBox).not.toBeNull();
+  expect(historyActionBox).not.toBeNull();
+  expect(historyBasisBox).not.toBeNull();
+  expect(historyReactionBox).not.toBeNull();
+  if (historyRecommendationBox && historyActionBox && historyBasisBox && historyReactionBox) {
+    expect(historyRecommendationBox.y).toBeLessThan(historyActionBox.y);
+    expect(historyActionBox.y).toBeLessThan(historyBasisBox.y);
+    expect(historyBasisBox.y).toBeLessThan(historyReactionBox.y);
+  }
   await expect(page.getByText("옷장 유지")).toBeVisible();
   await expect(page.getByText("반응 유지")).toBeVisible();
   await expect(page.getByText("사진만 새로")).toBeVisible();
