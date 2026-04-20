@@ -418,23 +418,65 @@ test("closet review filters drafts by review status", async ({ page }) => {
 
   await page.goto("/closet/review");
 
-  await expect(page.getByText("저장할 셔츠")).toBeVisible();
-  await expect(page.getByText("확인할 바지")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "저장할 셔츠" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "확인할 바지" })).toBeVisible();
   await expect(page.getByRole("button", { name: "전체 2" })).toBeVisible();
   await expect(page.getByRole("button", { name: "확인 필요만 1" })).toBeVisible();
   await expect(page.getByRole("button", { name: "저장 가능만 1" })).toBeVisible();
 
   await page.getByRole("button", { name: "확인 필요만 1" }).click();
-  await expect(page.getByText("저장할 셔츠")).toHaveCount(0);
-  await expect(page.getByText("확인할 바지")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "저장할 셔츠" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "확인할 바지" })).toBeVisible();
 
   await page.getByRole("button", { name: "저장 가능만 1" }).click();
-  await expect(page.getByText("저장할 셔츠")).toBeVisible();
-  await expect(page.getByText("확인할 바지")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "저장할 셔츠" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "확인할 바지" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "전체 2" }).click();
-  await expect(page.getByText("저장할 셔츠")).toBeVisible();
-  await expect(page.getByText("확인할 바지")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "저장할 셔츠" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "확인할 바지" })).toBeVisible();
+});
+
+test("closet review can quick confirm needs-review drafts", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-review-quick-confirm-user");
+
+  await page.addInitScript(({ image }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {},
+        closet_item_drafts: [
+          {
+            id: "draft-saveable",
+            photo_data_url: image,
+            analysis_status: "confirmed",
+            category: "tops",
+            name: "저장할 셔츠",
+            analysis_confidence: 0.86
+          },
+          {
+            id: "draft-review",
+            photo_data_url: image,
+            analysis_status: "needs_review",
+            category: "bottoms",
+            name: "확인할 바지"
+          }
+        ]
+      })
+    );
+  }, { image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
+
+  await page.goto("/closet/review");
+  await page.getByRole("button", { name: "확인 필요만 1" }).click();
+  await page.getByLabel("확인할 바지 빠른 이름").fill("연청 데님");
+  await page.getByRole("button", { name: "연청 데님 확정" }).click();
+
+  await expect(page.getByRole("button", { name: "확인 필요만 0" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "저장 가능만 2" })).toBeVisible();
+
+  await page.getByRole("button", { name: "저장 가능만 2" }).click();
+  await expect(page.getByRole("heading", { name: "저장할 셔츠" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "연청 데님" })).toBeVisible();
 });
 
 test("closet review can confirm draft categories without opening text edit", async ({ page }) => {

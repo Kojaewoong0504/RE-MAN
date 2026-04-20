@@ -88,6 +88,26 @@ export function ClosetDraftReviewClient() {
     setEditName("");
   }
 
+  function updateDraftName(id: string, name: string) {
+    persist(drafts.map((draft) => (draft.id === id ? { ...draft, name } : draft)));
+  }
+
+  function confirmDraft(id: string) {
+    persist(
+      drafts.map((draft) =>
+        draft.id === id
+          ? {
+              ...draft,
+              name: draft.name?.trim() || draft.detected_type?.trim() || "옷장 사진",
+              analysis_status: "confirmed" as const,
+              analysis_confidence: Math.max(draft.analysis_confidence ?? 0, 0.7)
+            }
+          : draft
+      )
+    );
+    setFilter("saveable");
+  }
+
   function removeDraft(id: string) {
     persist(drafts.map((draft) => (draft.id === id ? { ...draft, deleted: true } : draft)));
   }
@@ -257,6 +277,27 @@ export function ClosetDraftReviewClient() {
                     </button>
                   ))}
                 </div>
+
+                {draft.analysis_status === "needs_review" ? (
+                  <div className="closet-review-quick-edit">
+                    <label>
+                      <span>이름</span>
+                      <input
+                        aria-label={`${getDraftName(draft)} 빠른 이름`}
+                        onChange={(event) => updateDraftName(draft.id, event.target.value)}
+                        value={draft.name ?? ""}
+                      />
+                    </label>
+                    <button
+                      className="ui-button-accent h-11"
+                      disabled={!draft.category || !draft.name?.trim()}
+                      onClick={() => confirmDraft(draft.id)}
+                      type="button"
+                    >
+                      {getDraftName(draft)} 확정
+                    </button>
+                  </div>
+                ) : null}
 
                 {editingId === draft.id ? (
                   <div className="grid gap-2">

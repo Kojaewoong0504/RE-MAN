@@ -1903,6 +1903,19 @@ a {
     color: var(--color-bg);
   }
 
+  .closet-review-quick-edit {
+    @apply grid gap-2 rounded-2xl p-3;
+    background: rgba(5, 17, 37, 0.05);
+  }
+
+  .closet-review-quick-edit label {
+    @apply grid gap-1 text-xs font-black text-muted;
+  }
+
+  .closet-review-quick-edit input {
+    @apply min-h-11 rounded-2xl border-0 bg-white px-3 text-sm font-black text-ink outline-none;
+  }
+
   .closet-mode-sheet {
     @apply fixed inset-x-5 bottom-[calc(var(--bottom-tab-height)+1rem)] z-40 grid gap-3 rounded-[2rem] p-4;
     background: rgba(248, 249, 250, 0.96);
