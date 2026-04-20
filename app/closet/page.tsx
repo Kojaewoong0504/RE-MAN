@@ -66,12 +66,17 @@ export default function ClosetPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
+  const [reviewSavedCount, setReviewSavedCount] = useState(0);
   const hasUserEditedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
 
     async function load() {
+      const searchParams = new URLSearchParams(window.location.search);
+      const isFromReview = searchParams.get("from") === "review";
+      const savedCount = Number(searchParams.get("saved") ?? "0");
+      setReviewSavedCount(isFromReview && Number.isFinite(savedCount) ? Math.max(0, savedCount) : 0);
       setIsLoading(true);
       const sessionUser = await fetchAuthSession();
 
@@ -252,6 +257,18 @@ export default function ClosetPage() {
             })}
           </div>
         </section>
+
+        {reviewSavedCount > 0 ? (
+          <section aria-label="옷장 저장 결과" className="closet-review-result">
+            <p className="poster-kicker">Saved</p>
+            <h2>{reviewSavedCount}벌 저장됨</h2>
+            <p>
+              {closetReadiness.isReady
+                ? "스타일 체크 준비 완료"
+                : `${missingClosetLabels.join(", ")}만 추가하면 분석 가능`}
+            </p>
+          </section>
+        ) : null}
 
         <section className="ui-panel-muted space-y-5">
           {isLoading ? (

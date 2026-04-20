@@ -108,9 +108,10 @@ export function ClosetDraftReviewClient() {
     setSaveError("");
     const current = readOnboardingState();
     const existingItems = normalizeClosetItems(current.closet_items);
+    const saveableDrafts = selectSaveableDrafts(drafts);
     const nextItems = [
       ...existingItems,
-      ...selectSaveableDrafts(drafts).map(draftToClosetItem)
+      ...saveableDrafts.map(draftToClosetItem)
     ];
     const localState = saveClosetContextToOnboardingState({
       items: nextItems,
@@ -136,7 +137,7 @@ export function ClosetDraftReviewClient() {
       }
 
       patchOnboardingState({ closet_item_drafts: [] });
-      router.push("/closet");
+      router.push(`/closet?from=review&saved=${saveableDrafts.length}`);
     } catch {
       setSaveError("로컬에는 저장됨. 계정 동기화는 실패했습니다.");
       setIsSaving(false);

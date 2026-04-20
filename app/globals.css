@@ -950,6 +950,21 @@ a {
     @apply text-sm font-black leading-5 text-muted;
   }
 
+  .closet-review-result {
+    @apply rounded-[1.75rem] p-5;
+    background: var(--color-ink);
+    color: var(--color-bg);
+  }
+
+  .closet-review-result h2 {
+    @apply mt-2 text-2xl font-black tracking-[-0.04em];
+  }
+
+  .closet-review-result p:last-child {
+    @apply mt-2 text-sm font-black;
+    color: rgba(248, 249, 250, 0.78);
+  }
+
   .closet-readiness {
     @apply grid grid-cols-3 gap-2;
   }

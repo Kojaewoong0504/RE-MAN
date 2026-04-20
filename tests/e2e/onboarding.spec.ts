@@ -245,7 +245,7 @@ test("closet review saves confirmed drafts and ignores deleted drafts", async ({
   await page.getByRole("button", { name: "흰색 스니커즈 삭제" }).click();
   await page.getByRole("button", { name: "옷장에 저장" }).click();
 
-  await expect(page).toHaveURL(/\/closet$/);
+  await expect(page).toHaveURL(/\/closet\?from=review&saved=2$/);
   await page.getByRole("button", { name: /상의/ }).click();
   await expect(page.getByText("네이비 셔츠")).toBeVisible();
   await page.getByRole("button", { name: /하의/ }).click();
@@ -332,6 +332,78 @@ test("closet review can confirm draft categories without opening text edit", asy
       })
     ]
   });
+});
+
+test("closet review save shows readiness and continues into style check", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-review-ready-user");
+
+  await page.route("**/api/closet/items", async (route) => {
+    const payload = route.request().postDataJSON();
+
+    await route.fulfill({
+      contentType: "application/json",
+      status: 200,
+      body: JSON.stringify({
+        closet_items: payload.items,
+        closet_profile: payload.closet_profile
+      })
+    });
+  });
+
+  await page.addInitScript(({ image }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원"
+        },
+        closet_item_drafts: [
+          {
+            id: "draft-ready-top",
+            photo_data_url: image,
+            analysis_status: "confirmed",
+            category: "tops",
+            name: "네이비 셔츠",
+            analysis_confidence: 0.82,
+            size_source: "unknown",
+            size_confidence: 0
+          },
+          {
+            id: "draft-ready-bottom",
+            photo_data_url: image,
+            analysis_status: "confirmed",
+            category: "bottoms",
+            name: "검정 슬랙스",
+            analysis_confidence: 0.82,
+            size_source: "unknown",
+            size_confidence: 0
+          },
+          {
+            id: "draft-ready-shoes",
+            photo_data_url: image,
+            analysis_status: "confirmed",
+            category: "shoes",
+            name: "흰색 스니커즈",
+            analysis_confidence: 0.82,
+            size_source: "unknown",
+            size_confidence: 0
+          }
+        ]
+      })
+    );
+  }, { image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
+
+  await page.goto("/closet/review");
+  await page.getByRole("button", { name: "옷장에 저장" }).click();
+  await expect(page).toHaveURL(/\/closet\?from=review/);
+  await expect(page.getByRole("region", { name: "옷장 저장 결과" })).toBeVisible();
+  await expect(page.getByText("3벌 저장됨")).toBeVisible();
+  await expect(page.getByText("스타일 체크 준비 완료")).toBeVisible();
+  await page.getByRole("button", { name: "이 옷장으로 스타일 체크" }).click();
+  await expect(page).toHaveURL(/\/programs\/style\/onboarding\/upload$/);
+  await expect(page.getByText("상의, 하의, 신발 준비됨")).toBeVisible();
 });
 
 test("closet add button opens batch-first mode chooser", async ({ page }) => {
