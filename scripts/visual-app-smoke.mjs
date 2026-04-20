@@ -66,8 +66,13 @@ const pages = [
     id: "result",
     path: "/programs/style/onboarding/result",
     visibleText: "오늘 조합",
-    expectedTexts: ["내 옷장에서 쓴 것", "상의 · 하의 · 신발 중", "사이즈 후보 보기", "체크 3회"],
-    hiddenTexts: ["사이즈 체크 후보", "구매하기"],
+    expectedTexts: [
+      "내 옷장에서 쓴 것",
+      "상의 · 하의 · 신발 중",
+      "이 추천이 도움이 됐나요?",
+      "체크 3회"
+    ],
+    hiddenTexts: ["사이즈 체크 후보", "사이즈 후보 보기", "조합 느낌 보기", "계정 저장 열기", "구매하기"],
   },
   {
     id: "closet",

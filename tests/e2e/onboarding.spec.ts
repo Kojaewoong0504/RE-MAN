@@ -388,10 +388,6 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "흰색 무지 티셔츠" })).toBeVisible();
   await expect(page.getByText(/추천에 사용|비슷한 후보/).first()).toBeVisible();
   await expect(page.getByText("자주 입고 잘 맞음").first()).toHaveCount(0);
-  const resultActionDock = page.getByLabel("다음 행동");
-  await expect(resultActionDock.getByRole("link", { name: "옷장" })).toBeVisible();
-  await expect(resultActionDock.getByRole("link", { name: "기록" })).toBeVisible();
-  await expect(resultActionDock.getByRole("button", { name: "새 체크" })).toBeVisible();
   await expect(page.getByRole("link", { name: "크레딧 확인" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /핏 더 보기/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /레퍼런스\/실착 보기/ })).toHaveCount(0);
@@ -404,15 +400,13 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(page.getByText("추천 상의 꺼내기")).toBeVisible();
   await expect(page.getByText("하의와 신발 같이 입기")).toBeVisible();
   await expect(page.getByText("거울 앞에서 사진 비교하기")).toBeVisible();
-  await page.getByRole("button", { name: /진단과 이유 보기/ }).click();
-  await expect(page.getByText("청바지 + 무지 티셔츠 중심의 코디라")).toBeVisible();
-  await expect(page.getByText("새로 사기보다 지금 가진 옷")).toBeVisible();
-  await page.getByRole("button", { name: /근거 자세히 보기/ }).click();
-  await expect(page.getByText("자주 입고 잘 맞음").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /진단과 이유 보기/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /근거 자세히 보기/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /바꿀 점 3개 보기/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /조합 느낌 보기/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /사이즈 후보 보기/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /계정 저장 열기/ })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
-  await page.getByRole("button", { name: /바꿀 점 3개 보기/ }).click();
-  await expect(page.getByText("바지 핏을 조금 더 곧게 잡으면")).toBeVisible();
-  await page.getByRole("button", { name: /추천 반응 남기기/ }).click();
   await expect(page.getByRole("heading", { name: "이 추천이 도움이 됐나요?" })).toBeVisible();
   await page.getByRole("button", { name: /도움됨/ }).click();
   await page.getByPlaceholder("예: 셔츠 조합은 좋은데 신발은 애매했어요.").fill("셔츠 방향이 좋았어요.");
@@ -431,6 +425,9 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   expect(recommendationFeedbackState.recommendation_feedback.note).toContain("셔츠 방향");
   expect(recommendationFeedbackState.feedback_history[0].summary).toContain("내 반응: 도움됨");
   expect(recommendationFeedbackState.feedback_history[0].summary).toContain("셔츠 방향");
+  const nextStep = page.getByLabel("스타일 체크 다음 단계");
+  await expect(nextStep.getByRole("link", { name: "기록에서 보기" })).toBeVisible();
+  await expect(nextStep.getByRole("button", { name: "새 체크" })).toBeVisible();
   await expect(page.getByText(/^provider:/)).toHaveCount(0);
   await expect(page.getByText(/^개발 설정 누락:/)).toHaveCount(0);
   await page.reload();
@@ -584,24 +581,23 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
   await expect(page.getByRole("button", { name: /핏 더 보기/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /레퍼런스\/실착 보기/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /크레딧 확인/ })).toHaveCount(0);
-  await page.getByRole("button", { name: /조합 느낌 보기/ }).click();
-  await expect(page.getByRole("heading", { name: "이 조합을 보는 방법" })).toBeVisible();
-  await expect(page.getByText("크레딧 차감 없음")).toBeVisible();
-  await expect(page.getByText("Vertex 실착 생성은 나중에 엽니다.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /조합 느낌 보기/ })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "이 조합을 보는 방법" })).toHaveCount(0);
+  await expect(page.getByText("크레딧 차감 없음")).toHaveCount(0);
+  await expect(page.getByText("Vertex 실착 생성은 나중에 엽니다.")).toHaveCount(0);
   await expect(page.getByText("체크 3회")).toBeVisible();
   await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
-  await page.getByRole("button", { name: /사이즈 후보 보기/ }).click();
-  await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toBeVisible();
-  await expect(page.getByText("평소 사이즈 기준입니다.")).toBeVisible();
-  await expect(page.getByText("내 옷장 기준")).toBeVisible();
-  await expect(page.getByText(/네이비 옥스포드 셔츠 · L · 잘 맞음 · 깨끗함/)).toBeVisible();
-  await expect(page.getByText("내부 기준 후보").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /사이즈 후보 보기/ })).toHaveCount(0);
+  await expect(page.getByText("평소 사이즈 기준입니다.")).toHaveCount(0);
+  await expect(page.getByText("내 옷장 기준")).toHaveCount(0);
+  await expect(page.getByText(/네이비 옥스포드 셔츠 · L · 잘 맞음 · 깨끗함/)).toHaveCount(0);
+  await expect(page.getByText("내부 기준 후보").first()).toHaveCount(0);
   await expect(page.getByRole("link", { name: /구매/ })).toHaveCount(0);
   expect(deepDiveRequests).toBe(0);
   expect(tryOnRequests).toBe(0);
 });
 
-test("result explains how to unlock size candidates when size profile is missing", async ({ page }) => {
+test("result keeps size candidates out of the MVP golden path", async ({ page }) => {
   await page.addInitScript((outfit) => {
     window.localStorage.setItem(
       "reman:onboarding",
@@ -633,19 +629,10 @@ test("result explains how to unlock size candidates when size profile is missing
   await page.goto("/programs/style/onboarding/result");
 
   await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
-  await page.getByRole("button", { name: /사이즈 후보 보기/ }).click();
-  await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toBeVisible();
-  await expect(page.getByText("사이즈 정보를 추가하면 후보를 좁힐 수 있습니다.")).toBeVisible();
-  const sizeSettingsLink = page.getByRole("link", { name: "사이즈 추가하기" });
-  await expect(sizeSettingsLink).toBeVisible();
-  await expect(sizeSettingsLink).toHaveAttribute(
-    "href",
-    "/settings#size-profile"
-  );
+  await expect(page.getByRole("button", { name: /사이즈 후보 보기/ })).toHaveCount(0);
+  await expect(page.getByText("사이즈 정보를 추가하면 후보를 좁힐 수 있습니다.")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "사이즈 추가하기" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /구매/ })).toHaveCount(0);
-  await sizeSettingsLink.click();
-  await expect(page).toHaveURL(/\/settings#size-profile$/);
-  await expect(page.getByRole("heading", { name: "평소 사이즈를 기준으로 남깁니다" })).toBeVisible();
 });
 
 test("onboarding shows fallback when storage upload fails", async ({ page }) => {
@@ -806,7 +793,7 @@ test("try-on rejects unauthenticated requests", async ({ request }) => {
   expect(response.status()).toBe(401);
 });
 
-test("signed-in users can attach a local result to their account from result page", async ({ page }) => {
+test("signed-in users can save recommendation feedback from result page", async ({ page }) => {
   const uploadedImage = `data:image/png;base64,${tinyPng.buffer.toString("base64")}`;
 
   await addTryOnSession(page);
@@ -839,18 +826,16 @@ test("signed-in users can attach a local result to their account from result pag
   }, { outfit: recommendedOutfit, uploadedImage });
 
   await page.goto("/programs/style/onboarding/result");
-  await page.getByRole("button", { name: /계정 저장 열기/ }).click();
-  await expect(page.getByRole("heading", { name: "결과를 계정에 저장합니다" })).toBeVisible();
-  await page.getByRole("button", { name: /계정에 결과 저장/ }).click();
-
-  await expect(
-    page.getByRole("button", { name: /계정 저장 완료|계정에 결과 저장/ })
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /계정 저장 열기/ })).toHaveCount(0);
+  await page.getByRole("button", { name: /나중에 보기/ }).click();
+  await page.getByRole("button", { name: "추천 반응 저장" }).click();
+  await expect(page.getByRole("button", { name: /나중에 다시 보기 저장됨/ })).toBeVisible();
 
   const savedState = await page.evaluate(() => JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}"));
 
   expect(savedState.user_id).toBe("e2e-try-on-user");
   expect(savedState.email).toBe("try-on@example.com");
+  expect(savedState.recommendation_feedback.reaction).toBe("save_for_later");
   expect(savedState.feedback_history[0].summary).toContain("계정 저장 테스트 진단");
 });
 
