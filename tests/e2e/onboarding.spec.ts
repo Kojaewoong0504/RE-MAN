@@ -415,7 +415,9 @@ test("closet review save shows readiness and continues into style check", async 
   await expect(page.getByText("스타일 체크 준비 완료")).toBeVisible();
   await page.getByRole("button", { name: "이 옷장으로 스타일 체크" }).click();
   await expect(page).toHaveURL(/\/programs\/style\/onboarding\/upload$/);
-  await expect(page.getByText("상의, 하의, 신발 준비됨")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "분석 준비 상태" }).getByText("상의, 하의, 신발 준비됨")
+  ).toBeVisible();
 });
 
 test("closet add button opens batch-first mode chooser", async ({ page }) => {
