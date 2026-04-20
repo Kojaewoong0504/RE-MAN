@@ -685,6 +685,10 @@ test("upload requires top bottom and shoes closet context before analysis", asyn
   await expect(page.getByLabel("추천에 필요한 옷장").getByText("신발 필요")).toBeVisible();
   await expect(page.getByText("하의, 신발 필요")).toBeVisible();
   await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
+
+  await page.getByRole("button", { name: "하의 추가" }).click();
+  await expect(page.getByRole("heading", { name: "옷 추가" })).toBeVisible();
+  await expect(page.getByLabel("종류")).toHaveValue("bottoms");
 });
 
 test("style upload closet edits persist before analysis starts", async ({ page }) => {

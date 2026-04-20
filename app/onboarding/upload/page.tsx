@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AccountAccessButton } from "@/components/common/AccountAccessButton";
 import { BottomCTA } from "@/components/common/BottomCTA";
@@ -16,6 +16,7 @@ import {
   buildClosetItemsFromProfile,
   buildClosetProfileFromItems,
   buildRecommendationFeedbackMemory,
+  type ClosetItemCategory,
   getClosetCategoryLabel,
   getMinimumClosetReadiness,
   getRecentHistoryPreview,
@@ -85,6 +86,11 @@ export default function UploadPage() {
   const [feedbackMemoryRows, setFeedbackMemoryRows] = useState<
     ReturnType<typeof buildRecommendationFeedbackMemory>
   >([]);
+  const [quickAddRequest, setQuickAddRequest] = useState<{
+    category: ClosetItemCategory;
+    key: number;
+  } | null>(null);
+  const closetSyncRequestRef = useRef(0);
 
   useEffect(() => {
     let state = readOnboardingState();
@@ -165,6 +171,8 @@ export default function UploadPage() {
       return;
     }
 
+    const requestId = closetSyncRequestRef.current + 1;
+    closetSyncRequestRef.current = requestId;
     setClosetSyncStatus("saving");
 
     try {
@@ -173,6 +181,10 @@ export default function UploadPage() {
         closet_profile: nextState.closet_profile,
         size_profile: nextState.size_profile
       });
+
+      if (requestId !== closetSyncRequestRef.current) {
+        return;
+      }
 
       if (persisted.closet_items.length) {
         setClosetItems(persisted.closet_items);
@@ -187,6 +199,10 @@ export default function UploadPage() {
 
       setClosetSyncStatus("saved");
     } catch {
+      if (requestId !== closetSyncRequestRef.current) {
+        return;
+      }
+
       setClosetSyncStatus("error");
     }
   }
@@ -319,10 +335,28 @@ export default function UploadPage() {
           <div className="closet-readiness" aria-label="추천에 필요한 옷장">
             {closetReadiness.requiredCategories.map((category) => {
               const ready = closetReadiness.presentCategories.includes(category);
+              const label = getClosetCategoryLabel(category);
+
+              if (!ready) {
+                return (
+                  <button
+                    aria-label={`${label} 추가`}
+                    className="closet-readiness-action"
+                    key={category}
+                    onClick={() => {
+                      setIsClosetEditing(true);
+                      setQuickAddRequest({ category, key: Date.now() });
+                    }}
+                    type="button"
+                  >
+                    {label} 필요
+                  </button>
+                );
+              }
 
               return (
-                <span className={ready ? "closet-readiness-ready" : ""} key={category}>
-                  {getClosetCategoryLabel(category)} {ready ? "✓" : "필요"}
+                <span className="closet-readiness-ready" key={category}>
+                  {label} ✓
                 </span>
               );
             })}
@@ -339,6 +373,8 @@ export default function UploadPage() {
           {isClosetEditing || !hasClosetInput ? (
             <ClosetInventoryEditor
               items={closetItems}
+              quickAddCategory={quickAddRequest?.category}
+              quickAddRequestKey={quickAddRequest?.key}
               onChange={(nextItems) => {
                 setClosetItems(nextItems);
                 setIsClosetEditing(true);

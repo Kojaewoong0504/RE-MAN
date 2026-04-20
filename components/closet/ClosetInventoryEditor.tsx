@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import type { ClosetItem, ClosetItemCategory } from "@/lib/onboarding/storage";
@@ -58,10 +58,14 @@ function getItemImageSrc(item: ClosetItem) {
 
 export function ClosetInventoryEditor({
   items,
-  onChange
+  onChange,
+  quickAddCategory,
+  quickAddRequestKey = 0
 }: {
   items: ClosetItem[];
   onChange: (items: ClosetItem[]) => void;
+  quickAddCategory?: ClosetItemCategory | null;
+  quickAddRequestKey?: number;
 }) {
   const router = useRouter();
   const [category, setCategory] = useState<ClosetItemCategory>("tops");
@@ -108,13 +112,23 @@ export function ClosetInventoryEditor({
     setPhotoError(null);
   }
 
-  function openAddModal() {
+  function openAddModal(nextCategory = category) {
     resetForm();
+    setCategory(nextCategory);
     setEditingItemId(null);
     setShowOptionalDetails(false);
     setIsModeChoosing(false);
     setIsAdding(true);
   }
+
+  useEffect(() => {
+    if (!quickAddCategory || quickAddRequestKey <= 0) {
+      return;
+    }
+
+    openAddModal(quickAddCategory);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quickAddCategory, quickAddRequestKey]);
 
   function openAddChooser() {
     setIsModeChoosing(true);
@@ -376,7 +390,7 @@ export function ClosetInventoryEditor({
             <span>빠른 촬영</span>
             <small>여러 벌을 한 번에 추가</small>
           </button>
-          <button className="closet-mode-secondary" onClick={openAddModal} type="button">
+          <button className="closet-mode-secondary" onClick={() => openAddModal()} type="button">
             <span>한 벌 직접 등록</span>
             <small>사진 1장과 메모를 직접 입력</small>
           </button>

@@ -954,9 +954,14 @@ a {
     @apply grid grid-cols-3 gap-2;
   }
 
-  .closet-readiness span {
+  .closet-readiness span,
+  .closet-readiness button {
     @apply flex min-h-11 items-center justify-center rounded-xl px-2 text-center text-xs font-black text-muted;
     background: var(--color-bg);
+  }
+
+  .closet-readiness button {
+    @apply underline underline-offset-4;
   }
 
   .closet-readiness .closet-readiness-ready {

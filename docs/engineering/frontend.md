@@ -145,6 +145,8 @@ interface FeedbackStore {
 - 사이즈 정보는 업로드 기본 화면에 펼치지 않고 보조 설정 안에 둔다
 - 옷장 입력은 현실 옷장 사진 등록을 기본으로 한다. 상의/하의/신발/겉옷 중 최소 1개 사진 아이템이 있어야 분석을 시작할 수 있다
 - 등록된 옷장 사진 아이템은 `/api/feedback` 요청 전에 카테고리별 `closet_profile` 요약으로 변환되어 payload에 포함되어야 한다. 사진 원본은 payload에서 제외한다
+- 업로드 화면의 상의/하의/신발 준비 체크에서 부족한 항목은 `button`이어야 한다. 누르면 같은 화면의 옷장 등록 모달이 열리고 해당 종류가 미리 선택되어야 한다.
+- 업로드 화면에서 옷장 아이템을 연속 등록하면 저장 요청이 병렬로 끝날 수 있다. 최신 저장 요청보다 오래된 응답은 `closetItems` 상태를 덮어쓰면 안 된다.
 - `/onboarding/upload?reset=photo`로 진입하면 설문/옷장 기준과 compact 피드백 히스토리는 유지하되 이전 이미지, 현재 피드백, deep-dive, try-on 캐시는 초기화한다. 새 사진 체크가 이전 분석 산출물과 섞이면 실패다
 - 새 분석을 시작할 때도 이전 deep-dive, try-on 캐시, 루틴 산출물은 비워야 한다. 단, `feedback_history`와 `preference_profile`은 다음 분석의 개인화 컨텍스트로 payload에 포함한다
 - 업로드 완료 시 이미지 data URL을 보관하고 `/onboarding/analyzing` 이동
