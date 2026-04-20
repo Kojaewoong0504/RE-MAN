@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   draftToClosetItem,
   selectSaveableDrafts,
@@ -20,11 +20,13 @@ function getStatusLabel(status: ClosetItemDraft["analysis_status"]) {
 
 export function ClosetDraftReviewClient() {
   const router = useRouter();
-  const [drafts, setDrafts] = useState<ClosetItemDraft[]>(
-    () => readOnboardingState().closet_item_drafts ?? []
-  );
+  const [drafts, setDrafts] = useState<ClosetItemDraft[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+
+  useEffect(() => {
+    setDrafts(readOnboardingState().closet_item_drafts ?? []);
+  }, []);
 
   function persist(nextDrafts: ClosetItemDraft[]) {
     setDrafts(nextDrafts);

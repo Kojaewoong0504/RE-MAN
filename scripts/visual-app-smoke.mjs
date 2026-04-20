@@ -35,6 +35,12 @@ const pages = [
     expectedText: "체크 3회"
   },
   {
+    id: "survey",
+    path: "/programs/style/onboarding/survey",
+    visibleText: "지금 스타일이 어때요?",
+    expectedTexts: ["사진 업로드로 이동", "체크 3회"]
+  },
+  {
     id: "upload",
     path: "/programs/style/onboarding/upload",
     visibleText: "사진이 기준입니다",
@@ -59,7 +65,7 @@ const pages = [
   {
     id: "result",
     path: "/programs/style/onboarding/result",
-    visibleText: "오늘 바꿀 조합만 먼저 봅니다",
+    visibleText: "오늘 조합",
     expectedTexts: ["내 옷장에서 쓴 것", "상의 · 하의 · 신발 중", "사이즈 후보 보기", "체크 3회"],
     hiddenTexts: ["사이즈 체크 후보", "구매하기"],
   },
@@ -69,6 +75,53 @@ const pages = [
     visibleText: "옷장 저장",
     expectedTexts: ["3", "체크 3회"],
     hiddenText: "옷장을 불러오는 중"
+  },
+  {
+    id: "closet-empty",
+    path: "/closet",
+    visibleText: "옷장 저장",
+    expectedTexts: ["첫 옷을 걸어두세요", "체크 3회"],
+    hiddenText: "옷장을 불러오는 중",
+    openFirstClosetShelf: true,
+    seedState: {
+      closet_items: [],
+      closet_profile: {
+        tops: "",
+        bottoms: "",
+        shoes: "",
+        outerwear: "",
+        avoid: ""
+      }
+    }
+  },
+  {
+    id: "closet-batch",
+    path: "/closet/batch",
+    visibleText: "빠른 옷장 등록",
+    expectedTexts: ["여러 장을 한 번에 추가하세요", "체크 3회"]
+  },
+  {
+    id: "closet-review",
+    path: "/closet/review",
+    visibleText: "저장 전 확인",
+    expectedTexts: ["AI 초안은 확정 전까지", "네이비 셔츠", "체크 3회"],
+    seedState: {
+      closet_item_drafts: [
+        {
+          id: "visual-draft-top",
+          photo_data_url: tinyPng,
+          analysis_status: "confirmed",
+          category: "tops",
+          name: "네이비 셔츠",
+          color: "네이비",
+          detected_type: "셔츠",
+          season: "봄/가을",
+          analysis_confidence: 0.82,
+          size_source: "unknown",
+          size_confidence: 0
+        }
+      ]
+    }
   },
   {
     id: "history",
@@ -276,17 +329,20 @@ async function addSessionCookie(context) {
   ]);
 }
 
-async function seedPage(page) {
+async function seedPage(page, state = seededState) {
   await page.addInitScript((state) => {
     window.localStorage.setItem("reman:onboarding", JSON.stringify(state));
-  }, seededState);
+  }, state);
 }
 
 async function capturePage(browser, scenario, pageSpec) {
   const context = await browser.newContext({ viewport: scenario.viewport });
   await addSessionCookie(context);
   const page = await context.newPage();
-  await seedPage(page);
+  await seedPage(page, {
+    ...seededState,
+    ...(pageSpec.seedState ?? {})
+  });
 
   const artifact = `${outputDir}/${scenario.id}-${pageSpec.id}.png`;
 
@@ -311,6 +367,9 @@ async function capturePage(browser, scenario, pageSpec) {
         .getByText("추천에 쓴 옷")
         .first()
         .evaluate((element) => element.scrollIntoView({ block: "center" }));
+    }
+    if (pageSpec.openFirstClosetShelf) {
+      await page.locator(".closet-shelf-header").first().click();
     }
     for (const text of [pageSpec.expectedText, ...(pageSpec.expectedTexts ?? [])].filter(Boolean)) {
       await expect(page.getByText(text).first()).toBeVisible();
@@ -366,7 +425,7 @@ async function capture() {
         result.artifacts.map((artifact) => artifact.artifact)
       ),
       verified: [
-        "home, style, upload, result, closet, history, history detail, profile, settings pages render in a real browser",
+        "home, style, upload, result, closet, closet batch, closet review, history, history detail, profile, settings pages render in a real browser",
         "mobile and desktop screenshots are captured for UI review",
         "seeded auth cookie allows protected pages to render",
         "history load failure banner is not visible",

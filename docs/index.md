@@ -48,6 +48,8 @@
 ### Design
 
 - [design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/design/design.md)
+- [stitch/re-men/README.md](/Users/gojaewoong/Desktop/ko/nerd/docs/design/stitch/re-men/README.md)
+- [stitch/re-men/Design-System/design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/design/stitch/re-men/Design-System/design.md)
 
 ### Superpowers
 
@@ -73,11 +75,16 @@
 - [2026-04-17-today-action-plan.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-today-action-plan.md)
 - [2026-04-17-closet-basis-visibility-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-17-closet-basis-visibility-design.md)
 - [2026-04-17-closet-basis-visibility.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-17-closet-basis-visibility.md)
+- [2026-04-20-stitch-sartorial-slate-redesign.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-20-stitch-sartorial-slate-redesign.md)
+- [2026-04-20-stitch-sartorial-slate-redesign.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-20-stitch-sartorial-slate-redesign.md)
+- [2026-04-20-closet-batch-capture-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-20-closet-batch-capture-design.md)
+- [2026-04-20-closet-batch-capture.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-20-closet-batch-capture.md)
 
 ### Incidents
 
 - [README.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/README.md)
 - [2026-04-07-content-rules-448463445ed5371e.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/2026-04-07-content-rules-448463445ed5371e.md)
 - [2026-04-16-next-artifact-parallel-gate.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/2026-04-16-next-artifact-parallel-gate.md)
+- [2026-04-20-iab-google-popup-blocked.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/2026-04-20-iab-google-popup-blocked.md)
 
 구조 기준과 이동 히스토리는 [docs/STRUCTURE_PLAN.md](/Users/gojaewoong/Desktop/ko/nerd/docs/STRUCTURE_PLAN.md)를 따른다.

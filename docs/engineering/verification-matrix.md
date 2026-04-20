@@ -25,6 +25,12 @@
 | `npm run visual:app` | 홈, 스타일, 업로드, 분석, 결과, 옷장, 기록, 내 정보, 설정 화면의 캡처 생성 | visual smoke 통과 및 산출물 확인 |
 | `npm run build` | Next.js production build 가능 | build 통과 |
 
+## Feature Gates
+
+| Feature | Required verification | Commands | Reporting limit |
+|---|---|---|---|
+| Closet batch capture | Unit + integration + E2E + visual | `npm run test:unit -- tests/unit/closet-batch.test.ts`, `npm run test:integration -- tests/integration/closet-analyze-route.test.ts`, `npm run test:e2e`, `npm run visual:app` | mock provider only unless `CLOSET_ANALYSIS_PROVIDER=gemini` smoke exists |
+
 ## Sequential Commands
 
 아래 명령은 `.next` 또는 3001 포트 브라우저 서버를 공유하므로 병렬 실행하지 않는다.
@@ -53,6 +59,8 @@
 - `output/playwright/app-visual-smoke/mobile-upload.png`
 - `output/playwright/app-visual-smoke/mobile-result.png`
 - `output/playwright/app-visual-smoke/mobile-closet.png`
+- `output/playwright/app-visual-smoke/mobile-closet-batch.png`
+- `output/playwright/app-visual-smoke/mobile-closet-review.png`
 - `output/playwright/app-visual-smoke/mobile-history.png`
 - `output/playwright/app-visual-smoke/mobile-profile.png`
 - `output/playwright/app-visual-smoke/mobile-settings.png`
@@ -60,3 +68,5 @@
 - `output/playwright/app-visual-smoke/desktop-style.png`
 - `output/playwright/app-visual-smoke/desktop-result.png`
 - `output/playwright/app-visual-smoke/desktop-closet.png`
+- `output/playwright/app-visual-smoke/desktop-closet-batch.png`
+- `output/playwright/app-visual-smoke/desktop-closet-review.png`

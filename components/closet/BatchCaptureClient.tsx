@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { normalizeClosetDraft, type ClosetItemDraft } from "@/lib/closet/batch";
 import { patchOnboardingState, readOnboardingState } from "@/lib/onboarding/storage";
 import { validatePhotoFile } from "@/lib/upload/photo-input";
@@ -42,11 +42,13 @@ function getDraftStatusLabel(status: ClosetItemDraft["analysis_status"]) {
 
 export function BatchCaptureClient() {
   const router = useRouter();
-  const [drafts, setDrafts] = useState<ClosetItemDraft[]>(
-    () => readOnboardingState().closet_item_drafts ?? []
-  );
+  const [drafts, setDrafts] = useState<ClosetItemDraft[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setDrafts(readOnboardingState().closet_item_drafts ?? []);
+  }, []);
 
   function persist(nextDrafts: ClosetItemDraft[]) {
     setDrafts(nextDrafts);

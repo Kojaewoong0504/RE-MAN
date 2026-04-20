@@ -30,6 +30,9 @@ RE:MEN Style MVP는 기능을 많이 보여주는 앱이 아니라, 사용자의
 - 분석 요청은 현재 전신 사진 1장만 이미지로 포함해야 한다.
 - 옷장 사진 원본은 `/api/feedback` payload에 포함하지 않는다.
 - 옷장 메타데이터와 `closet_strategy`는 `/api/feedback` payload에 포함한다.
+- 옷장 등록은 한 벌 직접 등록과 빠른 대량 촬영 등록을 모두 제공해야 한다.
+- 대량 촬영 draft는 사용자 확인 전까지 `closet_items`로 승격하지 않는다.
+- 사이즈는 사진 1장만으로 확정하지 않고 `size_source`로 출처를 구분한다.
 - `closet_strategy`는 착용감, 착용 빈도, 계절, 상태, 메모를 점수화해 core/use_with_care/optional을 나눈다.
 - provider가 반환한 `source_item_ids`는 현재 `closet_items`의 같은 카테고리 id로 검증한 뒤에만 직접 매칭으로 사용한다.
 - 결과 화면은 추천 조합, 옷장 근거, 오늘 행동을 먼저 보여준다.

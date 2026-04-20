@@ -571,6 +571,7 @@ test("upload requires top bottom and shoes closet context before analysis", asyn
 
   await page.locator("#photo-upload").setInputFiles(tinyPng);
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
+  await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
   await page.getByRole("button", { name: /선택 정보 열기/ }).click();
@@ -926,6 +927,7 @@ test("closet page saves items into the next style check context", async ({ page 
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await expect(page.getByLabel("아이템 이름")).toHaveCount(0);
   await expect(page.getByLabel("색")).toHaveCount(0);
+  await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
   await page.getByRole("button", { name: /선택 정보 열기/ }).click();
@@ -948,6 +950,7 @@ test("closet page saves items into the next style check context", async ({ page 
   await expect(page.getByText("레귤러 · L · 잘 맞음 · 가끔 입음 · 여름 · 수선 필요")).toBeVisible();
 
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
+  await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("bottoms");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
