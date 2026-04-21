@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { createServerSession, fetchAuthSession } from "@/lib/auth/client";
+import {
+  createServerSession,
+  fetchAuthSession,
+  readCachedAuthSessionSnapshot
+} from "@/lib/auth/client";
 import { getFirebaseAuthInstance } from "@/lib/firebase/client";
 import { readStyleProgramStateFromFirestore } from "@/lib/firebase/firestore";
 import {
@@ -38,7 +42,11 @@ export function FirebaseSessionBootstrap() {
 
       const state = readOnboardingState();
 
-      const existingSession = await fetchAuthSession();
+      const cachedSession = readCachedAuthSessionSnapshot();
+      const existingSession =
+        cachedSession === undefined
+          ? await fetchAuthSession({ includeCredits: true })
+          : cachedSession;
 
       if (!existingSession) {
         try {

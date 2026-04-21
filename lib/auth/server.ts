@@ -255,6 +255,36 @@ export async function rotateRefreshSession(
   return issueSessionTokens(user, refreshPayload.familyId, randomUUID());
 }
 
+export async function resolveSessionFromCookieValues(input: {
+  accessToken?: string | null;
+  refreshToken?: string | null;
+  sessionStateToken?: string | null;
+}) {
+  if (input.accessToken) {
+    try {
+      const payload = await verifyAccessToken(input.accessToken);
+      return {
+        user: serializeAuthUser(payload),
+        rotated: null
+      };
+    } catch {
+      // Fall through to refresh recovery.
+    }
+  }
+
+  if (!input.refreshToken || !input.sessionStateToken) {
+    throw new Error("missing_refresh_state");
+  }
+
+  const rotated = await rotateRefreshSession(input.refreshToken, input.sessionStateToken);
+  const accessPayload = await verifyAccessToken(rotated.accessToken);
+
+  return {
+    user: serializeAuthUser(accessPayload),
+    rotated
+  };
+}
+
 export async function revokeRefreshSessionFamily(sessionStateToken: string) {
   const payload = await verifySessionStateToken(sessionStateToken);
   await revokeRefreshFamily(payload.familyId);

@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import {
   createDevServerSession,
   createServerSession,
-  fetchAuthSession
+  fetchAuthSession,
+  readCachedAuthSessionSnapshot
 } from "@/lib/auth/client";
 import { syncAuthenticatedProfileToFirestore } from "@/lib/firebase/firestore";
 import {
@@ -94,7 +95,11 @@ export function LoginPageClient({ returnTo }: LoginPageClientProps) {
         }
       }
 
-      const session = await fetchAuthSession();
+      const cachedSession = readCachedAuthSessionSnapshot();
+      const session =
+        cachedSession === undefined
+          ? await fetchAuthSession({ includeCredits: true })
+          : cachedSession;
 
       if (session && active) {
         router.replace(returnTo);

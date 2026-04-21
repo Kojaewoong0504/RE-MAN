@@ -18,6 +18,7 @@
 npm run check:deploy
 npm run check:deploy:strict
 npm run check:deploy:vercel
+npm run perf:app-shell
 SMOKE_BASE_URL=https://<deployment-url> npm run smoke:production:mvp
 ```
 
@@ -25,6 +26,7 @@ SMOKE_BASE_URL=https://<deployment-url> npm run smoke:production:mvp
 - `check:deploy:strict`는 MVP 필수 AI 기능인 스타일 분석과 옷장 대량 등록이 real provider가 아니면 실패로 처리한다.
 - 실착 이미지는 현재 MVP 필수 경로가 아니므로 `TRY_ON_PROVIDER=mock`이면 경고만 낸다.
 - `check:deploy:vercel`은 Vercel production env를 `.env.vercel.local`로 pull한 뒤 strict 검사를 실행한다.
+- `perf:app-shell`은 주요 화면의 응답 시간을 budget 기준으로 측정한다.
 - `smoke:production:mvp`는 배포 URL에서 로그인 세션, 크레딧 잔액, 옷장 등록, 스타일 분석, 반응 저장, 기록 이동을 한 번에 확인한다.
 - `smoke:production:mvp`는 테스트 세션을 발급하므로 실제 Google OAuth UI를 검증하지 않는다.
 - 배포에서 크레딧 원장을 실제 원장으로 보고하려면 `CREDIT_LEDGER_PROVIDER=firestore`가 필요하다. 값이 없으면 memory fallback이며 strict readiness는 실패한다.
@@ -52,6 +54,7 @@ npm run check:deploy:vercel
 - 배포 확인은 `npm run check:deploy:strict`와 배포 URL 대상 `npm run smoke:production:mvp`를 분리해서 보고한다.
 - 배포 Google 소셜 로그인은 `smoke:production:mvp`와 별개로 실제 브라우저 OAuth 완료와 앱 세션 쿠키 발급을 확인해야 한다.
 - 모바일/IAB 로그인은 redirect 우선 흐름이어야 한다. popup fallback만으로는 모바일 로그인 검증으로 보지 않는다.
+- Vercel alias host가 아니라 canonical production host에서 로그인해야 한다. `/login`과 public route도 alias host면 canonical production host로 redirect 되어야 한다.
 - 사용자 사진 업로드 경로는 갤러리 선택과 카메라 촬영 input을 모두 제공해야 한다.
 - 크레딧 원장이 memory 기반이면 `check:deploy:strict`는 실패해야 한다. 서버리스 배포에서는 memory 원장을 실제 사용량 기록으로 보고하지 않는다.
 

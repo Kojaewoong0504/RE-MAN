@@ -17,3 +17,20 @@ export async function getAuthenticatedSessionUser() {
     throw new Error("invalid_access_token");
   }
 }
+
+export async function getOptionalSessionUser() {
+  const cookieStore = cookies();
+  const names = getSessionCookieNames();
+  const accessToken = cookieStore.get(names.access)?.value;
+
+  if (!accessToken) {
+    return null;
+  }
+
+  try {
+    const payload = await verifyAccessToken(accessToken);
+    return serializeAuthUser(payload);
+  } catch {
+    return null;
+  }
+}

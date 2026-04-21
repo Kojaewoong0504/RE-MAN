@@ -1,8 +1,10 @@
 "use client";
 
 import type { AuthUser } from "@/lib/auth/types";
+import { clearCreditStatusCache, primeCreditStatusCache } from "@/lib/credits/client";
+import type { CreditStatusPayload } from "@/lib/credits/types";
 
-const SESSION_CACHE_TTL_MS = 30_000;
+const SESSION_CACHE_TTL_MS = 120_000;
 const AUTH_SESSION_EVENT = "reman:auth-session-changed";
 
 type AuthSessionCache = {
@@ -87,13 +89,27 @@ function writeCachedSession(user: AuthUser | null) {
   return user;
 }
 
+export function primeAuthSessionCache(user: AuthUser | null | undefined) {
+  if (user === undefined) {
+    return undefined;
+  }
+
+  return writeCachedSession(user);
+}
+
 export function clearAuthSessionCache() {
   const cache = getAuthSessionCache();
 
   cache.cachedSession = undefined;
   cache.cachedSessionAt = 0;
   cache.pendingSessionRequest = null;
+  clearCreditStatusCache();
   emitAuthSessionChanged(null);
+}
+
+export function readCachedAuthSessionSnapshot() {
+  const cache = getAuthSessionCache();
+  return cache.cachedSession;
 }
 
 export function subscribeAuthSessionChange(listener: (user: AuthUser | null) => void) {
@@ -113,42 +129,44 @@ export function subscribeAuthSessionChange(listener: (user: AuthUser | null) => 
   };
 }
 
-async function requestAuthSession(): Promise<AuthUser | null> {
-  const sessionResponse = await fetch("/api/auth/session", {
+type AuthBootstrapResponse = {
+  user?: AuthUser | null;
+  credits?: CreditStatusPayload;
+};
+
+type FetchAuthSessionOptions = {
+  includeCredits?: boolean;
+};
+
+async function requestAuthSession(
+  options: FetchAuthSessionOptions = {}
+): Promise<AuthUser | null> {
+  const url = options.includeCredits
+    ? "/api/auth/bootstrap?include=credits"
+    : "/api/auth/bootstrap";
+  const sessionResponse = await fetch(url, {
     method: "GET",
     credentials: "include",
     cache: "no-store"
   });
 
   if (sessionResponse.ok) {
-    const sessionJson = await jsonOrNull(sessionResponse);
+    const sessionJson = (await jsonOrNull(sessionResponse)) as AuthBootstrapResponse | null;
+
+    if (sessionJson?.credits) {
+      primeCreditStatusCache(sessionJson.credits);
+    }
+
     return writeCachedSession((sessionJson?.user as AuthUser | undefined) ?? null);
   }
 
-  const refreshResponse = await fetch("/api/auth/refresh", {
-    method: "POST",
-    credentials: "include"
-  });
-
-  if (!refreshResponse.ok) {
-    return writeCachedSession(null);
-  }
-
-  const retryResponse = await fetch("/api/auth/session", {
-    method: "GET",
-    credentials: "include",
-    cache: "no-store"
-  });
-
-  if (!retryResponse.ok) {
-    return writeCachedSession(null);
-  }
-
-  const retryJson = await jsonOrNull(retryResponse);
-  return writeCachedSession((retryJson?.user as AuthUser | undefined) ?? null);
+  clearCreditStatusCache();
+  return writeCachedSession(null);
 }
 
-export async function fetchAuthSession(): Promise<AuthUser | null> {
+export async function fetchAuthSession(
+  options: FetchAuthSessionOptions = {}
+): Promise<AuthUser | null> {
   const cache = getAuthSessionCache();
   const cached = readFreshCachedSession();
 
@@ -160,7 +178,7 @@ export async function fetchAuthSession(): Promise<AuthUser | null> {
     return cache.pendingSessionRequest;
   }
 
-  cache.pendingSessionRequest = requestAuthSession().finally(() => {
+  cache.pendingSessionRequest = requestAuthSession(options).finally(() => {
     cache.pendingSessionRequest = null;
   });
 

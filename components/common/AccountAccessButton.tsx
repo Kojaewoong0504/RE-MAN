@@ -3,12 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CreditStatus } from "@/components/credits/CreditStatus";
-import { fetchAuthSession, subscribeAuthSessionChange } from "@/lib/auth/client";
+import {
+  fetchAuthSession,
+  readCachedAuthSessionSnapshot,
+  subscribeAuthSessionChange
+} from "@/lib/auth/client";
 import type { AuthUser } from "@/lib/auth/types";
 
 export function AccountAccessButton() {
-  const [href, setHref] = useState("/login");
-  const [label, setLabel] = useState("Login");
+  const cachedUser = readCachedAuthSessionSnapshot();
+  const [href, setHref] = useState(cachedUser ? "/profile" : "/login");
+  const [label, setLabel] = useState(
+    cachedUser ? (cachedUser.name ?? cachedUser.email ?? "R").slice(0, 1) : "Login"
+  );
 
   useEffect(() => {
     let active = true;
@@ -29,7 +36,14 @@ export function AccountAccessButton() {
     }
 
     async function load() {
-      applyUser(await fetchAuthSession());
+      const cachedUser = readCachedAuthSessionSnapshot();
+
+      if (cachedUser !== undefined) {
+        applyUser(cachedUser);
+        return;
+      }
+
+      applyUser(await fetchAuthSession({ includeCredits: true }));
     }
 
     void load();

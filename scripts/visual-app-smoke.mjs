@@ -318,9 +318,45 @@ async function issueAccessToken() {
     .sign(new TextEncoder().encode(jwtSecret));
 }
 
+function readSetCookies(response) {
+  if (typeof response.headers.getSetCookie === "function") {
+    return response.headers.getSetCookie();
+  }
+
+  const raw = response.headers.get("set-cookie");
+  return raw ? [raw] : [];
+}
+
 async function addSessionCookie(context) {
-  const token = await issueAccessToken();
   const url = new URL(baseUrl);
+  const devLoginResponse = await fetch(`${baseUrl}/api/auth/dev-login`, {
+    method: "POST",
+    redirect: "manual"
+  }).catch(() => null);
+
+  if (devLoginResponse?.ok) {
+    const cookies = readSetCookies(devLoginResponse)
+      .map((cookie) => cookie.split(";")[0])
+      .filter(Boolean)
+      .map((cookie) => {
+        const [name, ...rest] = cookie.split("=");
+        return {
+          name,
+          value: rest.join("="),
+          domain: url.hostname,
+          path: "/",
+          httpOnly: true,
+          sameSite: "Lax"
+        };
+      });
+
+    if (cookies.length > 0) {
+      await context.addCookies(cookies);
+      return;
+    }
+  }
+
+  const token = await issueAccessToken();
 
   await context.addCookies([
     {

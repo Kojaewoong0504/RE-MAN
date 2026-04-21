@@ -27,6 +27,17 @@ describe("auth middleware", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
+  it("redirects public root on Vercel aliases to the canonical production host", () => {
+    const request = new NextRequest("https://re-man-kojaewoong0504s-projects.vercel.app/");
+    const response = middleware(request);
+    const location = response.headers.get("location");
+
+    expect(response.status).toBe(307);
+    expect(location).not.toBeNull();
+    expect(new URL(location ?? "http://localhost").host).toBe("re-man.vercel.app");
+    expect(new URL(location ?? "http://localhost").pathname).toBe("/");
+  });
+
   it("redirects protected routes without session cookies", () => {
     const request = new NextRequest("http://127.0.0.1:3001/credits");
     const response = middleware(request);

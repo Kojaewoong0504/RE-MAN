@@ -27,6 +27,7 @@
 | `npm run smoke:feedback:browser` | 브라우저 업로드 흐름과 실제 Gemini 경계 검증 | 브라우저 업로드와 실제 Gemini 경계 통과 |
 | `npm run smoke:closet:gemini` | 옷장 AI 초안 API가 실제 Gemini provider와 크레딧 차감을 통과 | 실제 옷장 AI+크레딧 smoke 통과 |
 | `npm run smoke:production:mvp` | 배포 URL에서 로그인 세션, 크레딧 잔액, 옷장 등록, 스타일 분석, 반응 저장, 기록 이동을 한 번에 검증 | 배포 MVP golden path 통과 |
+| `npm run perf:app-shell` | 주요 화면 응답 시간을 budget 기준으로 측정 | app shell perf budget 통과 |
 | `npm run visual:app` | 홈, 스타일, 업로드, 분석, 결과, 옷장, 기록, 내 정보, 설정 화면의 캡처 생성 | visual smoke 통과 및 산출물 확인 |
 | `npm run build` | Next.js production build 가능 | build 통과 |
 

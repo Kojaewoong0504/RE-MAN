@@ -51,11 +51,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/profile/:path*",
-    "/settings/:path*",
-    "/closet/:path*",
-    "/history/:path*",
-    "/credits/:path*",
-    "/programs/style/onboarding/:path*"
+    "/((?!api|_next/static|_next/image|favicon.ico).*)"
   ]
 };

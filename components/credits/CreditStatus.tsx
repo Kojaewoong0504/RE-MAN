@@ -1,26 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchAuthSession, subscribeAuthSessionChange } from "@/lib/auth/client";
-
-type CreditStatusPayload = {
-  balance: number;
-  event_credits: number;
-  paid_credits: number;
-  subscription_active: boolean;
-  style_feedback_cost: number;
-};
+import {
+  fetchAuthSession,
+  readCachedAuthSessionSnapshot,
+  subscribeAuthSessionChange
+} from "@/lib/auth/client";
+import {
+  clearCreditStatusCache,
+  loadCreditStatus,
+  readFreshCachedCreditStatus
+} from "@/lib/credits/client";
+import type { CreditStatusPayload } from "@/lib/credits/types";
 
 type CreditStatusProps = {
   compact?: boolean;
   variant?: "panel" | "badge";
 };
-
-const CREDIT_STATUS_CACHE_TTL_MS = 15_000;
-
-let cachedCreditStatus: CreditStatusPayload | undefined;
-let cachedCreditStatusAt = 0;
-let pendingCreditStatusRequest: Promise<CreditStatusPayload | null> | null = null;
 
 function getCreditStatusCopy(credits: CreditStatusPayload) {
   if (credits.subscription_active) {
@@ -41,74 +37,20 @@ function getCreditStatusCopy(credits: CreditStatusPayload) {
   };
 }
 
-function readFreshCachedCreditStatus() {
-  if (cachedCreditStatus === undefined) {
-    return undefined;
-  }
-
-  if (Date.now() - cachedCreditStatusAt > CREDIT_STATUS_CACHE_TTL_MS) {
-    return undefined;
-  }
-
-  return cachedCreditStatus;
-}
-
-function writeCachedCreditStatus(credits: CreditStatusPayload) {
-  cachedCreditStatus = credits;
-  cachedCreditStatusAt = Date.now();
-  return credits;
-}
-
-function clearCreditStatusCache() {
-  cachedCreditStatus = undefined;
-  cachedCreditStatusAt = 0;
-  pendingCreditStatusRequest = null;
-}
-
-async function loadCreditStatus() {
-  const cached = readFreshCachedCreditStatus();
-
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  if (pendingCreditStatusRequest) {
-    return pendingCreditStatusRequest;
-  }
-
-  pendingCreditStatusRequest = fetch("/api/credits", {
-    cache: "no-store",
-    credentials: "include"
-  })
-    .then(async (response) => {
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = (await response.json().catch(() => null)) as CreditStatusPayload | null;
-
-      if (!data || typeof data.balance !== "number") {
-        return null;
-      }
-
-      return writeCachedCreditStatus(data);
-    })
-    .catch(() => null)
-    .finally(() => {
-      pendingCreditStatusRequest = null;
-    });
-
-  return pendingCreditStatusRequest;
-}
-
 export function CreditStatus({ compact = false, variant = "panel" }: CreditStatusProps) {
-  const [credits, setCredits] = useState<CreditStatusPayload | null>(null);
+  const [credits, setCredits] = useState<CreditStatusPayload | null>(
+    () => readFreshCachedCreditStatus() ?? null
+  );
 
   useEffect(() => {
     let active = true;
 
     async function sync() {
-      const session = await fetchAuthSession();
+      const cachedSession = readCachedAuthSessionSnapshot();
+      const session =
+        cachedSession === undefined
+          ? await fetchAuthSession({ includeCredits: true })
+          : cachedSession;
 
       if (!active || !session) {
         if (active) {
@@ -126,8 +68,14 @@ export function CreditStatus({ compact = false, variant = "panel" }: CreditStatu
     }
 
     void sync();
-    const unsubscribe = subscribeAuthSessionChange(() => {
+    const unsubscribe = subscribeAuthSessionChange((user) => {
       clearCreditStatusCache();
+
+      if (!user) {
+        setCredits(null);
+        return;
+      }
+
       void sync();
     });
 

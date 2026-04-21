@@ -62,12 +62,17 @@ describe("deployment readiness", () => {
   it("documents a production MVP golden path smoke command", () => {
     const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
     const matrix = fs.readFileSync("docs/engineering/verification-matrix.md", "utf8");
+    const deploymentReadiness = fs.readFileSync("docs/engineering/deployment-readiness.md", "utf8");
 
     expect(packageJson.scripts["smoke:production:mvp"]).toBe(
       "node scripts/smoke-production-mvp.mjs"
     );
+    expect(packageJson.scripts["perf:app-shell"]).toBe("node scripts/perf-app-shell.mjs");
+    expect(fs.existsSync("scripts/perf-app-shell.mjs")).toBe(true);
     expect(fs.existsSync("scripts/smoke-production-mvp.mjs")).toBe(true);
     expect(matrix).toContain("`npm run smoke:production:mvp`");
     expect(matrix).toContain("배포 MVP golden path 통과");
+    expect(matrix).toContain("`npm run perf:app-shell`");
+    expect(deploymentReadiness).toContain("canonical production host");
   });
 });

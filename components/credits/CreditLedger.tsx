@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchAuthSession, subscribeAuthSessionChange } from "@/lib/auth/client";
+import {
+  fetchAuthSession,
+  readCachedAuthSessionSnapshot,
+  subscribeAuthSessionChange
+} from "@/lib/auth/client";
 
 type CreditTransactionType =
   | "grant_event"
@@ -95,7 +99,11 @@ export function CreditLedger() {
     let active = true;
 
     async function sync() {
-      const session = await fetchAuthSession();
+      const cachedSession = readCachedAuthSessionSnapshot();
+      const session =
+        cachedSession === undefined
+          ? await fetchAuthSession({ includeCredits: true })
+          : cachedSession;
 
       if (!active) {
         return;
@@ -112,7 +120,13 @@ export function CreditLedger() {
     }
 
     void sync();
-    const unsubscribe = subscribeAuthSessionChange(() => {
+    const unsubscribe = subscribeAuthSessionChange((user) => {
+      if (!user) {
+        setTransactions([]);
+        setIsReady(true);
+        return;
+      }
+
       void sync();
     });
 
