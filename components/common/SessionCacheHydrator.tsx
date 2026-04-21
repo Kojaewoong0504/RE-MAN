@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import type { AuthUser } from "@/lib/auth/types";
 import { primeAuthSessionCache } from "@/lib/auth/client";
 import { primeCreditStatusCache } from "@/lib/credits/client";
@@ -15,12 +15,7 @@ export function SessionCacheHydrator({
   initialUser,
   initialCredits
 }: SessionCacheHydratorProps) {
-  if (typeof window !== "undefined") {
-    primeAuthSessionCache(initialUser);
-    primeCreditStatusCache(initialCredits);
-  }
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     primeAuthSessionCache(initialUser);
     primeCreditStatusCache(initialCredits);
   }, [initialCredits, initialUser]);
