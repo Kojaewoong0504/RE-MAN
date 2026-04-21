@@ -19,6 +19,38 @@ def build_env():
     return env
 
 
+def terminate_local_next_dev_server(port: int = 3001):
+    result = subprocess.run(
+        f"lsof -tiTCP:{port} -sTCP:LISTEN",
+        shell=True,
+        cwd=ROOT,
+        env=build_env(),
+        text=True,
+        capture_output=True,
+    )
+    pids = [pid.strip() for pid in result.stdout.splitlines() if pid.strip()]
+
+    for pid in pids:
+        subprocess.run(
+            f"kill {pid}",
+            shell=True,
+            cwd=ROOT,
+            env=build_env(),
+            text=True,
+            capture_output=True,
+        )
+
+    if pids:
+        subprocess.run(
+            "rm -f .next-harness.lock",
+            shell=True,
+            cwd=ROOT,
+            env=build_env(),
+            text=True,
+            capture_output=True,
+        )
+
+
 def command_specs(mode: str):
     checks = [
         ("repository-harness", "python3 harness/repository/run.py"),
@@ -88,6 +120,10 @@ def print_summary(check):
 
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "pre-commit"
+
+    if mode == "pre-push":
+        terminate_local_next_dev_server()
+
     checks = [run_check(name, command) for name, command in command_specs(mode)]
 
     report = {

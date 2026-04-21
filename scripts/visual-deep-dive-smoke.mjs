@@ -135,6 +135,24 @@ async function seedResultState(page) {
               "신발은 로퍼처럼 매끈한 형태가 전체 인상을 정리해 줍니다."
             ],
             recommended_outfit: outfit,
+            recommendation_mix: {
+              primary_source: "closet",
+              closet_confidence: "high",
+              system_support_needed: false,
+              missing_categories: [],
+              summary: "주 조합은 옷장 기준으로 구성하고 시스템 추천은 보조로 제공합니다."
+            },
+            system_recommendations: [
+              {
+                id: "sys-top-1",
+                mode: "reference",
+                category: "tops",
+                title: "차콜 니트 폴로",
+                color: "차콜",
+                reason: "같은 무드로 변주하기 좋습니다.",
+                product: null
+              }
+            ],
             today_action: "오늘은 셔츠를 넣어 입은 버전과 빼서 입은 버전을 사진으로 비교해보세요.",
             day1_mission: "옷장에서 면접에 입을 수 있는 상의 두 개만 꺼내 비교하세요."
           },

@@ -793,8 +793,8 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(
     page.getByRole("heading", { name: "오늘 조합" })
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "내 옷장에서 쓴 것" })).toBeVisible();
-  const resultBasisRegion = page.getByRole("region", { name: "추천에 사용된 옷" });
+  await expect(page.getByRole("heading", { name: "내 옷장 기준" })).toBeVisible();
+  const resultBasisRegion = page.getByRole("region", { name: "내 옷장 기준" });
   await expect(resultBasisRegion).toBeVisible();
   await expect(page.getByText(/상의 · 하의 · 신발 중 \d개 반영/)).toBeVisible();
   await expect(page.getByText(/흰색 무지 티셔츠 중심으로 시작/)).toBeVisible();
@@ -806,14 +806,13 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(page.getByRole("button", { name: /핏 더 보기/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /레퍼런스\/실착 보기/ })).toHaveCount(0);
   await expect(page.getByText("청바지 + 무지 티셔츠 중심의 코디라")).toHaveCount(0);
-  await expect(page.getByText("새로 사기보다 지금 가진 옷")).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "지금 가진 옷으로 만드는 깔끔한 기본 조합" })
   ).toBeVisible();
   await expect(page.getByText("오늘 실행 3단계")).toBeVisible();
   const todayActionBox = await page.getByText("오늘 실행 3단계").boundingBox();
   const closetBasisBox = await page
-    .getByRole("heading", { name: "내 옷장에서 쓴 것" })
+    .getByRole("heading", { name: "내 옷장 기준" })
     .boundingBox();
   expect(todayActionBox).not.toBeNull();
   expect(closetBasisBox).not.toBeNull();
@@ -993,6 +992,14 @@ test("result action hub can start a new style check", async ({ page }) => {
           diagnosis: "기존 스타일 체크 결과",
           improvements: ["a", "b", "c"],
           recommended_outfit: outfit,
+          recommendation_mix: {
+            primary_source: "closet",
+            closet_confidence: "high",
+            system_support_needed: false,
+            missing_categories: [],
+            summary: "주 조합은 옷장 기준으로 구성합니다."
+          },
+          system_recommendations: [],
           today_action: "오늘 바로 할 것",
           day1_mission: "루틴 미션"
         },
@@ -1064,6 +1071,14 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
               tops: "missing-top"
             }
           },
+          recommendation_mix: {
+            primary_source: "closet",
+            closet_confidence: "medium",
+            system_support_needed: true,
+            missing_categories: ["bottoms", "shoes"],
+            summary: "옷장 기준 조합을 먼저 보고 부족한 카테고리는 시스템 추천으로 보강합니다."
+          },
+          system_recommendations: [],
           today_action: "오늘 바로 할 것",
           day1_mission: "Day 1 미션"
         }
@@ -1091,7 +1106,7 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /사이즈 후보 보기/ })).toHaveCount(0);
   await expect(page.getByText("평소 사이즈 기준입니다.")).toHaveCount(0);
-  await expect(page.getByText("내 옷장 기준")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "내 옷장 기준" })).toBeVisible();
   await expect(page.getByText(/네이비 옥스포드 셔츠 · L · 잘 맞음 · 깨끗함/)).toHaveCount(0);
   await expect(page.getByText("내부 기준 후보").first()).toHaveCount(0);
   await expect(page.getByRole("link", { name: /구매/ })).toHaveCount(0);
@@ -1523,6 +1538,14 @@ test("signed-in users can save recommendation feedback from result page", async 
           diagnosis: "계정 저장 테스트 진단",
           improvements: ["핏", "색", "신발"],
           recommended_outfit: outfit,
+          recommendation_mix: {
+            primary_source: "closet",
+            closet_confidence: "high",
+            system_support_needed: false,
+            missing_categories: [],
+            summary: "주 조합은 옷장 기준으로 구성합니다."
+          },
+          system_recommendations: [],
           today_action: "오늘 바로 할 것",
           day1_mission: "Day 1 미션"
         }

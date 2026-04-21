@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "NODE_OPTIONS='--require ./scripts/enable-next-wasm.cjs' next dev --hostname 127.0.0.1 --port 3001",
-    "build": "NODE_OPTIONS='--require ./scripts/enable-next-wasm.cjs' python3 scripts/with-next-artifact-lock.py build -- next build",
+    "build": "rm -rf .next && NODE_OPTIONS='--require ./scripts/enable-next-wasm.cjs' python3 scripts/with-next-artifact-lock.py build -- next build",
     "start": "NODE_OPTIONS='--require ./scripts/enable-next-wasm.cjs' next start --hostname 127.0.0.1 --port 3001",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
