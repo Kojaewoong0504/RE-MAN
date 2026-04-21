@@ -92,5 +92,6 @@
 - [2026-04-16-next-artifact-parallel-gate.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/2026-04-16-next-artifact-parallel-gate.md)
 - [2026-04-20-iab-google-popup-blocked.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/2026-04-20-iab-google-popup-blocked.md)
 - [2026-04-20-mobile-heic-preview-fallback.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/2026-04-20-mobile-heic-preview-fallback.md)
+- [2026-04-21-platform-locked-direct-dependency.md](/Users/gojaewoong/Desktop/ko/nerd/docs/incidents/2026-04-21-platform-locked-direct-dependency.md)
 
 구조 기준과 이동 히스토리는 [docs/STRUCTURE_PLAN.md](/Users/gojaewoong/Desktop/ko/nerd/docs/STRUCTURE_PLAN.md)를 따른다.
