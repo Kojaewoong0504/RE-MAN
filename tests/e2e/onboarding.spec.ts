@@ -1175,9 +1175,12 @@ test("saved result shows outfit previews and allows try-on generation", async ({
   expect(tryOnRequests).toHaveLength(1);
   expect(tryOnRequests[0]).toMatchObject({
     person_image: uploadedImage,
-    product_image: uploadedImage,
     prompt: recommendedOutfit.try_on_prompt
   });
+  expect(typeof tryOnRequests[0].product_image).toBe("string");
+  expect(String(tryOnRequests[0].product_image)).toMatch(/^data:image\/png;base64,/);
+  expect(String(tryOnRequests[0].product_image)).not.toBe(uploadedImage);
+  expect(String(tryOnRequests[0].product_image).length).toBeGreaterThan(uploadedImage.length);
   await expect(page.getByText("체크 3회")).toBeVisible();
   await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /사이즈 후보 보기/ })).toHaveCount(0);
@@ -1189,6 +1192,86 @@ test("saved result shows outfit previews and allows try-on generation", async ({
     JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}")
   );
   expect(savedState.try_on_previews?.recommended?.preview_image).toBe(uploadedImage);
+});
+
+test("result preview falls back to placeholder when a closet image fails to load", async ({ page }) => {
+  await page.addInitScript((outfit) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원",
+          style_goal: "전체적인 스타일 리셋",
+          confidence_level: "배우는 중"
+        },
+        closet_profile: {
+          tops: "검정 반팔 티셔츠",
+          bottoms: "회색 반바지",
+          shoes: "검정 운동화"
+        },
+        closet_items: [
+          {
+            id: "broken-top",
+            category: "tops",
+            name: "검정 반팔 티셔츠",
+            image_url: "/missing-top-preview.png"
+          },
+          {
+            id: "ok-bottom",
+            category: "bottoms",
+            name: "회색 반바지",
+            photo_data_url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9s3FoX0AAAAASUVORK5CYII="
+          },
+          {
+            id: "ok-shoes",
+            category: "shoes",
+            name: "검정 운동화",
+            photo_data_url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9s3FoX0AAAAASUVORK5CYII="
+          }
+        ],
+        feedback: {
+          diagnosis: "기본 조합",
+          improvements: ["a", "b", "c"],
+          recommended_outfit: {
+            ...outfit,
+            items: ["검정 반팔 티셔츠", "회색 반바지", "검정 운동화"],
+            source_item_ids: {
+              tops: "broken-top",
+              bottoms: "ok-bottom",
+              shoes: "ok-shoes"
+            }
+          },
+          recommendation_mix: {
+            primary_source: "closet",
+            closet_confidence: "high",
+            system_support_needed: false,
+            missing_categories: [],
+            summary: "옷장 조합"
+          },
+          system_recommendations: [],
+          today_action: "오늘 바로 할 것",
+          day1_mission: "Day 1 미션"
+        }
+      })
+    );
+  }, recommendedOutfit);
+
+  await addTryOnSession(page);
+  await page.goto("/programs/style/onboarding/result");
+
+  const topPreview = page.getByRole("img", { name: "추천 상의" });
+  await expect(topPreview).toBeVisible();
+  await expect
+    .poll(
+      () =>
+        topPreview.evaluate((element) =>
+          (element as HTMLImageElement).getAttribute("src") ?? ""
+        ),
+      { timeout: 5000 }
+    )
+    .toContain("/system-catalog/reference-top.svg");
 });
 
 test("hybrid recommendation shows system block first when system is the primary source", async ({

@@ -77,7 +77,7 @@ export type RecommendationFeedbackMemoryRow = {
 
 export type TryOnPreviewCacheEntry = {
   cache_key: string;
-  source: "reference" | "upload";
+  source: "reference" | "upload" | "outfit-board";
   reference_id?: string;
   prompt: string;
   provider: "mocked" | "vertex";

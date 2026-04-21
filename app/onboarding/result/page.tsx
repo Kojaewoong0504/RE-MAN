@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { SafePreviewImage } from "@/components/common/SafePreviewImage";
 import { CreditStatus } from "@/components/credits/CreditStatus";
 import type {
   AgentClosetItemCategory,
@@ -32,6 +33,7 @@ import {
   type ClosetBasisItem
 } from "@/lib/product/closet-basis";
 import { buildTodayActionPlan } from "@/lib/product/today-action-plan";
+import { buildOutfitBoardDataUrl } from "@/lib/try-on/outfit-board";
 
 type RecommendationFeedbackStatus = "idle" | "saving" | "saved" | "error";
 type TryOnStatus = "idle" | "generating" | "ready" | "error";
@@ -48,12 +50,7 @@ type OutfitPreviewCard = {
   label: string;
   title: string;
   imageSrc: string;
-  sourceLabel: string;
-};
-type TryOnSource = {
-  title: string;
-  label: string;
-  imageSrc: string;
+  fallbackSrc: string;
   sourceLabel: string;
 };
 
@@ -149,6 +146,7 @@ function buildOutfitPreviewCards(closetItems: ClosetItem[], feedback: Onboarding
       label: categoryLabels[category],
       title,
       imageSrc: resolveClosetImage(matched, category),
+      fallbackSrc: previewFallbacks[category],
       sourceLabel: matched ? "내 옷장 사진" : "기준 레퍼런스"
     } satisfies OutfitPreviewCard;
   });
@@ -189,35 +187,6 @@ async function imageUrlToDataUrl(url: string) {
   });
 }
 
-function buildTryOnSource(
-  outfitPreviewCards: OutfitPreviewCard[],
-  systemPreviewCards: Array<SystemRecommendation & { imageSrc: string }>
-) : TryOnSource | null {
-  return (
-    outfitPreviewCards.find((card) => card.category === "tops" && card.imageSrc) ||
-    outfitPreviewCards.find((card) => card.imageSrc) ||
-    systemPreviewCards
-      .filter((item) => item.imageSrc)
-      .map((item) => ({
-        title: item.title,
-        label: categoryLabels[item.category],
-        imageSrc: item.imageSrc,
-        sourceLabel: "시스템 레퍼런스"
-      }))
-      .find((item) => item.label === categoryLabels.tops) ||
-    systemPreviewCards
-      .filter((item) => item.imageSrc)
-      .map((item) => ({
-        title: item.title,
-        label: categoryLabels[item.category],
-        imageSrc: item.imageSrc,
-        sourceLabel: "시스템 레퍼런스"
-      }))
-      .find(Boolean) ||
-    null
-  );
-}
-
 export default function ResultPage() {
   const router = useRouter();
   const [feedback, setFeedback] = useState<OnboardingAgentResponse | null>(null);
@@ -251,10 +220,6 @@ export default function ResultPage() {
     () => (feedback ? buildSystemPreviewCards(feedback) : []),
     [feedback]
   );
-  const tryOnSource = useMemo(
-    () => buildTryOnSource(outfitPreviewCards, systemPreviewCards),
-    [outfitPreviewCards, systemPreviewCards]
-  );
   const effectivePersonImage =
     personImage ??
     (typeof window !== "undefined" ? readOnboardingState().image : undefined);
@@ -275,13 +240,11 @@ export default function ResultPage() {
                 {outfitPreviewCards.map((card) => (
                   <article className="result-preview-card" key={card.key}>
                     <div className="result-preview-image">
-                      <Image
+                      <SafePreviewImage
                         alt={`추천 ${card.label}`}
                         className="h-full w-full object-cover"
-                        fill
-                        sizes="(max-width: 768px) 33vw, 140px"
+                        fallbackSrc={card.fallbackSrc}
                         src={card.imageSrc}
-                        unoptimized
                       />
                     </div>
                     <div className="result-preview-copy">
@@ -333,13 +296,11 @@ export default function ResultPage() {
                   {systemPreviewCards.map((item) => (
                     <article className="result-system-card" key={item.id}>
                       <div className="result-system-card-media">
-                        <Image
+                        <SafePreviewImage
                           alt={`시스템 추천 ${item.category}`}
                           className="h-full w-full object-cover"
-                          fill
-                          sizes="(max-width: 768px) 100vw, 160px"
+                          fallbackSrc={previewFallbacks[item.category]}
                           src={item.imageSrc}
-                          unoptimized
                         />
                       </div>
                       <div className="result-system-card-copy">
@@ -483,8 +444,8 @@ export default function ResultPage() {
   }
 
   async function handleGenerateTryOn() {
-    if (!feedback || !tryOnPersonImage || !tryOnSource) {
-      setTryOnError("현재 사진과 추천 기준 이미지가 모두 있어야 실착을 만들 수 있습니다.");
+    if (!feedback || !tryOnPersonImage || outfitPreviewCards.length === 0) {
+      setTryOnError("현재 사진과 추천 조합 이미지가 모두 있어야 실착을 만들 수 있습니다.");
       setTryOnStatus("error");
       return;
     }
@@ -494,7 +455,14 @@ export default function ResultPage() {
     setTryOnMessage(null);
 
     try {
-      const productImage = await imageUrlToDataUrl(tryOnSource.imageSrc);
+      const productImage = await buildOutfitBoardDataUrl(
+        outfitPreviewCards.map((card) => ({
+          title: card.title,
+          label: card.label,
+          imageSrc: card.imageSrc,
+          fallbackSrc: card.fallbackSrc
+        }))
+      );
       const response = await fetch("/api/try-on", {
         method: "POST",
         headers: {
@@ -525,7 +493,9 @@ export default function ResultPage() {
 
       const entry: TryOnPreviewCacheEntry = {
         cache_key: TRY_ON_CACHE_KEY,
-        source: tryOnSource.imageSrc.startsWith("data:image/") ? "upload" : "reference",
+        source: outfitPreviewCards.some((card) => card.sourceLabel === "내 옷장 사진")
+          ? "upload"
+          : "outfit-board",
         reference_id: feedback.recommended_outfit.title,
         prompt: feedback.recommended_outfit.try_on_prompt,
         provider: data.status,
@@ -663,7 +633,7 @@ export default function ResultPage() {
               </span>
             </div>
             <p className="result-recommendation-copy">
-              추천 조합의 대표 이미지를 기준으로 실착 이미지를 만들어 봅니다.
+              추천 상의, 하의, 신발을 한 장의 조합 보드로 묶어 현재 전신 사진에 입혀 봅니다.
             </p>
             <div className="result-try-on-layout">
               <div className="result-try-on-output">
@@ -685,17 +655,17 @@ export default function ResultPage() {
               </div>
               <div className="result-try-on-actions">
                 <div className="result-try-on-source">
-                  <span>기준 이미지</span>
-                  <strong>{tryOnSource ? compactUiText(tryOnSource.title, 22) : "추천 이미지 없음"}</strong>
+                  <span>실착 입력</span>
+                  <strong>{feedback ? compactUiText(feedback.recommended_outfit.title, 22) : "추천 이미지 없음"}</strong>
                   <small>
-                    {tryOnSource
-                      ? `${tryOnSource.sourceLabel} · ${tryOnSource.label}`
-                      : "옷장 사진 또는 시스템 추천 이미지가 필요합니다."}
+                    {outfitPreviewCards.length > 0
+                      ? "추천 상의 · 하의 · 신발 3개 조합 보드"
+                      : "추천 조합 이미지가 필요합니다."}
                   </small>
                 </div>
                 <button
                   className="ui-button-secondary justify-between py-4 disabled:opacity-60"
-                  disabled={!tryOnPersonImage || !tryOnSource || tryOnStatus === "generating"}
+                  disabled={!tryOnPersonImage || outfitPreviewCards.length === 0 || tryOnStatus === "generating"}
                   onClick={() => void handleGenerateTryOn()}
                   type="button"
                 >
