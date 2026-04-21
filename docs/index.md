@@ -84,6 +84,7 @@
 - [2026-04-20-closet-batch-ux-v2.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-20-closet-batch-ux-v2.md)
 - [2026-04-21-auth-performance-hardening-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-21-auth-performance-hardening-design.md)
 - [2026-04-21-auth-performance-hardening.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-21-auth-performance-hardening.md)
+- [2026-04-21-hybrid-outfit-recommendation-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-21-hybrid-outfit-recommendation-design.md)
 
 ### Incidents
 
