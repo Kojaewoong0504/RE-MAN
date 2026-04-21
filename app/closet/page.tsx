@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ClosetInventoryEditor } from "@/components/closet/ClosetInventoryEditor";
 import { CreditStatus } from "@/components/credits/CreditStatus";
 import { fetchAuthSession } from "@/lib/auth/client";
+import { fetchClosetPreviewUrls, type ClosetPreviewMap } from "@/lib/closet/preview-client";
 import {
   readCurrentUserProfile,
   syncClosetItemsToServer,
@@ -57,6 +58,34 @@ function getInitialClosetItems(localItems: ClosetItem[], profile: UserProfileDoc
   return buildClosetItemsFromProfile(toClosetProfile(profile?.closet_profile));
 }
 
+function mergePreviewUrlsIntoItems(items: ClosetItem[], previewUrls: ClosetPreviewMap) {
+  return items.map((item) => {
+    const previewUrl = previewUrls[item.id];
+
+    if (!previewUrl || item.photo_data_url) {
+      return item;
+    }
+
+    return {
+      ...item,
+      image_url: previewUrl
+    };
+  });
+}
+
+function getPersistableClosetItems(items: ClosetItem[]) {
+  return items.map((item) => {
+    if (!item.storage_bucket || !item.storage_path || item.photo_data_url) {
+      return item;
+    }
+
+    return {
+      ...item,
+      image_url: ""
+    };
+  });
+}
+
 export default function ClosetPage() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -67,7 +96,19 @@ export default function ClosetPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
   const [reviewSavedCount, setReviewSavedCount] = useState(0);
+  const [previewUrls, setPreviewUrls] = useState<ClosetPreviewMap>({});
   const hasUserEditedRef = useRef(false);
+
+  async function syncPreviewUrls(nextItems: ClosetItem[]) {
+    try {
+      const nextPreviewUrls = await fetchClosetPreviewUrls(nextItems);
+      setPreviewUrls(nextPreviewUrls);
+      setItems((currentItems) => mergePreviewUrlsIntoItems(currentItems, nextPreviewUrls));
+    } catch {
+      // Keep the last successful preview map. A later failed refresh should not
+      // erase previews that are already being shown.
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -100,6 +141,7 @@ export default function ClosetPage() {
       // Local closet context is the immediate product input. Remote profile sync
       // should enrich it later, not make the closet look empty while loading.
       setItems(localProfileItems);
+      void syncPreviewUrls(localProfileItems);
       setAvoid(localState.closet_profile?.avoid ?? "");
       setIsLoading(false);
 
@@ -112,6 +154,7 @@ export default function ClosetPage() {
       setProfile(nextProfile);
       if (!hasUserEditedRef.current) {
         setItems(getInitialClosetItems(localItems, nextProfile));
+        void syncPreviewUrls(getInitialClosetItems(localItems, nextProfile));
         setAvoid(nextProfile?.closet_profile?.avoid ?? localState.closet_profile?.avoid ?? "");
       }
       setIsLoading(false);
@@ -131,24 +174,26 @@ export default function ClosetPage() {
 
     setIsSaving(true);
     setStatus("idle");
+    const persistableItems = getPersistableClosetItems(items);
 
     const nextState = saveClosetContextToOnboardingState({
       user_id: user.uid,
       email: user.email ?? undefined,
-      items,
+      items: persistableItems,
       avoid
     });
     const closetProfile = nextState.closet_profile ?? buildClosetProfileFromItems(items, avoid);
 
     try {
       const persisted = await syncClosetItemsToServer({
-        items,
+        items: persistableItems,
         closet_profile: closetProfile,
         size_profile: profile?.size_profile ?? nextState.size_profile
       });
 
       if (persisted.closet_items.length) {
         setItems(persisted.closet_items);
+        void syncPreviewUrls(persisted.closet_items);
         saveClosetContextToOnboardingState({
           user_id: user.uid,
           email: user.email ?? undefined,
@@ -163,7 +208,7 @@ export default function ClosetPage() {
         bio: profile?.bio ?? "",
         preferredProgram: profile?.preferredProgram ?? "style",
         survey: profile?.survey ?? nextState.survey,
-        closet_items: persisted.closet_items.length ? persisted.closet_items : items,
+        closet_items: persisted.closet_items.length ? persisted.closet_items : persistableItems,
         closet_profile: persisted.closet_profile ?? closetProfile,
         size_profile: profile?.size_profile ?? nextState.size_profile
       });
@@ -281,9 +326,11 @@ export default function ClosetPage() {
             <>
               <ClosetInventoryEditor
                 items={items}
+                previewUrls={previewUrls}
                 onChange={(nextItems) => {
                   hasUserEditedRef.current = true;
                   setItems(nextItems);
+                  void syncPreviewUrls(nextItems);
                 }}
               />
             </>

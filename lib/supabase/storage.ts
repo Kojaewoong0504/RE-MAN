@@ -107,6 +107,22 @@ export async function deleteImageFromSupabaseStorage(imageRef: UploadedImageRef)
   }
 }
 
+export async function createSignedImageUrl(
+  imageRef: Pick<UploadedImageRef, "bucket" | "path">,
+  expiresInSeconds = 60 * 60
+) {
+  const client = getSupabaseStorageClient();
+  const { data, error } = await client.storage
+    .from(imageRef.bucket)
+    .createSignedUrl(imageRef.path, expiresInSeconds);
+
+  if (error) {
+    throw new Error(`supabase_signed_url_failed:${error.message}`);
+  }
+
+  return data.signedUrl;
+}
+
 export async function runSupabaseStorageSmokeTest(userId?: string) {
   const testImage =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9s3FoX0AAAAASUVORK5CYII=";

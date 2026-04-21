@@ -10,12 +10,21 @@ import {
 } from "@/lib/auth/client";
 import type { AuthUser } from "@/lib/auth/types";
 
-export function AccountAccessButton() {
+type AccountAccessButtonProps = {
+  hideWhenSignedOut?: boolean;
+  showProfileLink?: boolean;
+};
+
+export function AccountAccessButton({
+  hideWhenSignedOut = false,
+  showProfileLink = true
+}: AccountAccessButtonProps) {
   const cachedUser = readCachedAuthSessionSnapshot();
   const [href, setHref] = useState(cachedUser ? "/profile" : "/login");
   const [label, setLabel] = useState(
     cachedUser ? (cachedUser.name ?? cachedUser.email ?? "R").slice(0, 1) : "Login"
   );
+  const [user, setUser] = useState<AuthUser | null | undefined>(cachedUser);
 
   useEffect(() => {
     let active = true;
@@ -24,6 +33,8 @@ export function AccountAccessButton() {
       if (!active) {
         return;
       }
+
+      setUser(user);
 
       if (user) {
         setHref("/profile");
@@ -55,15 +66,21 @@ export function AccountAccessButton() {
     };
   }, []);
 
+  if (hideWhenSignedOut && !user) {
+    return null;
+  }
+
   return (
     <div className="app-header-actions">
       <CreditStatus variant="badge" />
-      <Link
-        className="account-access-pill"
-        href={href}
-      >
-        {label}
-      </Link>
+      {showProfileLink ? (
+        <Link
+          className="account-access-pill"
+          href={href}
+        >
+          {label}
+        </Link>
+      ) : null}
     </div>
   );
 }

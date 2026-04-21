@@ -545,7 +545,13 @@ test("closet review save shows readiness and continues into style check", async 
       contentType: "application/json",
       status: 200,
       body: JSON.stringify({
-        closet_items: payload.items,
+        closet_items: payload.items.map((item: Record<string, unknown>) => ({
+          ...item,
+          photo_data_url: "",
+          image_url: "",
+          storage_bucket: "uploads",
+          storage_path: `closet/${String(item.id)}.jpg`
+        })),
         closet_profile: payload.closet_profile
       })
     });
@@ -607,6 +613,65 @@ test("closet review save shows readiness and continues into style check", async 
   await expect(
     page.getByRole("region", { name: "분석 준비 상태" }).getByText("상의, 하의, 신발 준비됨")
   ).toBeVisible();
+});
+
+test("closet page renders signed preview for saved storage items", async ({ page }) => {
+  await addTryOnSession(page, "e2e-closet-preview-user");
+  let previewRequestCount = 0;
+
+  await page.route("**/api/closet/previews", async (route) => {
+    previewRequestCount += 1;
+    await route.fulfill({
+      contentType: "application/json",
+      status: 200,
+      body: JSON.stringify({
+        previews: [
+          {
+            id: "saved-top",
+            preview_url: "https://signed.example.com/saved-top.jpg"
+          }
+        ]
+      })
+    });
+  });
+
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        user_id: "e2e-closet-preview-user",
+        email: "try-on@example.com",
+        survey: {},
+        closet_items: [
+          {
+            id: "saved-top",
+            category: "tops",
+            name: "네이비 셔츠",
+            photo_data_url: "",
+            image_url: "",
+            storage_bucket: "uploads",
+            storage_path: "closet/saved-top.jpg"
+          }
+        ],
+        closet_profile: {
+          tops: "네이비 셔츠",
+          bottoms: "",
+          shoes: "",
+          outerwear: "",
+          avoid: ""
+        }
+      })
+    );
+  });
+
+  await page.goto("/closet");
+  await expect(page.getByRole("heading", { name: "옷장 사진 저장" })).toBeVisible();
+  await expect.poll(() => previewRequestCount).toBeGreaterThan(0);
+  await page.getByRole("button", { name: /상의 .* 열기/ }).click();
+  await expect(page.getByAltText("네이비 셔츠 옷장 사진")).toHaveAttribute(
+    "src",
+    /signed\.example\.com\/saved-top\.jpg/
+  );
 });
 
 test("closet add button opens batch-first mode chooser", async ({ page }) => {
@@ -1450,6 +1515,12 @@ test("protected profile redirects to login when no session is present", async ({
     page.getByRole("heading", { name: "진행한 변화와 계정을 함께 관리합니다" })
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Google로 계속하기" })).toBeVisible();
+});
+
+test("home header hides login pill when no session is present", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "관리 홈" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
 });
 
 test("protected closet redirects to login when no session is present", async ({ page }) => {

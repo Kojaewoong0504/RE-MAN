@@ -56,6 +56,7 @@
 - `npm run test:e2e`만 실행하고 실제 Gemini 사진 분석이 된다고 말하지 않는다.
 - `npm run typecheck`와 `npm run lint`만 실행하고 사용자 플로우가 통과했다고 말하지 않는다.
 - `npm run visual:app`을 실행하지 않고 UI 배치가 확인됐다고 말하지 않는다.
+- 사용자가 "여전히 보인다", "여전히 안 된다"처럼 현재 브라우저 상태를 반박하면, 기존 테스트 결과로 밀어붙이지 않는다. 현재 떠 있는 서버/브라우저 상태를 다시 열어 DOM 또는 새 캡처로 직접 확인한 뒤에만 수정 완료를 말한다.
 - 실패한 명령이 있으면 숨기지 않는다.
 - 실패는 `auth`, `credit`, `payload`, `provider`, `storage`, `ui`, `visual`, `harness` 중 하나로 분류한다.
 - `npm run check:deploy` 경고를 무시하고 배포 기능이 실제 AI/크레딧으로 동작한다고 말하지 않는다.

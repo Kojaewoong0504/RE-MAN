@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import type { ClosetItem, ClosetItemCategory } from "@/lib/onboarding/storage";
+import type { ClosetPreviewMap } from "@/lib/closet/preview-client";
 import { normalizePhotoForBrowserUpload } from "@/lib/upload/browser-normalize";
 import { IMAGE_INPUT_ACCEPT, validatePhotoFile } from "@/lib/upload/photo-input";
 
@@ -52,17 +53,19 @@ function getItemDisplayName(item: ClosetItem) {
   return `${color} ${name}`;
 }
 
-function getItemImageSrc(item: ClosetItem) {
-  return item.photo_data_url || item.image_url || "";
+function getItemImageSrc(item: ClosetItem, previewUrls?: ClosetPreviewMap) {
+  return item.photo_data_url || previewUrls?.[item.id] || item.image_url || "";
 }
 
 export function ClosetInventoryEditor({
   items,
+  previewUrls,
   onChange,
   quickAddCategory,
   quickAddRequestKey = 0
 }: {
   items: ClosetItem[];
+  previewUrls?: ClosetPreviewMap;
   onChange: (items: ClosetItem[]) => void;
   quickAddCategory?: ClosetItemCategory | null;
   quickAddRequestKey?: number;
@@ -90,7 +93,10 @@ export function ClosetInventoryEditor({
   const [openCategories, setOpenCategories] = useState<ClosetItemCategory[]>([]);
   const [showOptionalDetails, setShowOptionalDetails] = useState(false);
 
-  const photoPreviewSrc = photoDataUrl || imageUrl;
+  const photoPreviewSrc =
+    photoDataUrl ||
+    (editingItemId ? previewUrls?.[editingItemId] : "") ||
+    imageUrl;
   const canAdd = Boolean(photoPreviewSrc);
   const isEditing = Boolean(editingItemId);
   const selectedItem = items.find((item) => item.id === selectedItemId) ?? null;
@@ -151,7 +157,7 @@ export function ClosetInventoryEditor({
     setCondition(item.condition ?? "");
     setNotes(item.notes ?? "");
     setPhotoDataUrl(item.photo_data_url ?? "");
-    setImageUrl(item.image_url ?? "");
+    setImageUrl(item.image_url ?? previewUrls?.[item.id] ?? "");
     setStorageBucket(item.storage_bucket ?? "");
     setStoragePath(item.storage_path ?? "");
     setPhotoError(null);
@@ -304,12 +310,12 @@ export function ClosetInventoryEditor({
                         type="button"
                       >
                         <span className="closet-item-photo">
-                          {getItemImageSrc(item) ? (
+                          {getItemImageSrc(item, previewUrls) ? (
                             <NextImage
                               alt={`${getItemDisplayName(item)} 옷장 사진`}
                               className="h-full w-full object-cover"
                               height={160}
-                              src={getItemImageSrc(item)}
+                              src={getItemImageSrc(item, previewUrls)}
                               unoptimized
                               width={120}
                             />

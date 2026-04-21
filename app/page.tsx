@@ -49,7 +49,7 @@ export default function LandingPage() {
     <main className="app-shell min-h-screen pb-24 pt-4">
       <div className="app-header">
         <p className="app-brand">RE:MAN</p>
-        <AccountAccessButton />
+        <AccountAccessButton hideWhenSignedOut showProfileLink={false} />
       </div>
 
       <section className="home-slate-hero mt-5">

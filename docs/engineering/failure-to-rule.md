@@ -119,3 +119,16 @@
   - `scripts/check-deploy-readiness.mjs`
   - `tests/unit/deploy-readiness.test.ts`
   - `docs/engineering/deployment-readiness.md`
+
+### Browser State Verification Failure
+
+- 실패 설명: 사용자가 브라우저에서 여전히 로그인 버튼을 보고 있는데도, 에이전트가 테스트 통과와 서버 재시작만 근거로 수정 완료처럼 보고했다.
+- 직접 원인: 테스트 서버와 사용자가 실제 보고 있는 현재 서버/브라우저 상태를 분리해서 확인하지 않았다.
+- 재발 가능성: 높음. dev server 재시작, 캐시, 다른 실행 세션 때문에 테스트 결과와 현재 화면이 어긋날 수 있다.
+- 추가한 규칙:
+  - 사용자가 현재 브라우저 상태를 반박하면 기존 테스트 결과보다 현재 서버/브라우저 재확인이 우선이다.
+  - "보인다/안 보인다" 같은 UI 수정 완료 보고는 현재 떠 있는 서버를 직접 열어 DOM 또는 새 캡처로 확인한 뒤에만 할 수 있다.
+  - dev server를 다시 띄웠다고 해서 사용자가 보고 있는 화면까지 자동으로 갱신됐다고 가정하지 않는다.
+- 연결한 하네스:
+  - `docs/engineering/verification-matrix.md`
+  - 현재 서버 대상 수동 Playwright 확인
