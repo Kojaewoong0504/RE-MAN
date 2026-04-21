@@ -8,8 +8,8 @@
     "start": "NODE_OPTIONS='--require ./scripts/enable-next-wasm.cjs' next start --hostname 127.0.0.1 --port 3001",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:unit": "NAPI_RS_FORCE_WASI=1 vitest run tests/unit",
-    "test:integration": "NAPI_RS_FORCE_WASI=1 vitest run tests/integration",
+    "test:unit": "node scripts/run-vitest-local.mjs tests/unit",
+    "test:integration": "node scripts/run-vitest-local.mjs tests/integration",
     "test:e2e": "python3 scripts/with-next-artifact-lock.py e2e -- playwright test",
     "visual:app": "python3 scripts/with-next-artifact-lock.py visual-app -- node scripts/visual-app-smoke.mjs",
     "visual:deep-dive": "python3 scripts/with-next-artifact-lock.py visual-deep-dive -- node scripts/visual-deep-dive-smoke.mjs",
@@ -42,7 +42,6 @@
   "devDependencies": {
     "@next/swc-wasm-nodejs": "^14.2.30",
     "@playwright/test": "1.54.2",
-    "@rolldown/binding-wasm32-wasi": "^1.0.0-rc.13",
     "@types/node": "22.15.3",
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.7",

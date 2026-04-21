@@ -24,6 +24,37 @@ const strictRealAiEnv = {
 };
 
 describe("deployment readiness", () => {
+  it("fails readiness when package.json contains a platform-locked direct dependency", () => {
+    const packageJsonPath = "package.json";
+    const original = fs.readFileSync(packageJsonPath, "utf8");
+    const parsed = JSON.parse(original);
+
+    parsed.devDependencies = {
+      ...parsed.devDependencies,
+      "@rolldown/binding-wasm32-wasi": "^1.0.0-rc.13"
+    };
+
+    fs.writeFileSync(packageJsonPath, `${JSON.stringify(parsed, null, 2)}\n`);
+
+    try {
+      const result = spawnSync(
+        "node",
+        ["scripts/check-deploy-readiness.mjs", "--strict"],
+        {
+          cwd: process.cwd(),
+          env: strictRealAiEnv,
+          encoding: "utf-8"
+        }
+      );
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toContain("FAIL install-platform-compatibility");
+      expect(result.stdout).toContain("@rolldown/binding-wasm32-wasi");
+    } finally {
+      fs.writeFileSync(packageJsonPath, original);
+    }
+  });
+
   it("fails strict readiness when the credit ledger is still memory backed", () => {
     const result = spawnSync(
       "node",
@@ -68,11 +99,14 @@ describe("deployment readiness", () => {
       "node scripts/smoke-production-mvp.mjs"
     );
     expect(packageJson.scripts["perf:app-shell"]).toBe("node scripts/perf-app-shell.mjs");
+    expect(deploymentReadiness).toContain("platform package");
+    expect(deploymentReadiness).toContain("`npm install`");
     expect(fs.existsSync("scripts/perf-app-shell.mjs")).toBe(true);
     expect(fs.existsSync("scripts/smoke-production-mvp.mjs")).toBe(true);
     expect(matrix).toContain("`npm run smoke:production:mvp`");
     expect(matrix).toContain("배포 MVP golden path 통과");
     expect(matrix).toContain("`npm run perf:app-shell`");
+    expect(matrix).toContain("install compatibility");
     expect(deploymentReadiness).toContain("canonical production host");
   });
 });

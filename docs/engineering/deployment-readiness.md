@@ -26,11 +26,15 @@ SMOKE_BASE_URL=https://<deployment-url> npm run smoke:production:mvp
 - `check:deploy:strict`는 MVP 필수 AI 기능인 스타일 분석과 옷장 대량 등록이 real provider가 아니면 실패로 처리한다.
 - 실착 이미지는 현재 MVP 필수 경로가 아니므로 `TRY_ON_PROVIDER=mock`이면 경고만 낸다.
 - `check:deploy:vercel`은 Vercel production env를 `.env.vercel.local`로 pull한 뒤 strict 검사를 실행한다.
+- `check:deploy`는 `package.json` 직접 의존성에 Vercel/Linux 설치 단계에서 깨지는 platform package가 있는지도 같이 확인한다.
 - `perf:app-shell`은 주요 화면의 응답 시간을 budget 기준으로 측정한다.
 - `smoke:production:mvp`는 배포 URL에서 로그인 세션, 크레딧 잔액, 옷장 등록, 스타일 분석, 반응 저장, 기록 이동을 한 번에 확인한다.
 - `smoke:production:mvp`는 테스트 세션을 발급하므로 실제 Google OAuth UI를 검증하지 않는다.
 - 배포에서 크레딧 원장을 실제 원장으로 보고하려면 `CREDIT_LEDGER_PROVIDER=firestore`가 필요하다. 값이 없으면 memory fallback이며 strict readiness는 실패한다.
 - Vercel production env를 로컬에서 확인할 때는 secret 값을 출력하지 말고 env를 pull한 뒤 검사한다.
+- `npm install` 단계에서 깨지는 문제는 build 실패가 아니라 install compatibility 실패로 분리해서 보고한다.
+- `@rolldown/binding-wasm32-wasi` 같은 `wasm32` 전용 패키지를 직접 `dependencies` 또는 `devDependencies`에 추가하면 배포 금지다. 이런 우회는 공용 저장소 의존성이 아니라 로컬 전용 방법으로 분리해야 한다.
+- 로컬 검증이 platform package를 잠깐 필요로 하면 `--no-save` 임시 설치나 로컬 스크립트로 처리하고 lockfile/manifest에는 남기지 않는다.
 
 ```bash
 vercel env pull .env.vercel.local --environment=production

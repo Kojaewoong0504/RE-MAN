@@ -104,3 +104,18 @@
   - `scripts/with-next-artifact-lock.py`
   - `AGENTS.md`
   - `docs/engineering/save-gate.md`
+
+### Platform-Locked Direct Dependency Failure
+
+- 실패 설명: 로컬 서명/런타임 우회를 위해 `wasm32` 전용 패키지를 직접 `devDependencies`에 추가했고, 그 결과 Vercel `npm install`이 `EBADPLATFORM`으로 실패했다.
+- 직접 원인: 로컬 문제 우회를 배포 가능한 의존성 구조와 분리하지 않고 저장소 공용 직접 의존성에 넣었다.
+- 재발 가능성: 높음. 플랫폼 전용 패키지는 로컬에서 우연히 동작해도 다른 CPU/OS에서 바로 설치 실패를 만든다.
+- 추가한 규칙:
+  - `package.json`의 직접 `dependencies`/`devDependencies`에는 배포 불가능한 platform-locked package를 넣지 않는다.
+  - install 단계 실패는 build 실패와 분리해 `install compatibility` 결함으로 보고한다.
+  - `npm run check:deploy`는 직접 의존성에 금지된 platform package가 있으면 실패해야 한다.
+  - 로컬 검증 우회가 필요하면 `--no-save` 임시 설치로 처리하고 manifest/lockfile에 남기지 않는다.
+- 연결한 하네스:
+  - `scripts/check-deploy-readiness.mjs`
+  - `tests/unit/deploy-readiness.test.ts`
+  - `docs/engineering/deployment-readiness.md`

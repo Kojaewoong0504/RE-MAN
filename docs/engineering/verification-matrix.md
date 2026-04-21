@@ -59,6 +59,7 @@
 - 실패한 명령이 있으면 숨기지 않는다.
 - 실패는 `auth`, `credit`, `payload`, `provider`, `storage`, `ui`, `visual`, `harness` 중 하나로 분류한다.
 - `npm run check:deploy` 경고를 무시하고 배포 기능이 실제 AI/크레딧으로 동작한다고 말하지 않는다.
+- `npm run check:deploy`가 install compatibility를 실패시키면 `npm install` 단계에서 깨지는 배포 결함으로 보고하고, build 통과로 덮지 않는다.
 - `npm run smoke:production:mvp` 없이 배포 URL에서 로그인, 크레딧 차감, 분석, 기록 확인이 끝까지 된다고 말하지 않는다.
 
 ## Visual Evidence

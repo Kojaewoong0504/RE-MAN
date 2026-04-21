@@ -91,8 +91,53 @@ function providerValue(env, key) {
   return present(env, key) ? env[key].trim() : "mock";
 }
 
+function readRootPackageJson() {
+  const packagePath = path.resolve(process.cwd(), "package.json");
+
+  if (!fs.existsSync(packagePath)) {
+    return null;
+  }
+
+  return JSON.parse(fs.readFileSync(packagePath, "utf8"));
+}
+
 function failWhenStrict(id, warningMessage, strictMessage = warningMessage) {
   return strict ? statusLine("FAIL", id, strictMessage) : statusLine("WARN", id, warningMessage);
+}
+
+function checkInstallPlatformCompatibility() {
+  const packageJson = readRootPackageJson();
+
+  if (!packageJson) {
+    return statusLine(
+      "FAIL",
+      "install-platform-compatibility",
+      "package.json을 찾을 수 없어 배포 install compatibility를 확인할 수 없습니다."
+    );
+  }
+
+  const directDependencies = {
+    ...(packageJson.dependencies ?? {}),
+    ...(packageJson.devDependencies ?? {}),
+    ...(packageJson.optionalDependencies ?? {})
+  };
+  const forbiddenPackages = Object.keys(directDependencies).filter(
+    (name) => name === "@rolldown/binding-wasm32-wasi"
+  );
+
+  if (forbiddenPackages.length > 0) {
+    return statusLine(
+      "FAIL",
+      "install-platform-compatibility",
+      `직접 의존성에 배포 불가능한 platform package가 있습니다: ${forbiddenPackages.join(", ")}`
+    );
+  }
+
+  return statusLine(
+    "PASS",
+    "install-platform-compatibility",
+    "직접 의존성에 배포 불가능한 platform package가 없습니다."
+  );
 }
 
 function checkStyleFeedback(env) {
@@ -293,6 +338,7 @@ function checkTryOn(env) {
 
 const env = loadEnv();
 const results = [
+  checkInstallPlatformCompatibility(),
   checkStyleFeedback(env),
   checkClosetBatch(env),
   checkCreditLedger(env),
