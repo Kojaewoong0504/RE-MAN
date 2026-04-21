@@ -56,7 +56,11 @@ export function PhotoUploader({
               전신이 보이면 됩니다.
             </p>
           </div>
-          <div className="work-surface overflow-hidden">
+          <div
+            className="photo-preview-frame"
+            data-design-system="sartorial-slate"
+            data-testid="photo-preview-frame"
+          >
             {image && isBrowserPreviewableImageDataUrl(image) ? (
               <NextImage
                 alt="업로드한 스타일 사진 미리보기"
@@ -67,29 +71,57 @@ export function PhotoUploader({
                 width={720}
               />
             ) : image ? (
-              <div className="flex aspect-[4/5] flex-col justify-end bg-[linear-gradient(160deg,#eef1ed_0%,#fcf8ef_62%,#dfe5dc_100%)] p-6">
-                <p className="text-[34px] font-black leading-[1.02] tracking-[-0.06em] text-ink">
+              <div className="photo-preview-frame-state photo-preview-frame-state-complete">
+                <div className="photo-preview-frame-topline">
+                  <span>READY SHOT</span>
+                  <strong>분석에 사용할 사진</strong>
+                </div>
+                <div className="photo-preview-guide-markers" aria-hidden>
+                  <span>정면</span>
+                  <span>전신</span>
+                  <span>밝은 곳</span>
+                </div>
+                <p className="photo-preview-frame-title">
                   사진 선택 완료
                 </p>
-                <p className="mt-3 max-w-xs text-sm font-bold leading-6 text-muted">
+                <p className="photo-preview-frame-copy">
                   분석할 사진이 준비되었습니다.
                 </p>
               </div>
             ) : (
-              <div className="flex aspect-[4/5] flex-col justify-end bg-[linear-gradient(160deg,#f4ecdd_0%,#fcf8ef_62%,#e8ddcc_100%)] p-6">
-                <p className="text-[34px] font-black leading-[1.02] tracking-[-0.06em] text-ink">
+              <div className="photo-preview-frame-state photo-preview-frame-state-empty">
+                <div className="photo-preview-frame-topline">
+                  <span>FRAME GUIDE</span>
+                  <strong>지금 입은 모습 기준</strong>
+                </div>
+                <div className="photo-preview-ambient">
+                  <span />
+                  <span />
+                </div>
+                <div className="photo-preview-guide-markers" aria-hidden>
+                  <span>정면</span>
+                  <span>전신</span>
+                  <span>밝은 곳</span>
+                </div>
+                <p className="photo-preview-frame-title">
                   지금 입은 모습 그대로
                 </p>
-                <p className="mt-3 max-w-xs text-sm font-bold leading-6 text-muted">
+                <p className="photo-preview-frame-copy">
                   전신, 정면, 밝은 곳.
                 </p>
               </div>
             )}
           </div>
-          <div className="metric-strip grid-cols-3 text-xs font-black text-muted">
-            <span className="metric-cell">전신</span>
-            <span className="metric-cell">정면</span>
-            <span className="metric-cell">밝은 곳</span>
+          <div className="photo-preview-checklist" role="list" aria-label="사진 가이드">
+            <span className="photo-preview-check" role="listitem">
+              전신
+            </span>
+            <span className="photo-preview-check" role="listitem">
+              정면
+            </span>
+            <span className="photo-preview-check" role="listitem">
+              밝은 곳
+            </span>
           </div>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">

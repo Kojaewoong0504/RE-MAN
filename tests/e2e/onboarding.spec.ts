@@ -914,6 +914,61 @@ test("upload step summarizes analysis readiness in one status card", async ({ pa
   await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeEnabled();
 });
 
+test("upload step uses the sartorial slate photo frame", async ({ page }) => {
+  await addTryOnSession(page, "e2e-upload-design-user");
+  await page.goto("/programs/style/onboarding/survey");
+  await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
+  await page.getByRole("button", { name: "소개팅 / 이성 만남" }).click();
+  await page.getByRole("button", { name: "15~30만원" }).click();
+  await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
+
+  const frame = page.getByTestId("photo-preview-frame");
+
+  await expect(frame).toHaveAttribute("data-design-system", "sartorial-slate");
+  await expect(frame).toContainText("지금 입은 모습 그대로");
+});
+
+test("analyzing page cycles the active stage instead of staying static", async ({ page }) => {
+  await addTryOnSession(page, "e2e-analyzing-motion-user");
+  await page.route("**/api/feedback", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2600));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        diagnosis: "현재 스타일 진단",
+        improvements: ["개선 1", "개선 2", "개선 3"],
+        recommended_outfit: recommendedOutfit,
+        today_action: "오늘 바로 할 것",
+        day1_mission: "오늘 미션"
+      })
+    });
+  });
+
+  await page.goto("/programs/style/onboarding/survey");
+  await page.getByRole("button", { name: "청바지 + 무지 티셔츠" }).click();
+  await page.getByRole("button", { name: "소개팅 / 이성 만남" }).click();
+  await page.getByRole("button", { name: "15~30만원" }).click();
+  await page.getByRole("button", { name: "사진 업로드로 이동" }).click();
+  await page.locator("#photo-upload").setInputFiles(tinyPng);
+  await fillUploadContext(page);
+  await page.getByRole("button", { name: "AI 분석 시작하기" }).click();
+
+  await expect(page).toHaveURL(/\/programs\/style\/onboarding\/analyzing$/);
+
+  const currentStage = page.getByTestId("analysis-stage-current");
+  const timeline = page.getByTestId("analysis-stage-timeline");
+
+  await expect(currentStage).toHaveAttribute("data-stage-index", "0");
+  await expect(timeline.getByRole("listitem")).toHaveCount(3);
+
+  await expect
+    .poll(async () => currentStage.getAttribute("data-stage-index"), {
+      timeout: 2200
+    })
+    .toBe("1");
+});
+
 test("result action hub can start a new style check", async ({ page }) => {
   const uploadedImage = `data:image/png;base64,${tinyPng.buffer.toString("base64")}`;
 

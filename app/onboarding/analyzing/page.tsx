@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { OnboardingAgentResponse } from "@/lib/agents/contracts";
 import { fetchAuthSession } from "@/lib/auth/client";
@@ -143,6 +143,17 @@ async function postFeedback(payload: FeedbackRequestPayload, signal: AbortSignal
 export default function AnalyzingPage() {
   const router = useRouter();
   const [errorState, setErrorState] = useState<AnalysisError | null>(null);
+  const [activeStep, setActiveStep] = useState(0);
+
+  const timeline = useMemo(
+    () =>
+      steps.map((label, index) => ({
+        label,
+        state:
+          index < activeStep ? "done" : index === activeStep ? "active" : "upcoming"
+      })),
+    [activeStep]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -228,6 +239,18 @@ export default function AnalyzingPage() {
     };
   }, [router]);
 
+  useEffect(() => {
+    if (errorState) {
+      return undefined;
+    }
+
+    const interval = window.setInterval(() => {
+      setActiveStep((current) => (current + 1) % steps.length);
+    }, 1400);
+
+    return () => window.clearInterval(interval);
+  }, [errorState]);
+
   return (
     <main className="app-shell flex min-h-screen flex-col justify-center gap-8">
       <div className="space-y-4">
@@ -235,19 +258,53 @@ export default function AnalyzingPage() {
         <h1 className="text-4xl font-bold tracking-[-0.04em]">
           AI가 지금 스타일의 출발점을 읽고 있어요
         </h1>
+        <p className="max-w-sm text-sm font-semibold leading-6 text-muted">
+          멈춘 화면이 아니라 단계별로 분석을 진행하는 중입니다.
+        </p>
       </div>
-      <div className="grid gap-3">
-        {steps.map((step, index) => (
-          <div
-            key={step}
-            className={`px-4 py-4 text-base font-bold ${
-              index === steps.length - 1 ? "ui-panel-accent" : "ui-panel-muted text-ink"
-            }`}
-          >
-            {step}
+      <section
+        aria-label="분석 진행 시각화"
+        className="analysis-stage-shell"
+      >
+        <div
+          aria-live="polite"
+          className="analysis-stage-current"
+          data-stage-index={activeStep}
+          data-testid="analysis-stage-current"
+        >
+          <div className="analysis-stage-current-copy">
+            <p className="poster-kicker text-[var(--color-accent-ink)]/72">Current Stage</p>
+            <strong>{steps[activeStep]}</strong>
+            <span>사진, 옷장, 설문을 순서대로 엮어 현재 조합 기준을 만들고 있습니다.</span>
           </div>
-        ))}
-      </div>
+          <div aria-hidden className="analysis-stage-scanner">
+            <span className="analysis-stage-scanner-line" />
+            <span className="analysis-stage-scanner-glow" />
+          </div>
+        </div>
+        <ol
+          className="analysis-stage-timeline"
+          data-testid="analysis-stage-timeline"
+        >
+          {timeline.map((step, index) => (
+            <li
+              aria-current={step.state === "active" ? "step" : undefined}
+              className={`analysis-stage-item analysis-stage-item-${step.state}`}
+              key={step.label}
+            >
+              <span className="analysis-stage-index">{String(index + 1).padStart(2, "0")}</span>
+              <span className="analysis-stage-label">{step.label}</span>
+              <span className="analysis-stage-state">
+                {step.state === "done"
+                  ? "완료"
+                  : step.state === "active"
+                    ? "진행 중"
+                    : "대기"}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
       {errorState ? (
         <div className="ui-panel-muted space-y-4">
           <p className="text-sm leading-6 text-ink">{errorState.message}</p>
