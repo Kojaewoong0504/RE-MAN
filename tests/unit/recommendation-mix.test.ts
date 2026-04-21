@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
 import { buildHybridRecommendation } from "@/lib/product/recommendation-mix";
+import { SYSTEM_STYLE_LIBRARY } from "@/lib/product/system-style-library";
 
 describe("hybrid recommendation mix", () => {
   it("falls back to system-first recommendations when the closet is empty", () => {
@@ -84,5 +86,19 @@ describe("hybrid recommendation mix", () => {
     expect(result.system_recommendations.length).toBeGreaterThan(0);
     expect(result.system_recommendations.every((item) => item.mode === "reference")).toBe(true);
     expect(result.system_recommendations.every((item) => item.product === null)).toBe(true);
+  });
+
+  it("uses shipped non-placeholder image assets for core system references", () => {
+    const coreReferences = SYSTEM_STYLE_LIBRARY.filter((item) =>
+      ["tops", "bottoms", "shoes", "outerwear"].includes(item.category)
+    );
+
+    expect(coreReferences.length).toBeGreaterThanOrEqual(4);
+
+    for (const item of coreReferences) {
+      expect(item.image_url).toBeTruthy();
+      expect(item.image_url).not.toMatch(/reference-(top|bottom|shoes|outerwear)\.svg$/);
+      expect(existsSync(`./public${item.image_url}`)).toBe(true);
+    }
   });
 });

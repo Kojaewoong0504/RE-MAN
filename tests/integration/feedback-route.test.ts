@@ -243,6 +243,11 @@ describe("feedback API route", () => {
       mode: "reference",
       product: null
     });
+    expect(body.system_recommendations.every((item: { image_url?: string }) =>
+      typeof item.image_url === "string" &&
+      item.image_url.startsWith("/system-catalog/") &&
+      !item.image_url.endsWith(".svg")
+    )).toBe(true);
   });
 
   it("builds hybrid metadata from sanitized verified source item ids for provider responses", async () => {
@@ -349,6 +354,11 @@ describe("feedback API route", () => {
     });
     expect(body.recommendation_mix.summary).not.toBe("provider metadata");
     expect(body.system_recommendations.length).toBeGreaterThan(0);
+    expect(body.system_recommendations.every((item: { image_url?: string }) =>
+      typeof item.image_url === "string" &&
+      item.image_url.startsWith("/system-catalog/") &&
+      !item.image_url.endsWith(".svg")
+    )).toBe(true);
   });
 
   it("does not charge twice when the same feedback request is replayed", async () => {

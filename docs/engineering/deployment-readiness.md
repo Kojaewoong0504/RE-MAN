@@ -12,6 +12,14 @@
 | 옷장 대량 등록 초안 | `/api/closet/analyze` | `CLOSET_ANALYSIS_PROVIDER=gemini` + Gemini env 필요 | 예 | `npm run check:deploy` |
 | 실착 이미지 | `/api/try-on` | 선택 기능. `TRY_ON_PROVIDER=vertex` + Vertex env 필요 | 조건부 | `npm run check:deploy` |
 
+## Vertex Try-On IAM
+
+- `TRY_ON_PROVIDER=vertex`가 실제로 동작하려면 인증 토큰만으로는 부족하다.
+- Vertex 호출 주체는 `virtual-try-on-001` publisher model에 대해 `aiplatform.endpoints.predict` 권한이 있어야 한다.
+- RE:MAN은 `VERTEX_ACCESS_TOKEN`이 없더라도 `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`가 있으면 서비스 계정 기반 OAuth 토큰을 직접 발급할 수 있다.
+- 이 경우에도 해당 서비스 계정에 Vertex 호출 권한이 없으면 `PERMISSION_DENIED`로 실패한다.
+- 실제 배포 검증 전에는 사용 중인 서비스 계정에 최소한 Vertex prediction 실행 권한이 있는지 확인해야 한다.
+
 ## Commands
 
 ```bash

@@ -86,7 +86,8 @@ describe("try-on provider contract", () => {
       resolvePreferredVertexAccessToken({
         nodeEnv: "development",
         envToken: "stale-env-token",
-        gcloudToken: "fresh-gcloud-token"
+        gcloudToken: "fresh-gcloud-token",
+        serviceAccountToken: null
       })
     ).toBe("fresh-gcloud-token");
   });
@@ -96,9 +97,21 @@ describe("try-on provider contract", () => {
       resolvePreferredVertexAccessToken({
         nodeEnv: "production",
         envToken: "server-env-token",
-        gcloudToken: "fresh-gcloud-token"
+        gcloudToken: "fresh-gcloud-token",
+        serviceAccountToken: null
       })
     ).toBe("server-env-token");
+  });
+
+  it("prefers a service account token over env token when available", () => {
+    expect(
+      resolvePreferredVertexAccessToken({
+        nodeEnv: "production",
+        envToken: "server-env-token",
+        gcloudToken: null,
+        serviceAccountToken: "service-account-token"
+      })
+    ).toBe("service-account-token");
   });
 
   it("does not report Vertex config as missing while mock provider is active", () => {
@@ -121,6 +134,27 @@ describe("try-on provider contract", () => {
         "VERTEX_PROJECT_ID",
         "VERTEX_LOCATION"
       ])
+    });
+  });
+
+  it("treats Firebase service-account credentials as a valid Vertex auth source", () => {
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv(
+      "FIREBASE_CLIENT_EMAIL",
+      "firebase-admin@test-project.iam.gserviceaccount.com"
+    );
+    vi.stubEnv(
+      "FIREBASE_PRIVATE_KEY",
+      "-----BEGIN PRIVATE KEY-----\\ntest\\n-----END PRIVATE KEY-----\\n"
+    );
+
+    expect(getTryOnRuntimeStatus()).toMatchObject({
+      provider: "vertex",
+      real_generation_enabled: true,
+      auth_source: "service_account"
     });
   });
 
