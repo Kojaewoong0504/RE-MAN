@@ -86,6 +86,7 @@
 - [2026-04-21-auth-performance-hardening.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-21-auth-performance-hardening.md)
 - [2026-04-21-hybrid-outfit-recommendation-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-21-hybrid-outfit-recommendation-design.md)
 - [2026-04-21-hybrid-outfit-recommendation.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-21-hybrid-outfit-recommendation.md)
+- [2026-04-21-system-reference-and-vertex-validation-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-21-system-reference-and-vertex-validation-design.md)
 
 ### Incidents
 
