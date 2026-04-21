@@ -1,0 +1,7 @@
+<svg width="320" height="400" viewBox="0 0 320 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="320" height="400" rx="32" fill="#F3EEE1"/>
+  <rect x="36" y="36" width="248" height="328" rx="24" fill="#F7F3E8" stroke="#D8CCB4"/>
+  <path d="M104 84H216L232 314H180L160 208L140 314H88L104 84Z" fill="#1F2735" stroke="#0E1521" stroke-width="8"/>
+  <path d="M134 84H186" stroke="#9CA6B8" stroke-width="8" stroke-linecap="round"/>
+  <text x="48" y="340" fill="#22314A" font-family="Arial, sans-serif" font-size="22" font-weight="700">REFERENCE BOTTOM</text>
+</svg>

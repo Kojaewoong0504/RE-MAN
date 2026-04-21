@@ -1,0 +1,9 @@
+<svg width="320" height="400" viewBox="0 0 320 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="320" height="400" rx="32" fill="#F3EEE1"/>
+  <rect x="36" y="36" width="248" height="328" rx="24" fill="#F7F3E8" stroke="#D8CCB4"/>
+  <path d="M70 238H152L192 274V304H58C48.0589 304 40 295.941 40 286V268L70 238Z" fill="#F8F8F6" stroke="#22314A" stroke-width="8"/>
+  <path d="M168 238H250L280 268V286C280 295.941 271.941 304 262 304H128V274L168 238Z" fill="#F8F8F6" stroke="#22314A" stroke-width="8"/>
+  <path d="M74 280H156" stroke="#A9B2C2" stroke-width="6" stroke-linecap="round"/>
+  <path d="M164 280H246" stroke="#A9B2C2" stroke-width="6" stroke-linecap="round"/>
+  <text x="48" y="340" fill="#22314A" font-family="Arial, sans-serif" font-size="22" font-weight="700">REFERENCE SHOES</text>
+</svg>

@@ -26,6 +26,7 @@
 | `npm run smoke:feedback:gemini` | 실제 Gemini API 응답 계약 검증 | 실제 Gemini API 계약 통과 |
 | `npm run smoke:feedback:browser` | 브라우저 업로드 흐름과 실제 Gemini 경계 검증 | 브라우저 업로드와 실제 Gemini 경계 통과 |
 | `npm run smoke:closet:gemini` | 옷장 AI 초안 API가 실제 Gemini provider와 크레딧 차감을 통과 | 실제 옷장 AI+크레딧 smoke 통과 |
+| `npm run smoke:try-on:vertex` | 실제 Vertex 실착 생성 API와 크레딧 차감 검증 | 실제 Vertex 실착 생성+크레딧 smoke 통과 |
 | `npm run smoke:production:mvp` | 배포 URL에서 로그인 세션, 크레딧 잔액, 옷장 등록, 스타일 분석, 반응 저장, 기록 이동을 한 번에 검증 | 배포 MVP golden path 통과 |
 | `npm run perf:app-shell` | 주요 화면 응답 시간을 budget 기준으로 측정 | app shell perf budget 통과 |
 | `npm run visual:app` | 홈, 스타일, 업로드, 분석, 결과, 옷장, 기록, 내 정보, 설정 화면의 캡처 생성 | visual smoke 통과 및 산출물 확인 |
@@ -36,6 +37,7 @@
 | Feature | Required verification | Commands | Reporting limit |
 |---|---|---|---|
 | Closet batch capture | Unit + integration + E2E + visual + real provider smoke | `npm run test:unit -- tests/unit/closet-batch.test.ts`, `npm run test:integration -- tests/integration/closet-analyze-route.test.ts`, `npm run test:e2e`, `npm run visual:app`, `npm run smoke:closet:gemini` | mock provider only unless `CLOSET_ANALYSIS_PROVIDER=gemini` smoke passes |
+| Try-on generation | Unit + integration + targeted E2E + real provider smoke | `npm run test:unit -- tests/unit/try-on.test.ts`, `npm run test:integration -- tests/integration/try-on-route.test.ts`, `npm run test:e2e -- --grep "saved result shows outfit previews and allows try-on generation"`, `npm run smoke:try-on:vertex` | mock preview only unless `TRY_ON_PROVIDER=vertex` smoke passes |
 | Hybrid recommendation | Unit + integration + targeted E2E | `npm run test:unit -- tests/unit/recommendation-mix.test.ts tests/unit/agent-contracts.test.ts tests/unit/firebase-firestore.test.ts`, `npm run test:integration -- tests/integration/feedback-route.test.ts`, `npm run test:e2e -- --grep "hybrid recommendation"` | provider 결과 원문이 아니라 route가 재합성한 metadata와 UI 순서까지 확인하기 전에는 완료로 보고 금지 |
 | Deployed real AI + credits | Env readiness + provider smoke + credit route tests + 배포 URL golden path | `npm run check:deploy:strict`, `npm run smoke:feedback:gemini`, `npm run smoke:production:mvp`, `npm run test:integration -- tests/integration/feedback-route.test.ts tests/integration/credit-transactions-route.test.ts` | `smoke:production:mvp` 전에는 로컬/환경 readiness까지만 보고 |
 | Google social login UI | 실제 브라우저 OAuth 완료 + 앱 세션 쿠키 발급 | 수동 브라우저 확인 또는 별도 OAuth E2E | `smoke:production:mvp`는 테스트 세션 우회이므로 Google OAuth 검증으로 보고 금지 |

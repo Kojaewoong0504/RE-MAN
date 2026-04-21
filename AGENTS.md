@@ -174,6 +174,7 @@
 - `npm run smoke:feedback:gemini` 통과는 `실제 Gemini API 계약 통과`로 보고한다.
 - `npm run smoke:feedback:browser` 통과는 `브라우저 업로드와 실제 Gemini 경계 통과`로 보고한다.
 - `npm run smoke:closet:gemini` 통과는 `실제 옷장 AI+크레딧 smoke 통과`로 보고한다.
+- `npm run smoke:try-on:vertex` 통과는 `실제 Vertex 실착 생성+크레딧 smoke 통과`로 보고한다.
 - `npm run smoke:production:mvp` 통과는 `배포 MVP golden path 통과`로 보고한다.
 - `npm run smoke:production:mvp`는 `AUTH_JWT_SECRET` 기반 테스트 세션으로 Google OAuth UI를 우회한다. 이 결과만으로 배포 Google 소셜 로그인이 검증됐다고 말하지 않는다.
 - Google OAuth UI가 검증됐다고 말하려면 실제 브라우저에서 Google 인증 흐름 완료와 앱 세션 쿠키 발급을 별도로 확인해야 한다.
@@ -183,6 +184,9 @@
 - 실패가 발생하면 "테스트 통과"로 덮지 말고 provider, timeout, storage, image input 중 어느 경계에서 실패했는지 분리해 보고한다.
 - 사용자가 버튼처럼 보는 선택지는 실제 `button`이어야 하며, 선택 상태가 저장되고 `/api/feedback` 요청 payload에 포함되는지 E2E로 확인해야 한다.
 - 전역 UI(크레딧 배지, 하단 탭, 계정 버튼)를 수정하면 `npm run visual:app` 캡처와 브라우저 E2E로 실제 표시 여부를 확인해야 한다. 텍스트 assertion만으로 "보인다"고 보고하지 않는다.
+- 분석 진행 UI를 수정할 때 단순 순환 타이머로 `완료 → 대기`가 반복되게 만들면 실패다. 요청 lifecycle과 연결하거나, 최소한 단계 상태가 역행하지 않는 단방향(monotonic) 진행으로 검증해야 한다.
+- 결과 화면의 추천 조합을 수정할 때 텍스트 이름만 나열하면 실패다. 추천 상의/하의/신발마다 미리보기 이미지 또는 명시적 레퍼런스 placeholder가 보여야 하고, 실착 기능이 포함된 MVP 경로에서는 결과 화면에서 `/api/try-on` 호출 CTA가 실제로 동작하는지 E2E로 확인해야 한다.
+- 실제 Vertex 실착 생성이 된다고 말하려면 `TRY_ON_PROVIDER=vertex` 상태에서 `npm run smoke:try-on:vertex` 성공 결과를 확인해야 한다.
 - 크레딧 배지는 로그인 사용자의 모든 핵심 앱 화면에서 보여야 한다. 특정 화면에서 사라지면 실패다.
 - 크레딧 배지처럼 앱 상태를 보여주는 요소는 앱 헤더/탭 같은 실제 앱 레이아웃 안에 배치한다. 화면 전체 기준 `fixed` 오버레이로 맞추면 데스크톱에서 앱 밖으로 밀리기 쉬우므로 실패다.
 - 하단 탭으로 갈 수 있는 핵심 화면(홈, 스타일, 옷장, 기록, 내 정보)을 다시 헤더/하단 보조 버튼으로 반복 연결하지 않는다. 예외는 현재 작업 맥락의 직접 행동(예: 결과 카드의 `결과 보기`)뿐이다.

@@ -324,6 +324,36 @@ a {
     color: var(--color-ink);
   }
 
+  .result-preview-grid {
+    @apply grid grid-cols-3 gap-2;
+  }
+
+  .result-preview-card {
+    @apply overflow-hidden rounded-2xl;
+    background: var(--color-surface-raised);
+  }
+
+  .result-preview-image {
+    @apply relative aspect-[4/5] overflow-hidden;
+    background: linear-gradient(180deg, rgba(27, 38, 59, 0.06), rgba(27, 38, 59, 0.02));
+  }
+
+  .result-preview-copy {
+    @apply grid gap-1 p-3;
+  }
+
+  .result-preview-copy span {
+    @apply text-[10px] font-black uppercase tracking-[0.16em] text-muted;
+  }
+
+  .result-preview-copy strong {
+    @apply text-sm font-black leading-5 text-ink;
+  }
+
+  .result-preview-copy small {
+    @apply text-[11px] font-bold leading-5 text-muted;
+  }
+
   .result-next-action {
     @apply rounded-2xl p-4;
     background: var(--color-ink);
@@ -497,30 +527,35 @@ a {
   }
 
   .result-system-card {
-    @apply rounded-2xl p-4;
+    @apply grid grid-cols-[120px_1fr] gap-3 rounded-2xl p-3;
     background: var(--color-surface-raised);
   }
 
-  .result-system-card p {
+  .result-system-card-media {
+    @apply relative aspect-[4/5] overflow-hidden rounded-xl;
+    background: linear-gradient(180deg, rgba(27, 38, 59, 0.06), rgba(27, 38, 59, 0.02));
+  }
+
+  .result-system-card-copy p {
     @apply text-[10px] font-black uppercase tracking-[0.16em] text-muted;
   }
 
-  .result-system-card h3 {
+  .result-system-card-copy h3 {
     @apply mt-2 text-lg font-black leading-5 tracking-[-0.04em] text-ink;
   }
 
-  .result-system-card span {
+  .result-system-card-copy span {
     @apply mt-3 inline-flex rounded-full px-2 py-1 text-[10px] font-black;
     background: var(--color-surface);
     color: var(--color-muted);
   }
 
-  .result-system-card small {
+  .result-system-card-copy small {
     @apply mt-2 block text-sm font-bold leading-5 text-muted;
   }
 
   .result-action-dock {
-    @apply grid grid-cols-3 overflow-hidden rounded-2xl text-center;
+    @apply grid grid-cols-2 overflow-hidden rounded-2xl text-center;
     background: linear-gradient(135deg, var(--color-ink), var(--color-accent));
   }
 
@@ -544,6 +579,66 @@ a {
     @apply space-y-4 border-t p-4;
     border-color: var(--color-line);
     background: var(--color-bg);
+  }
+
+  .result-try-on-panel {
+    @apply space-y-4 rounded-2xl p-4;
+    background: var(--color-surface);
+  }
+
+  .result-try-on-layout {
+    @apply grid gap-4;
+  }
+
+  .result-try-on-output {
+    @apply relative min-h-[260px] overflow-hidden rounded-[28px];
+    background:
+      radial-gradient(circle at top right, rgba(187, 198, 226, 0.16), transparent 40%),
+      linear-gradient(145deg, rgba(27, 38, 59, 0.08), rgba(27, 38, 59, 0.02));
+  }
+
+  .result-try-on-empty {
+    @apply flex h-full min-h-[260px] flex-col justify-end gap-2 p-5;
+  }
+
+  .result-try-on-empty strong {
+    @apply text-xl font-black leading-6 tracking-[-0.04em] text-ink;
+  }
+
+  .result-try-on-empty span {
+    @apply text-sm font-bold leading-6 text-muted;
+  }
+
+  .result-try-on-actions {
+    @apply grid gap-3;
+  }
+
+  .result-try-on-source {
+    @apply rounded-2xl border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .result-try-on-source span {
+    @apply text-[10px] font-black uppercase tracking-[0.16em] text-muted;
+  }
+
+  .result-try-on-source strong {
+    @apply mt-2 block text-lg font-black leading-5 tracking-[-0.04em] text-ink;
+  }
+
+  .result-try-on-source small {
+    @apply mt-2 block text-sm font-bold leading-5 text-muted;
+  }
+
+  .result-try-on-message {
+    @apply text-sm font-bold leading-6 text-muted;
+  }
+
+  @media (min-width: 640px) {
+    .result-try-on-layout {
+      @apply grid-cols-[1.2fr_0.8fr];
+    }
   }
 
   .result-detail-copy {

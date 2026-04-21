@@ -67,8 +67,8 @@ const pages = [
     path: "/programs/style/onboarding/result",
     visibleText: "오늘 조합",
     expectedTexts: [
-      "내 옷장에서 쓴 것",
-      "상의 · 하의 · 신발 중",
+      "내 옷장 기준",
+      "실착 보기",
       "이 추천이 도움이 됐나요?",
       "체크 3회"
     ],
@@ -228,6 +228,26 @@ const seededState = {
       "흰색 스니커즈는 깨끗한 상태일 때 가장 좋습니다."
     ],
     recommended_outfit: seededOutfit,
+    recommendation_mix: {
+      primary_source: "closet",
+      closet_confidence: "high",
+      system_support_needed: false,
+      missing_categories: [],
+      summary: "옷장 기준 추천을 먼저 보고 필요한 경우 시스템 추천으로 보강합니다."
+    },
+    system_recommendations: [
+      {
+        id: "visual-system-top",
+        mode: "reference",
+        category: "tops",
+        title: "하늘색 옥스퍼드 셔츠",
+        color: "하늘색",
+        fit: "레귤러",
+        reason: "얼굴 주변을 밝게 정리합니다.",
+        image_url: "/system-catalog/reference-top.svg",
+        product: null
+      }
+    ],
     today_action: "셔츠를 넣어 입은 버전과 빼서 입은 버전을 거울 앞에서 비교하세요.",
     day1_mission: "옷장에서 단정한 상의 하나를 골라 오늘 조합의 기준으로 삼으세요."
   },

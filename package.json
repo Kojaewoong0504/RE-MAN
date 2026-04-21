@@ -16,6 +16,7 @@
     "smoke:feedback:gemini": "python3 scripts/smoke-feedback-gemini.py",
     "smoke:feedback:browser": "node scripts/smoke-feedback-browser-gemini.mjs",
     "smoke:closet:gemini": "python3 scripts/smoke-closet-gemini.py",
+    "smoke:try-on:vertex": "python3 scripts/smoke-try-on-vertex.py",
     "smoke:production:mvp": "node scripts/smoke-production-mvp.mjs",
     "perf:app-shell": "node scripts/perf-app-shell.mjs",
     "check:architecture": "python3 harness/architecture/run.py",

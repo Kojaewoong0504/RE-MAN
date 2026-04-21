@@ -147,16 +147,51 @@ function getLocalGcloudAccessToken() {
   }
 }
 
+export function resolvePreferredVertexAccessToken(input: {
+  nodeEnv: string | undefined;
+  envToken: string | undefined;
+  gcloudToken: string | null;
+}) {
+  if (input.nodeEnv !== "production" && input.gcloudToken) {
+    return input.gcloudToken;
+  }
+
+  return input.envToken || input.gcloudToken || null;
+}
+
 function getVertexAccessToken() {
-  return process.env.VERTEX_ACCESS_TOKEN || getLocalGcloudAccessToken();
+  const envToken = process.env.VERTEX_ACCESS_TOKEN;
+  const gcloudToken = getLocalGcloudAccessToken();
+
+  return resolvePreferredVertexAccessToken({
+    nodeEnv: process.env.NODE_ENV,
+    envToken,
+    gcloudToken
+  });
 }
 
 function getVertexAuthSource(): TryOnRuntimeStatus["auth_source"] {
-  if (process.env.VERTEX_ACCESS_TOKEN) {
+  const envToken = process.env.VERTEX_ACCESS_TOKEN;
+  const gcloudToken = getLocalGcloudAccessToken();
+  const preferred = resolvePreferredVertexAccessToken({
+    nodeEnv: process.env.NODE_ENV,
+    envToken,
+    gcloudToken
+  });
+
+  if (!preferred) {
+    return "missing";
+  }
+
+  if (process.env.NODE_ENV !== "production" && gcloudToken && preferred === gcloudToken) {
+    return "gcloud";
+  }
+
+  if (envToken) {
     return "env";
   }
 
-  if (getLocalGcloudAccessToken()) {
+  if (gcloudToken) {
     return "gcloud";
   }
 

@@ -12,7 +12,20 @@ import {
   syncHistoryFromState
 } from "@/lib/onboarding/storage";
 
-const steps = ["핏을 분석하는 중...", "컬러 밸런스 확인 중...", "개선 포인트 정리 중..."];
+const steps = [
+  {
+    label: "요청을 접수하는 중...",
+    description: "사진, 설문, 옷장 데이터를 묶어서 분석 요청을 보내고 있습니다."
+  },
+  {
+    label: "스타일 기준을 분석하는 중...",
+    description: "사진과 옷장 맥락을 바탕으로 현재 조합의 기준점을 읽고 있습니다."
+  },
+  {
+    label: "추천 결과를 정리하는 중...",
+    description: "추천 조합, 개선 포인트, 오늘 할 일을 결과 화면에 맞게 정리하고 있습니다."
+  }
+] as const;
 const RATE_LIMIT_MESSAGE =
   "요청이 너무 빠르게 반복됐습니다. 잠시 후 다시 시도해 주세요.";
 const AUTH_REQUIRED_MESSAGE =
@@ -144,11 +157,10 @@ export default function AnalyzingPage() {
   const router = useRouter();
   const [errorState, setErrorState] = useState<AnalysisError | null>(null);
   const [activeStep, setActiveStep] = useState(0);
-
   const timeline = useMemo(
     () =>
       steps.map((label, index) => ({
-        label,
+        label: label.label,
         state:
           index < activeStep ? "done" : index === activeStep ? "active" : "upcoming"
       })),
@@ -158,6 +170,17 @@ export default function AnalyzingPage() {
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
+    let analysisTimer: number | null = null;
+
+    const advanceStep = (nextStep: number) => {
+      if (!isMounted) {
+        return;
+      }
+
+      setActiveStep((current) => {
+        return Math.max(current, nextStep);
+      });
+    };
 
     async function runAnalysis() {
       const state = readOnboardingState();
@@ -183,6 +206,10 @@ export default function AnalyzingPage() {
       let response: Response;
 
       try {
+        advanceStep(0);
+        analysisTimer = window.setTimeout(() => {
+          advanceStep(1);
+        }, 900);
         response = await postFeedback(payload, controller.signal);
 
         if (response.status === 401) {
@@ -200,6 +227,11 @@ export default function AnalyzingPage() {
         throw error;
       }
 
+      if (analysisTimer) {
+        window.clearTimeout(analysisTimer);
+      }
+
+      advanceStep(2);
       const data = (await response.json().catch(() => null)) as
         | OnboardingAgentResponse
         | { fallback_message?: string; detail?: string; error?: string }
@@ -228,6 +260,7 @@ export default function AnalyzingPage() {
       });
       const syncedState = syncHistoryFromState(nextState);
       void saveOnboardingFeedbackToFirestore(syncedState, data);
+      await new Promise((resolve) => window.setTimeout(resolve, 420));
       router.replace("/programs/style/onboarding/result");
     }
 
@@ -235,21 +268,12 @@ export default function AnalyzingPage() {
 
     return () => {
       isMounted = false;
+      if (analysisTimer) {
+        window.clearTimeout(analysisTimer);
+      }
       controller.abort();
     };
   }, [router]);
-
-  useEffect(() => {
-    if (errorState) {
-      return undefined;
-    }
-
-    const interval = window.setInterval(() => {
-      setActiveStep((current) => (current + 1) % steps.length);
-    }, 1400);
-
-    return () => window.clearInterval(interval);
-  }, [errorState]);
 
   return (
     <main className="app-shell flex min-h-screen flex-col justify-center gap-8">
@@ -274,8 +298,8 @@ export default function AnalyzingPage() {
         >
           <div className="analysis-stage-current-copy">
             <p className="poster-kicker text-[var(--color-accent-ink)]/72">Current Stage</p>
-            <strong>{steps[activeStep]}</strong>
-            <span>사진, 옷장, 설문을 순서대로 엮어 현재 조합 기준을 만들고 있습니다.</span>
+            <strong>{steps[activeStep].label}</strong>
+            <span>{steps[activeStep].description}</span>
           </div>
           <div aria-hidden className="analysis-stage-scanner">
             <span className="analysis-stage-scanner-line" />

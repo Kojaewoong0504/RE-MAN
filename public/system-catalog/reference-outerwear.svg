@@ -1,0 +1,7 @@
+<svg width="320" height="400" viewBox="0 0 320 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="320" height="400" rx="32" fill="#F3EEE1"/>
+  <rect x="36" y="36" width="248" height="328" rx="24" fill="#F7F3E8" stroke="#D8CCB4"/>
+  <path d="M104 116L142 80H178L216 116L238 294H196L180 178L160 224L140 178L124 294H82L104 116Z" fill="#273B59" stroke="#162436" stroke-width="8"/>
+  <path d="M142 80H178L168 114H152L142 80Z" fill="#F7F3E8" stroke="#162436" stroke-width="8"/>
+  <text x="48" y="340" fill="#22314A" font-family="Arial, sans-serif" font-size="22" font-weight="700">REFERENCE OUTER</text>
+</svg>

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   generateTryOnPreview,
   getTryOnRuntimeStatus,
+  resolvePreferredVertexAccessToken,
   resolveTryOnProvider,
   TryOnProviderError,
   validateTryOnRequest
@@ -80,6 +81,26 @@ describe("try-on provider contract", () => {
     expect(resolveTryOnProvider()).toBe("vertex");
   });
 
+  it("prefers a fresh gcloud token over env token in local development", () => {
+    expect(
+      resolvePreferredVertexAccessToken({
+        nodeEnv: "development",
+        envToken: "stale-env-token",
+        gcloudToken: "fresh-gcloud-token"
+      })
+    ).toBe("fresh-gcloud-token");
+  });
+
+  it("keeps env token as the primary source in production", () => {
+    expect(
+      resolvePreferredVertexAccessToken({
+        nodeEnv: "production",
+        envToken: "server-env-token",
+        gcloudToken: "fresh-gcloud-token"
+      })
+    ).toBe("server-env-token");
+  });
+
   it("does not report Vertex config as missing while mock provider is active", () => {
     vi.stubEnv("TRY_ON_PROVIDER", "mock");
 
@@ -155,6 +176,7 @@ describe("try-on provider contract", () => {
     });
 
     vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
     vi.stubEnv("VERTEX_LOCATION", "us-central1");
     vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");

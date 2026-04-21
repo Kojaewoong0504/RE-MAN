@@ -41,7 +41,8 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       color: "하늘색",
       fit: "레귤러",
       season: ["봄", "가을"],
-      style_tags: ["clean", "basic"]
+      style_tags: ["clean", "basic"],
+      image_url: "/system-catalog/reference-top.svg"
     }
   ),
   buildSystemRecommendation(
@@ -53,7 +54,8 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       color: "검정",
       fit: "테이퍼드",
       season: ["사계절"],
-      style_tags: ["clean", "date"]
+      style_tags: ["clean", "date"],
+      image_url: "/system-catalog/reference-bottom.svg"
     }
   ),
   buildSystemRecommendation(
@@ -65,7 +67,8 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       color: "화이트",
       fit: "로우탑",
       season: ["사계절"],
-      style_tags: ["basic", "daily"]
+      style_tags: ["basic", "daily"],
+      image_url: "/system-catalog/reference-shoes.svg"
     }
   ),
   buildSystemRecommendation(
@@ -77,7 +80,8 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       color: "네이비",
       fit: "세미 루즈",
       season: ["봄", "가을"],
-      style_tags: ["clean", "casual"]
+      style_tags: ["clean", "casual"],
+      image_url: "/system-catalog/reference-outerwear.svg"
     }
   )
 ];

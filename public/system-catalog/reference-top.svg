@@ -1,0 +1,9 @@
+<svg width="320" height="400" viewBox="0 0 320 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="320" height="400" rx="32" fill="#F3EEE1"/>
+  <rect x="36" y="36" width="248" height="328" rx="24" fill="#F7F3E8" stroke="#D8CCB4"/>
+  <path d="M110 120L140 92H180L210 120V286H110V120Z" fill="#AAC3D9" stroke="#22314A" stroke-width="8"/>
+  <path d="M110 126L84 170L118 188V132L110 126Z" fill="#C5D8E7" stroke="#22314A" stroke-width="8"/>
+  <path d="M210 126L236 170L202 188V132L210 126Z" fill="#C5D8E7" stroke="#22314A" stroke-width="8"/>
+  <path d="M142 92H178L170 120H150L142 92Z" fill="#F7F3E8" stroke="#22314A" stroke-width="8"/>
+  <text x="48" y="340" fill="#22314A" font-family="Arial, sans-serif" font-size="22" font-weight="700">REFERENCE TOP</text>
+</svg>
