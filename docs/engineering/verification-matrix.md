@@ -36,6 +36,7 @@
 | Feature | Required verification | Commands | Reporting limit |
 |---|---|---|---|
 | Closet batch capture | Unit + integration + E2E + visual + real provider smoke | `npm run test:unit -- tests/unit/closet-batch.test.ts`, `npm run test:integration -- tests/integration/closet-analyze-route.test.ts`, `npm run test:e2e`, `npm run visual:app`, `npm run smoke:closet:gemini` | mock provider only unless `CLOSET_ANALYSIS_PROVIDER=gemini` smoke passes |
+| Hybrid recommendation | Unit + integration + targeted E2E | `npm run test:unit -- tests/unit/recommendation-mix.test.ts tests/unit/agent-contracts.test.ts tests/unit/firebase-firestore.test.ts`, `npm run test:integration -- tests/integration/feedback-route.test.ts`, `npm run test:e2e -- --grep "hybrid recommendation"` | provider 결과 원문이 아니라 route가 재합성한 metadata와 UI 순서까지 확인하기 전에는 완료로 보고 금지 |
 | Deployed real AI + credits | Env readiness + provider smoke + credit route tests + 배포 URL golden path | `npm run check:deploy:strict`, `npm run smoke:feedback:gemini`, `npm run smoke:production:mvp`, `npm run test:integration -- tests/integration/feedback-route.test.ts tests/integration/credit-transactions-route.test.ts` | `smoke:production:mvp` 전에는 로컬/환경 readiness까지만 보고 |
 | Google social login UI | 실제 브라우저 OAuth 완료 + 앱 세션 쿠키 발급 | 수동 브라우저 확인 또는 별도 OAuth E2E | `smoke:production:mvp`는 테스트 세션 우회이므로 Google OAuth 검증으로 보고 금지 |
 | Mobile photo input | 갤러리 선택 + 카메라 촬영 input 계약 | `npm run test:e2e -- --grep "style upload exposes gallery and camera inputs"` | `accept="image/*"`와 `capture="environment"` 없으면 모바일 사진 업로드 준비로 보고 금지 |
@@ -56,6 +57,8 @@
 - `npm run test:e2e`만 실행하고 실제 Gemini 사진 분석이 된다고 말하지 않는다.
 - `npm run typecheck`와 `npm run lint`만 실행하고 사용자 플로우가 통과했다고 말하지 않는다.
 - `npm run visual:app`을 실행하지 않고 UI 배치가 확인됐다고 말하지 않는다.
+- hybrid recommendation은 `npm run test:e2e -- --grep "hybrid recommendation"` 없이 `primary_source`와 실제 블록 순서가 맞는다고 말하지 않는다.
+- `system_recommendations[].mode = reference`인데 출처 라벨 없이 렌더되거나 구매 CTA가 붙은 상태를 통과로 보고하지 않는다.
 - 사용자가 "여전히 보인다", "여전히 안 된다"처럼 현재 브라우저 상태를 반박하면, 기존 테스트 결과로 밀어붙이지 않는다. 현재 떠 있는 서버/브라우저 상태를 다시 열어 DOM 또는 새 캡처로 직접 확인한 뒤에만 수정 완료를 말한다.
 - 실패한 명령이 있으면 숨기지 않는다.
 - 실패는 `auth`, `credit`, `payload`, `provider`, `storage`, `ui`, `visual`, `harness` 중 하나로 분류한다.

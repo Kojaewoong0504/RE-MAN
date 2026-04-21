@@ -25,6 +25,7 @@ import {
   reserveEntitledUsageAsync,
   STYLE_FEEDBACK_CREDIT_COST
 } from "@/lib/credits/server";
+import { buildHybridRecommendation } from "@/lib/product/recommendation-mix";
 
 const FEEDBACK_RATE_LIMIT = {
   limit: 5,
@@ -121,15 +122,24 @@ export async function POST(request: Request) {
             }),
       getStorageFailureMode(request)
     );
+    const verifiedSourceItemIds = sanitizeSourceItemIdsForCloset(
+      feedback.recommended_outfit.source_item_ids,
+      payload.closet_items
+    );
+    const hybrid = buildHybridRecommendation({
+      survey: payload.survey,
+      closetItems: payload.closet_items ?? [],
+      closetStrategy: payload.closet_strategy,
+      verifiedSourceItemIds: verifiedSourceItemIds ?? {}
+    });
     const verifiedFeedback = {
       ...feedback,
       recommended_outfit: {
         ...feedback.recommended_outfit,
-        source_item_ids: sanitizeSourceItemIdsForCloset(
-          feedback.recommended_outfit.source_item_ids,
-          payload.closet_items
-        )
-      }
+        source_item_ids: verifiedSourceItemIds
+      },
+      recommendation_mix: hybrid.recommendation_mix,
+      system_recommendations: hybrid.system_recommendations
     };
 
     return NextResponse.json(

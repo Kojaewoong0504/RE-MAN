@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   type DeepDiveRequest,
+  type LegacyOnboardingAgentResponse,
   validateDeepDiveRequest,
   validateDeepDiveResponse
 } from "@/lib/agents/contracts";
@@ -16,6 +17,14 @@ const baseFeedback = {
     reason: "지금 가진 옷으로 가능한 조합",
     try_on_prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
   },
+  recommendation_mix: {
+    primary_source: "closet" as const,
+    closet_confidence: "medium" as const,
+    system_support_needed: false,
+    missing_categories: [] as ("tops" | "bottoms" | "shoes" | "outerwear")[],
+    summary: "옷장 기준 추천"
+  },
+  system_recommendations: [],
   today_action: "상의 길이를 확인해보세요.",
   day1_mission: "옷장 조합을 확인해보세요."
 };
@@ -30,6 +39,19 @@ const baseRequest: DeepDiveRequest = {
   },
   feedback_history: [],
   current_feedback: baseFeedback
+};
+
+const legacyFeedback: LegacyOnboardingAgentResponse = {
+  diagnosis: "현재 스타일 진단",
+  improvements: ["핏", "색", "신발"],
+  recommended_outfit: {
+    title: "기본 조합",
+    items: ["검정 티셔츠", "청바지", "흰색 스니커즈"],
+    reason: "지금 가진 옷으로 가능한 조합",
+    try_on_prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+  },
+  today_action: "상의 길이를 확인해보세요.",
+  day1_mission: "옷장 조합을 확인해보세요."
 };
 
 const validDeepDiveResponse = {
@@ -53,6 +75,12 @@ describe("deep-dive contract", () => {
 
   it("accepts fit, color, occasion, and closet modules with the current onboarding feedback", () => {
     expect(validateDeepDiveRequest(baseRequest)).toBe(true);
+    expect(
+      validateDeepDiveRequest({
+        ...baseRequest,
+        current_feedback: legacyFeedback
+      })
+    ).toBe(true);
     expect(
       validateDeepDiveRequest({
         ...baseRequest,

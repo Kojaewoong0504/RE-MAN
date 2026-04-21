@@ -319,6 +319,11 @@ a {
     color: var(--color-accent-ink);
   }
 
+  .result-item-strip-surface span {
+    background: var(--color-surface);
+    color: var(--color-ink);
+  }
+
   .result-next-action {
     @apply rounded-2xl p-4;
     background: var(--color-ink);
@@ -363,6 +368,30 @@ a {
   .result-closet-basis {
     @apply space-y-3 rounded-2xl p-4;
     background: var(--color-surface);
+  }
+
+  .result-recommendation-stack {
+    @apply grid gap-3;
+  }
+
+  .result-recommendation-card {
+    @apply space-y-4 rounded-2xl p-4;
+    background: var(--color-surface);
+  }
+
+  .result-recommendation-heading {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .result-recommendation-copy {
+    @apply text-sm font-bold leading-6 text-muted;
+  }
+
+  .result-source-badge {
+    @apply inline-flex shrink-0 rounded-full border px-3 py-1 text-[10px] font-black;
+    border-color: var(--color-line-strong);
+    background: var(--color-surface-raised);
+    color: var(--color-ink);
   }
 
   .result-section-heading h2 {
@@ -461,6 +490,33 @@ a {
   .result-basis-empty {
     @apply border border-dashed p-4 text-sm font-black leading-6 text-muted;
     border-color: var(--color-line);
+  }
+
+  .result-system-grid {
+    @apply grid gap-2;
+  }
+
+  .result-system-card {
+    @apply rounded-2xl p-4;
+    background: var(--color-surface-raised);
+  }
+
+  .result-system-card p {
+    @apply text-[10px] font-black uppercase tracking-[0.16em] text-muted;
+  }
+
+  .result-system-card h3 {
+    @apply mt-2 text-lg font-black leading-5 tracking-[-0.04em] text-ink;
+  }
+
+  .result-system-card span {
+    @apply mt-3 inline-flex rounded-full px-2 py-1 text-[10px] font-black;
+    background: var(--color-surface);
+    color: var(--color-muted);
+  }
+
+  .result-system-card small {
+    @apply mt-2 block text-sm font-bold leading-5 text-muted;
   }
 
   .result-action-dock {

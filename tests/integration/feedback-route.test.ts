@@ -200,6 +200,157 @@ describe("feedback API route", () => {
     });
   });
 
+  it("overrides mock feedback hybrid metadata with route-composed response", async () => {
+    const { POST } = await loadRouteWithCookies(
+      await buildAuthCookies({
+        ...authUser,
+        uid: "feedback-hybrid-mock-user"
+      })
+    );
+    const response = await POST(
+      buildRequest({
+        ...validFeedbackPayload,
+        closet_items: [
+          {
+            id: "mock-top-1",
+            category: "tops",
+            name: "네이비 셔츠"
+          },
+          {
+            id: "mock-bottom-1",
+            category: "bottoms",
+            name: "검정 슬랙스"
+          },
+          {
+            id: "mock-shoes-1",
+            category: "shoes",
+            name: "흰색 스니커즈"
+          }
+        ]
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.recommendation_mix).toMatchObject({
+      primary_source: "system",
+      closet_confidence: "low",
+      system_support_needed: true,
+      missing_categories: []
+    });
+    expect(body.system_recommendations.length).toBeGreaterThan(0);
+    expect(body.system_recommendations[0]).toMatchObject({
+      mode: "reference",
+      product: null
+    });
+  });
+
+  it("builds hybrid metadata from sanitized verified source item ids for provider responses", async () => {
+    process.env.AI_PROVIDER = "gemini";
+    vi.doMock("@/lib/agents/gemini", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/agents/gemini")>(
+        "@/lib/agents/gemini"
+      );
+
+      return {
+        ...actual,
+        generateOnboardingFeedback: () => ({
+          diagnosis: "진단",
+          improvements: ["핏", "색", "신발"],
+          recommended_outfit: {
+            title: "하이브리드 검증 조합",
+            items: ["네이비 셔츠", "검정 슬랙스", "흰색 스니커즈"],
+            reason: "provider 응답",
+            try_on_prompt: "provider prompt",
+            source_item_ids: {
+              tops: "provider-top",
+              bottoms: "provider-top",
+              shoes: "missing-shoes"
+            }
+          },
+          recommendation_mix: {
+            primary_source: "closet",
+            closet_confidence: "high",
+            system_support_needed: false,
+            missing_categories: [],
+            summary: "provider metadata"
+          },
+          system_recommendations: [],
+          today_action: "액션",
+          day1_mission: "미션"
+        })
+      };
+    });
+
+    const { POST } = await loadRouteWithCookies(
+      await buildAuthCookies({
+        ...authUser,
+        uid: "feedback-hybrid-provider-user"
+      })
+    );
+    const response = await POST(
+      buildRequest({
+        ...validFeedbackPayload,
+        closet_items: [
+          {
+            id: "provider-top",
+            category: "tops",
+            name: "네이비 셔츠"
+          },
+          {
+            id: "provider-bottom",
+            category: "bottoms",
+            name: "검정 슬랙스"
+          },
+          {
+            id: "provider-shoes",
+            category: "shoes",
+            name: "흰색 스니커즈"
+          }
+        ],
+        closet_strategy: {
+          core_item_ids: ["provider-top", "provider-bottom"],
+          caution_item_ids: [],
+          optional_item_ids: ["provider-shoes"],
+          items: [
+            {
+              id: "provider-top",
+              category: "tops",
+              role: "core",
+              reason: "잘 맞음"
+            },
+            {
+              id: "provider-bottom",
+              category: "bottoms",
+              role: "core",
+              reason: "자주 입음"
+            },
+            {
+              id: "provider-shoes",
+              category: "shoes",
+              role: "optional",
+              reason: "후보"
+            }
+          ]
+        }
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.recommended_outfit.source_item_ids).toEqual({
+      tops: "provider-top"
+    });
+    expect(body.recommendation_mix).toMatchObject({
+      primary_source: "closet",
+      closet_confidence: "medium",
+      system_support_needed: true,
+      missing_categories: []
+    });
+    expect(body.recommendation_mix.summary).not.toBe("provider metadata");
+    expect(body.system_recommendations.length).toBeGreaterThan(0);
+  });
+
   it("does not charge twice when the same feedback request is replayed", async () => {
     const user = {
       ...authUser,

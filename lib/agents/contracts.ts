@@ -52,6 +52,31 @@ export type ClosetStrategy = {
   items: ClosetStrategyItem[];
 };
 
+export type RecommendationPrimarySource = "closet" | "system";
+export type ClosetConfidence = "high" | "medium" | "low";
+
+export type RecommendationMix = {
+  primary_source: RecommendationPrimarySource;
+  closet_confidence: ClosetConfidence;
+  system_support_needed: boolean;
+  missing_categories: AgentClosetItemCategory[];
+  summary: string;
+};
+
+export type SystemRecommendation = {
+  id: string;
+  mode: "reference";
+  category: AgentClosetItemCategory;
+  title: string;
+  color?: string;
+  fit?: string;
+  season?: string[];
+  style_tags?: string[];
+  reason: string;
+  image_url?: string;
+  product: null;
+};
+
 export type FeedbackHistoryItem = {
   day: number;
   summary: string;
@@ -90,9 +115,16 @@ export type OnboardingAgentResponse = {
   diagnosis: string;
   improvements: [string, string, string];
   recommended_outfit: OutfitRecommendation;
+  recommendation_mix: RecommendationMix;
+  system_recommendations: SystemRecommendation[];
   today_action: string;
   day1_mission: string;
 };
+
+export type LegacyOnboardingAgentResponse = Omit<
+  OnboardingAgentResponse,
+  "recommendation_mix" | "system_recommendations"
+>;
 
 export type DailyAgentResponse = {
   diagnosis: string;
@@ -105,7 +137,7 @@ export type DeepDiveModule = "fit" | "color" | "occasion" | "closet";
 
 export type DeepDiveRequest = AgentRequest & {
   module: DeepDiveModule;
-  current_feedback: OnboardingAgentResponse;
+  current_feedback: OnboardingAgentResponse | LegacyOnboardingAgentResponse;
 };
 
 export type DeepDiveResponse = {
@@ -360,6 +392,73 @@ function validateOutfitRecommendation(value: unknown): value is OutfitRecommenda
   );
 }
 
+function validateLegacyOnboardingResponse(value: unknown): boolean {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const response = value as Record<string, unknown>;
+  return (
+    isNonEmptyString(response.diagnosis) &&
+    validateImprovements(response.improvements) &&
+    validateOutfitRecommendation(response.recommended_outfit) &&
+    isNonEmptyString(response.today_action) &&
+    isNonEmptyString(response.day1_mission)
+  );
+}
+
+function validateRecommendationMix(value: unknown): value is RecommendationMix {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const mix = value as Record<string, unknown>;
+  return (
+    (mix.primary_source === "closet" || mix.primary_source === "system") &&
+    (mix.closet_confidence === "high" ||
+      mix.closet_confidence === "medium" ||
+      mix.closet_confidence === "low") &&
+    typeof mix.system_support_needed === "boolean" &&
+    Array.isArray(mix.missing_categories) &&
+    mix.missing_categories.every(
+      (category) =>
+        category === "tops" ||
+        category === "bottoms" ||
+        category === "shoes" ||
+        category === "outerwear"
+    ) &&
+    isNonEmptyString(mix.summary)
+  );
+}
+
+function validateSystemRecommendation(value: unknown): value is SystemRecommendation {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const recommendation = value as Record<string, unknown>;
+  return (
+    isNonEmptyString(recommendation.id) &&
+    recommendation.mode === "reference" &&
+    (recommendation.category === "tops" ||
+      recommendation.category === "bottoms" ||
+      recommendation.category === "shoes" ||
+      recommendation.category === "outerwear") &&
+    isNonEmptyString(recommendation.title) &&
+    (recommendation.color === undefined || typeof recommendation.color === "string") &&
+    (recommendation.fit === undefined || typeof recommendation.fit === "string") &&
+    (recommendation.season === undefined ||
+      (Array.isArray(recommendation.season) &&
+        recommendation.season.every((item) => typeof item === "string"))) &&
+    (recommendation.style_tags === undefined ||
+      (Array.isArray(recommendation.style_tags) &&
+        recommendation.style_tags.every((item) => typeof item === "string"))) &&
+    isNonEmptyString(recommendation.reason) &&
+    (recommendation.image_url === undefined || typeof recommendation.image_url === "string") &&
+    recommendation.product === null
+  );
+}
+
 function normalizeSourceItemIds(
   value: OutfitRecommendation["source_item_ids"]
 ): OutfitRecommendation["source_item_ids"] {
@@ -378,6 +477,24 @@ function normalizeSourceItemIds(
 
     return acc;
   }, {});
+}
+
+function normalizeSystemRecommendation(
+  recommendation: SystemRecommendation
+): SystemRecommendation {
+  return {
+    id: recommendation.id.trim(),
+    mode: "reference",
+    category: recommendation.category,
+    title: compactResponseText(recommendation.title, RESPONSE_LIMITS.outfitTitle),
+    color: recommendation.color ? compactResponseText(recommendation.color, RESPONSE_LIMITS.improvement) : undefined,
+    fit: recommendation.fit ? compactResponseText(recommendation.fit, RESPONSE_LIMITS.improvement) : undefined,
+    season: recommendation.season,
+    style_tags: recommendation.style_tags,
+    reason: compactResponseText(recommendation.reason, RESPONSE_LIMITS.outfitReason),
+    image_url: recommendation.image_url?.trim() || undefined,
+    product: null
+  };
 }
 
 export function sanitizeSourceItemIdsForCloset(
@@ -419,6 +536,9 @@ export function validateOnboardingResponse(
     isNonEmptyString(response.diagnosis) &&
     validateImprovements(response.improvements) &&
     validateOutfitRecommendation(response.recommended_outfit) &&
+    validateRecommendationMix(response.recommendation_mix) &&
+    Array.isArray(response.system_recommendations) &&
+    response.system_recommendations.every(validateSystemRecommendation) &&
     isNonEmptyString(response.today_action) &&
     isNonEmptyString(response.day1_mission) &&
     response.tomorrow_preview === undefined
@@ -451,7 +571,7 @@ export function validateDeepDiveRequest(payload: unknown): payload is DeepDiveRe
       request.module === "color" ||
       request.module === "occasion" ||
       request.module === "closet") &&
-    validateOnboardingResponse(request.current_feedback)
+    validateLegacyOnboardingResponse(request.current_feedback)
   );
 }
 
@@ -486,6 +606,17 @@ export function normalizeOnboardingResponse(
       ),
       source_item_ids: normalizeSourceItemIds(response.recommended_outfit.source_item_ids)
     },
+    recommendation_mix: {
+      primary_source: response.recommendation_mix.primary_source,
+      closet_confidence: response.recommendation_mix.closet_confidence,
+      system_support_needed: response.recommendation_mix.system_support_needed,
+      missing_categories: response.recommendation_mix.missing_categories,
+      summary: compactResponseText(
+        response.recommendation_mix.summary,
+        RESPONSE_LIMITS.outfitReason
+      )
+    },
+    system_recommendations: response.system_recommendations.map(normalizeSystemRecommendation),
     today_action: compactResponseText(response.today_action, RESPONSE_LIMITS.action),
     day1_mission: compactResponseText(response.day1_mission, RESPONSE_LIMITS.mission)
   };

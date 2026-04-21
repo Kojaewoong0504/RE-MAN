@@ -6,7 +6,9 @@ import type {
   DailyAgentResponse,
   DeepDiveModule,
   DeepDiveResponse,
-  OnboardingAgentResponse
+  OnboardingAgentResponse,
+  RecommendationMix,
+  SystemRecommendation
 } from "@/lib/agents/contracts";
 import { getFirebaseFirestoreInstance, hasFirebaseClientConfig } from "@/lib/firebase/client";
 import {
@@ -112,6 +114,8 @@ export async function saveOnboardingFeedbackToFirestore(
     diagnosis: feedback.diagnosis,
     improvements: feedback.improvements,
     recommended_outfit: feedback.recommended_outfit,
+    recommendation_mix: feedback.recommendation_mix,
+    system_recommendations: feedback.system_recommendations,
     today_action: feedback.today_action,
     day1_mission: feedback.day1_mission
   });
@@ -387,6 +391,145 @@ function parseRecommendedOutfit(data: Record<string, unknown>) {
   };
 }
 
+function parseRecommendationMix(data: Record<string, unknown>): RecommendationMix | null {
+  if (!Object.prototype.hasOwnProperty.call(data, "recommendation_mix")) {
+    return {
+      primary_source: "closet",
+      closet_confidence: "medium",
+      system_support_needed: false,
+      missing_categories: [],
+      summary: "옷장 기준 추천입니다."
+    };
+  }
+
+  const value = data.recommendation_mix;
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const mix = value as Record<string, unknown>;
+  const missingCategories = Array.isArray(mix.missing_categories)
+    ? mix.missing_categories.filter(
+        (category): category is "tops" | "bottoms" | "shoes" | "outerwear" =>
+          category === "tops" ||
+          category === "bottoms" ||
+          category === "shoes" ||
+          category === "outerwear"
+    )
+    : [];
+
+  if (
+    !(
+      mix.primary_source === "closet" ||
+      mix.primary_source === "system"
+    ) ||
+    !(
+      mix.closet_confidence === "high" ||
+      mix.closet_confidence === "medium" ||
+      mix.closet_confidence === "low"
+    ) ||
+    typeof mix.system_support_needed !== "boolean" ||
+    !Array.isArray(mix.missing_categories) ||
+    !mix.missing_categories.every(
+      (category) =>
+        category === "tops" ||
+        category === "bottoms" ||
+        category === "shoes" ||
+        category === "outerwear"
+    ) ||
+    typeof mix.summary !== "string" ||
+    !mix.summary.trim()
+  ) {
+    return null;
+  }
+
+  return {
+    primary_source: mix.primary_source,
+    closet_confidence: mix.closet_confidence,
+    system_support_needed: mix.system_support_needed,
+    missing_categories: missingCategories,
+    summary: mix.summary
+  };
+}
+
+function parseSystemRecommendations(
+  data: Record<string, unknown>
+): SystemRecommendation[] | null {
+  if (!Object.prototype.hasOwnProperty.call(data, "system_recommendations")) {
+    return [];
+  }
+
+  const value = data.system_recommendations;
+
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const parsed: SystemRecommendation[] = [];
+
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return null;
+    }
+
+    const recommendation = item as Record<string, unknown>;
+    const trimmedId =
+      typeof recommendation.id === "string" ? recommendation.id.trim() : null;
+    const trimmedTitle =
+      typeof recommendation.title === "string" ? recommendation.title.trim() : null;
+    const trimmedReason =
+      typeof recommendation.reason === "string" ? recommendation.reason.trim() : null;
+
+    if (
+      !trimmedId ||
+      recommendation.mode !== "reference" ||
+      (recommendation.category !== "tops" &&
+        recommendation.category !== "bottoms" &&
+        recommendation.category !== "shoes" &&
+        recommendation.category !== "outerwear") ||
+      !trimmedTitle ||
+      !trimmedReason ||
+      (recommendation.color !== undefined && typeof recommendation.color !== "string") ||
+      (recommendation.fit !== undefined && typeof recommendation.fit !== "string") ||
+      (recommendation.image_url !== undefined &&
+        typeof recommendation.image_url !== "string") ||
+      (recommendation.season !== undefined &&
+        (!Array.isArray(recommendation.season) ||
+          !recommendation.season.every((season) => typeof season === "string"))) ||
+      (recommendation.style_tags !== undefined &&
+        (!Array.isArray(recommendation.style_tags) ||
+          !recommendation.style_tags.every((tag) => typeof tag === "string"))) ||
+      recommendation.product !== null
+    ) {
+      return null;
+    }
+
+    parsed.push({
+      id: trimmedId,
+      mode: "reference",
+      category: recommendation.category,
+      title: trimmedTitle,
+      color: typeof recommendation.color === "string" ? recommendation.color : undefined,
+      fit: typeof recommendation.fit === "string" ? recommendation.fit : undefined,
+      season: Array.isArray(recommendation.season)
+        ? recommendation.season
+        : undefined,
+      style_tags: Array.isArray(recommendation.style_tags)
+        ? recommendation.style_tags
+        : undefined,
+      reason: trimmedReason,
+      image_url:
+        typeof recommendation.image_url === "string"
+          ? recommendation.image_url.trim() || undefined
+          : undefined,
+      product: null
+    });
+  }
+
+  return parsed;
+}
+
 function parseFeedbackDoc(day: number, data: Record<string, unknown>) {
   const improvements = Array.isArray(data.improvements)
     ? data.improvements.filter((item): item is string => typeof item === "string")
@@ -409,8 +552,15 @@ function parseFeedbackDoc(day: number, data: Record<string, unknown>) {
   if (day === 1) {
     const day1_mission = typeof data.day1_mission === "string" ? data.day1_mission : "";
     const recommended_outfit = parseRecommendedOutfit(data);
+    const recommendation_mix = parseRecommendationMix(data);
+    const system_recommendations = parseSystemRecommendations(data);
 
-    if (!day1_mission || !recommended_outfit) {
+    if (
+      !day1_mission ||
+      !recommended_outfit ||
+      recommendation_mix === null ||
+      system_recommendations === null
+    ) {
       return null;
     }
 
@@ -419,6 +569,8 @@ function parseFeedbackDoc(day: number, data: Record<string, unknown>) {
       feedback: {
         ...common,
         recommended_outfit,
+        recommendation_mix,
+        system_recommendations,
         day1_mission
       } satisfies OnboardingAgentResponse
     };

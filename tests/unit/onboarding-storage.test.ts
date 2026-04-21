@@ -29,6 +29,17 @@ const baseRecommendedOutfit = {
   try_on_prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
 };
 
+const baseHybridFeedback = {
+  recommendation_mix: {
+    primary_source: "closet" as const,
+    closet_confidence: "medium" as const,
+    system_support_needed: false,
+    missing_categories: [] as ("tops" | "bottoms" | "shoes" | "outerwear")[],
+    summary: "옷장 기준 추천"
+  },
+  system_recommendations: []
+};
+
 const baseDeepDiveFeedback = {
   title: "핏 체크",
   diagnosis: "상의 길이를 먼저 봅니다.",
@@ -56,6 +67,7 @@ describe("onboarding state merge", () => {
       survey: baseSurvey,
       image: "data:image/png;base64,local",
       feedback: {
+        ...baseHybridFeedback,
         diagnosis: "Day 1 diagnosis",
         improvements: ["a", "b", "c"],
         recommended_outfit: baseRecommendedOutfit,
@@ -110,6 +122,7 @@ describe("onboarding state merge", () => {
       user_id: "user-2",
       survey: baseSurvey,
       feedback: {
+        ...baseHybridFeedback,
         diagnosis: "Day 1 diagnosis",
         improvements: ["a", "b", "c"],
         recommended_outfit: baseRecommendedOutfit,
@@ -520,6 +533,7 @@ describe("recommendation feedback", () => {
     const timeline = getStyleFeedbackTimeline({
       survey: baseSurvey,
       feedback: {
+        ...baseHybridFeedback,
         diagnosis: "최근 스타일 체크 진단",
         improvements: ["a", "b", "c"],
         recommended_outfit: baseRecommendedOutfit,
@@ -542,6 +556,7 @@ describe("recommendation feedback", () => {
       survey: baseSurvey,
       image: "data:image/png;base64,next",
       feedback: {
+        ...baseHybridFeedback,
         diagnosis: "기본 조합은 좋지만 색 대비가 약합니다",
         improvements: ["a", "b", "c"] as [string, string, string],
         recommended_outfit: baseRecommendedOutfit,
@@ -600,6 +615,7 @@ describe("onboarding feedback history", () => {
     const state: OnboardingState = {
       survey: baseSurvey,
       feedback: {
+        ...baseHybridFeedback,
         diagnosis: longDiagnosis,
         improvements: ["a", "b", "c"],
         recommended_outfit: baseRecommendedOutfit,
@@ -641,6 +657,7 @@ describe("onboarding feedback history", () => {
     const timeline = getStyleFeedbackTimeline({
       survey: baseSurvey,
       feedback: {
+        ...baseHybridFeedback,
         diagnosis: "최근 스타일 체크 진단",
         improvements: ["a", "b", "c"],
         recommended_outfit: {

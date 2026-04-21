@@ -153,6 +153,9 @@
   (구매를 유도하는 액션은 Day 6 이전 금지 — `docs/product/core-beliefs.md` 참고)
 - `recommended_outfit`은 현재 옷장 컨텍스트를 우선 사용해야 함. Day 6 전까지 구매 유도 금지.
 - `recommended_outfit.source_item_ids`는 현재 요청의 `closet_items`에 같은 id와 같은 카테고리로 존재할 때만 직접 매칭 근거로 사용한다. 검증되지 않은 id는 제거하고 근거 후보로 낮춘다.
+- `/api/feedback`의 최종 응답은 provider가 보낸 `recommendation_mix`와 `system_recommendations`를 그대로 신뢰하지 않는다. 서버가 sanitize된 `source_item_ids`, `closet_items`, `closet_strategy` 기준으로 다시 합성한 값을 사용해야 한다.
+- `recommendation_mix.primary_source`가 `system`이면 결과 화면 메인 블록은 `시스템 추천`, `closet`이면 `내 옷장 기준`이 먼저 보여야 한다.
+- `system_recommendations`는 항상 `reference` 전용이다. 결과 화면에서 `시스템 추천 참고` 같은 출처 라벨을 보여야 하며 구매 CTA, 가격, 재고, 쇼핑 링크를 붙이면 실패다.
 - `closet_strategy.items[].score`는 착용감, 착용 빈도, 계절, 상태, 메모 기반 신뢰 점수다. 깨끗하지만 거의 안 입는 옷을 `core`로 올리면 실패다.
 - 추천 근거 UI는 내부 점수나 상태명을 노출하지 않는다. 사용자 label은 `추천에 사용`, `비슷한 후보`, `추가 후보`, `자주 입고 잘 맞음`, `핏/상태 확인`, `후보`처럼 짧게 표시한다.
 - 분석 시작 UI는 상의, 하의, 신발이 모두 준비되지 않았으면 비활성화되어야 한다.
@@ -191,6 +194,9 @@
 - 옷장 근거를 수정하면 `source_item_ids`가 실제 `closet_items`에 존재하고 같은 카테고리인지 단위/통합/E2E 중 최소 두 계층에서 검증해야 한다.
 - 결과/기록 화면의 옷장 근거에서 `추천에 사용`을 표시하려면 사용자에게도 `옷장 ID 검증`처럼 검증된 근거임을 짧게 보여줘야 한다. 텍스트 후보나 fallback을 직접 사용처럼 보이게 만들면 실패다.
 - 옷장 전략을 수정하면 깨끗하지만 거의 안 입는 옷이 `optional`, 불편하거나 오염/수선 필요 옷이 `use_with_care`, 자주 입고 잘 맞는 옷이 `core`로 분류되는지 단위 테스트와 payload E2E로 검증해야 한다.
+- hybrid recommendation을 수정하면 unit(`tests/unit/recommendation-mix.test.ts`), integration(`tests/integration/feedback-route.test.ts`), E2E(`tests/e2e/onboarding.spec.ts --grep "hybrid recommendation"`)를 함께 확인해야 한다.
+- 결과 화면의 hybrid recommendation 블록을 수정하면 `recommendation_mix.primary_source`와 실제 블록 순서가 일치하는지 E2E로 검증해야 한다.
+- `system_recommendations[].mode = reference`일 때 구매 CTA나 상품 판매 문구가 결과 화면에 노출되면 실패다.
 - 분석 시작 조건을 수정하면 상의만 있는 상태에서 하의/신발 부족 안내가 보이고 `AI 분석 시작하기`가 비활성화되는지 E2E로 검증해야 한다.
 - 모바일 사진 업로드를 수정할 때 HEIC/HEIF 같은 모바일 원본 포맷을 "미리보기 불가지만 분석 가능" 같은 저품질 UX로 넘기지 않는다. 가능한 경우 JPEG로 변환해 미리보기와 분석 입력을 같은 정상 경로로 태우고, 변환 실패 시 명확히 재선택을 요구한다.
 - `CLOSET_ANALYSIS_PROVIDER=mock` 기반 통과를 실제 옷 인식 성공으로 보고하지 않는다.

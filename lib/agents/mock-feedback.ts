@@ -81,6 +81,14 @@ export function buildMockOnboardingFeedback(
         "전신 정면 사진을 기준으로 무지 상의, 일자핏 바지, 톤이 맞는 신발을 자연스럽게 착용한 미리보기",
       source_item_ids: getFirstClosetItemIdByCategory(payload)
     },
+    recommendation_mix: {
+      primary_source: "closet",
+      closet_confidence: "medium",
+      system_support_needed: false,
+      missing_categories: [],
+      summary: "옷장 기준으로 먼저 추천합니다."
+    },
+    system_recommendations: [],
     today_action:
       "지금 가진 옷 중 가장 깔끔한 상의와 바지를 한 번 다시 조합해서 거울로 비교해보세요.",
     day1_mission: dayOneMission

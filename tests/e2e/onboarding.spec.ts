@@ -1099,6 +1099,203 @@ test("saved result hides non-MVP generation actions", async ({ page }) => {
   expect(tryOnRequests).toBe(0);
 });
 
+test("hybrid recommendation shows system block first when system is the primary source", async ({
+  page
+}) => {
+  await page.addInitScript((uploadedImage) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원",
+          style_goal: "전체적인 스타일 리셋",
+          confidence_level: "배우는 중"
+        },
+        closet_profile: {
+          tops: "무지 티셔츠",
+          bottoms: "",
+          shoes: ""
+        },
+        closet_items: [
+          {
+            id: "top-1",
+            category: "tops",
+            name: "흰색 무지 티셔츠",
+            color: "흰색",
+            wear_state: "잘 맞음",
+            condition: "깨끗함"
+          }
+        ],
+        image: uploadedImage,
+        feedback: {
+          diagnosis: "시스템 추천 우선 결과",
+          improvements: ["핏", "색", "신발"],
+          recommended_outfit: {
+            title: "보유 옷 기준 조합",
+            items: ["흰색 무지 티셔츠", "진청 데님", "흰색 스니커즈"],
+            reason: "현재 옷장 기준으로 가장 무난한 조합입니다.",
+            try_on_prompt: "전신 정면 자연광 실착",
+            source_item_ids: {
+              tops: "top-1"
+            }
+          },
+          recommendation_mix: {
+            primary_source: "system",
+            closet_confidence: "low",
+            system_support_needed: true,
+            missing_categories: ["bottoms", "shoes"],
+            summary: "시스템 추천을 먼저 보고 옷장 조합을 보조로 확인합니다."
+          },
+          system_recommendations: [
+            {
+              id: "sys-bottom-1",
+              mode: "reference",
+              category: "bottoms",
+              title: "스트레이트 데님",
+              color: "진청",
+              reason: "기본 상의와 가장 안정적으로 이어집니다.",
+              product: null
+            },
+            {
+              id: "sys-shoes-1",
+              mode: "reference",
+              category: "shoes",
+              title: "로우탑 스니커즈",
+              color: "오프화이트",
+              reason: "전체 톤을 가볍게 정리합니다.",
+              product: null
+            }
+          ],
+          today_action: "오늘 바로 할 것",
+          day1_mission: "Day 1 미션"
+        }
+      })
+    );
+  }, `data:image/png;base64,${tinyPng.buffer.toString("base64")}`);
+
+  await addTryOnSession(page);
+  await page.goto("/programs/style/onboarding/result");
+
+  await expect(page.getByRole("heading", { name: "시스템 추천" })).toBeVisible();
+  await expect(page.getByText("출처 라벨", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("시스템 추천 참고")).toBeVisible();
+  await expect(page.getByRole("link", { name: /구매/ })).toHaveCount(0);
+
+  const blockOrder = await page.locator("[data-testid='recommendation-block']").evaluateAll(
+    (nodes) =>
+      nodes.map((node) =>
+        node.querySelector("h2")?.textContent?.trim() ?? ""
+      )
+  );
+
+  expect(blockOrder.slice(0, 2)).toEqual(["시스템 추천", "내 옷장 기준"]);
+});
+
+test("hybrid recommendation shows closet block first when closet is the primary source", async ({
+  page
+}) => {
+  await page.addInitScript((uploadedImage) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원",
+          style_goal: "전체적인 스타일 리셋",
+          confidence_level: "배우는 중"
+        },
+        closet_profile: {
+          tops: "셔츠",
+          bottoms: "슬랙스",
+          shoes: "스니커즈"
+        },
+        closet_items: [
+          {
+            id: "top-1",
+            category: "tops",
+            name: "네이비 셔츠",
+            color: "네이비",
+            wear_state: "잘 맞음",
+            wear_frequency: "자주 입음",
+            condition: "깨끗함"
+          },
+          {
+            id: "bottom-1",
+            category: "bottoms",
+            name: "검정 슬랙스",
+            color: "검정",
+            wear_state: "잘 맞음",
+            wear_frequency: "자주 입음",
+            condition: "깨끗함"
+          },
+          {
+            id: "shoes-1",
+            category: "shoes",
+            name: "흰색 스니커즈",
+            color: "흰색",
+            wear_state: "잘 맞음",
+            wear_frequency: "자주 입음",
+            condition: "깨끗함"
+          }
+        ],
+        image: uploadedImage,
+        feedback: {
+          diagnosis: "옷장 추천 우선 결과",
+          improvements: ["핏", "색", "신발"],
+          recommended_outfit: {
+            title: "네이비 셔츠 기본 조합",
+            items: ["네이비 셔츠", "검정 슬랙스", "흰색 스니커즈"],
+            reason: "지금 가진 옷으로 톤 정리가 가장 쉽습니다.",
+            try_on_prompt: "전신 정면 자연광 실착",
+            source_item_ids: {
+              tops: "top-1",
+              bottoms: "bottom-1",
+              shoes: "shoes-1"
+            }
+          },
+          recommendation_mix: {
+            primary_source: "closet",
+            closet_confidence: "high",
+            system_support_needed: false,
+            missing_categories: [],
+            summary: "주 조합은 옷장 기준으로 구성합니다."
+          },
+          system_recommendations: [
+            {
+              id: "sys-top-1",
+              mode: "reference",
+              category: "tops",
+              title: "차콜 니트 폴로",
+              color: "차콜",
+              reason: "같은 무드로 변주하기 좋습니다.",
+              product: null
+            }
+          ],
+          today_action: "오늘 바로 할 것",
+          day1_mission: "Day 1 미션"
+        }
+      })
+    );
+  }, `data:image/png;base64,${tinyPng.buffer.toString("base64")}`);
+
+  await addTryOnSession(page);
+  await page.goto("/programs/style/onboarding/result");
+
+  const blockOrder = await page.locator("[data-testid='recommendation-block']").evaluateAll(
+    (nodes) =>
+      nodes.map((node) =>
+        node.querySelector("h2")?.textContent?.trim() ?? ""
+      )
+  );
+
+  expect(blockOrder.slice(0, 2)).toEqual(["내 옷장 기준", "시스템 추천"]);
+  await expect(page.getByText("시스템 추천 참고")).toBeVisible();
+  await expect(page.getByRole("link", { name: /구매/ })).toHaveCount(0);
+});
+
 test("result keeps size candidates out of the MVP golden path", async ({ page }) => {
   await page.addInitScript((outfit) => {
     window.localStorage.setItem(

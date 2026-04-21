@@ -107,6 +107,28 @@ describe("agent response contracts", () => {
           bottoms: "bottom-1"
         }
       },
+      recommendation_mix: {
+        primary_source: "closet",
+        closet_confidence: "high",
+        system_support_needed: true,
+        missing_categories: ["outerwear"],
+        summary: longText
+      },
+      system_recommendations: [
+        {
+          id: "sys-top-1",
+          mode: "reference",
+          category: "tops",
+          title: longText,
+          color: "네이비",
+          fit: "레귤러",
+          season: ["봄", "가을"],
+          style_tags: ["clean"],
+          reason: longText,
+          image_url: longText,
+          product: null
+        }
+      ],
       today_action: longText,
       day1_mission: longText
     });
@@ -116,6 +138,10 @@ describe("agent response contracts", () => {
     expect(normalized.improvements.every((item) => item.length <= 72)).toBe(true);
     expect(normalized.recommended_outfit.title.length).toBeLessThanOrEqual(32);
     expect(normalized.recommended_outfit.source_item_ids?.tops).toBe("top-1");
+    expect(normalized.recommendation_mix.primary_source).toBe("closet");
+    expect(normalized.recommendation_mix.summary.length).toBeLessThanOrEqual(110);
+    expect(normalized.system_recommendations[0].mode).toBe("reference");
+    expect(normalized.system_recommendations[0].product).toBeNull();
     expect(normalized.today_action.length).toBeLessThanOrEqual(72);
     expect(normalized.diagnosis.endsWith("…")).toBe(true);
   });
@@ -125,15 +151,23 @@ describe("agent response contracts", () => {
       validateOnboardingResponse({
         diagnosis: "진단",
         improvements: ["핏", "색", "신발"],
-        recommended_outfit: {
-          title: "기본 조합",
-          items: ["상의", "하의", "신발"],
-          reason: "지금 가진 옷 기준입니다.",
-          try_on_prompt: "전신 정면 사진 기준 자연스러운 실착"
-        },
-        today_action: "옷장 확인",
-        day1_mission: "오늘 바로 확인"
-      })
+      recommended_outfit: {
+        title: "기본 조합",
+        items: ["상의", "하의", "신발"],
+        reason: "지금 가진 옷 기준입니다.",
+        try_on_prompt: "전신 정면 사진 기준 자연스러운 실착"
+      },
+      recommendation_mix: {
+        primary_source: "system",
+        closet_confidence: "low",
+        system_support_needed: false,
+        missing_categories: [],
+        summary: "시스템 추천 우선"
+      },
+      system_recommendations: [],
+      today_action: "옷장 확인",
+      day1_mission: "오늘 바로 확인"
+    })
     ).toBe(true);
   });
 

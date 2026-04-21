@@ -28,6 +28,13 @@ import {
 import { buildTodayActionPlan } from "@/lib/product/today-action-plan";
 
 type RecommendationFeedbackStatus = "idle" | "saving" | "saved" | "error";
+type RecommendationBlock = {
+  key: "closet" | "system";
+  title: string;
+  kicker: string;
+  badge?: string;
+  body: JSX.Element;
+};
 
 const recommendationReactionOptions: Array<{
   reaction: RecommendationFeedbackReaction;
@@ -92,6 +99,99 @@ export default function ResultPage() {
       })
     : null;
   const closetBasisSummary = buildClosetBasisSummary(closetBasis);
+  const recommendationBlocks: RecommendationBlock[] = feedback
+    ? [
+        {
+          key: "closet" as const,
+          title: "내 옷장 기준",
+          kicker: "Closet Match",
+          body: (
+            <>
+              <p className="result-recommendation-copy">
+                {feedback.recommended_outfit.reason}
+              </p>
+              <div className="result-item-strip result-item-strip-surface">
+                {feedback.recommended_outfit.items.map((item) => (
+                  <span key={`closet-${item}`}>{item}</span>
+                ))}
+              </div>
+              {closetBasis.length > 0 ? (
+                <>
+                  <div className="result-basis-summary">
+                    <span>{closetBasisSummary.countLabel}</span>
+                    <strong>{closetBasisSummary.reasonLabel}</strong>
+                  </div>
+                  <div className="result-basis-chip-grid">
+                    {closetBasis.slice(0, 3).map((item) => (
+                      <article
+                        className={`result-basis-chip result-basis-${item.matchStatus}`}
+                        key={`${item.category}-${item.itemName}-summary`}
+                      >
+                        <p>{item.label}</p>
+                        <h3>{compactUiText(item.itemName, 18)}</h3>
+                        <span>{item.statusLabel}</span>
+                        <small>{item.verificationLabel}</small>
+                      </article>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="result-basis-empty">
+                  옷장 사진을 등록하면 다음 추천부터 근거가 보입니다.
+                </div>
+              )}
+            </>
+          )
+        },
+        {
+          key: "system" as const,
+          title: "시스템 추천",
+          kicker: "System Assist",
+          badge: "시스템 추천 참고",
+          body: (
+            <>
+              <p className="result-recommendation-copy">
+                {feedback.recommendation_mix.summary}
+              </p>
+              {feedback.system_recommendations.length > 0 ? (
+                <div className="result-system-grid">
+                  {feedback.system_recommendations.slice(0, 3).map((item) => (
+                    <article className="result-system-card" key={item.id}>
+                      <p>{item.category}</p>
+                      <h3>{item.title}</h3>
+                      <span>
+                        {[item.color, item.fit].filter(Boolean).join(" · ") || "reference"}
+                      </span>
+                      <small>{item.reason}</small>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="result-basis-empty">
+                  지금은 옷장 조합을 먼저 보고 다음 추천에서 시스템 후보를 보강합니다.
+                </div>
+              )}
+            </>
+          )
+        }
+      ].sort((left: RecommendationBlock, right: RecommendationBlock) => {
+        const primary = feedback.recommendation_mix.primary_source;
+
+        if (left.key === right.key) {
+          return 0;
+        }
+
+        if (left.key === primary) {
+          return -1;
+        }
+
+        if (right.key === primary) {
+          return 1;
+        }
+
+        return 0;
+      })
+    : [];
 
   useEffect(() => {
     const state = readOnboardingState();
@@ -277,37 +377,27 @@ export default function ResultPage() {
             </section>
           ) : null}
 
-          <section aria-label="추천에 사용된 옷" className="result-closet-basis">
-            <div className="result-section-heading">
-              <p className="poster-kicker">Closet Basis</p>
-              <h2>내 옷장에서 쓴 것</h2>
-            </div>
-            {closetBasis.length > 0 ? (
-              <>
-                <div className="result-basis-summary">
-                  <span>{closetBasisSummary.countLabel}</span>
-                  <strong>{closetBasisSummary.reasonLabel}</strong>
+          <div className="result-recommendation-stack" aria-label="하이브리드 추천">
+            {recommendationBlocks.map((block) => (
+              <section
+                aria-label={block.title}
+                className="result-recommendation-card"
+                data-testid="recommendation-block"
+                key={block.key}
+              >
+                <div className="result-section-heading result-recommendation-heading">
+                  <div>
+                    <p className="poster-kicker">{block.kicker}</p>
+                    <h2>{block.title}</h2>
+                  </div>
+                  {block.badge ? (
+                    <span className="result-source-badge">{block.badge}</span>
+                  ) : null}
                 </div>
-                <div className="result-basis-chip-grid">
-                  {closetBasis.slice(0, 3).map((item) => (
-                    <article
-                      className={`result-basis-chip result-basis-${item.matchStatus}`}
-                      key={`${item.category}-${item.itemName}-summary`}
-                    >
-                      <p>{item.label}</p>
-                      <h3>{compactUiText(item.itemName, 18)}</h3>
-                      <span>{item.statusLabel}</span>
-                      <small>{item.verificationLabel}</small>
-                    </article>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="result-basis-empty">
-                옷장 사진을 등록하면 다음 추천부터 근거가 보입니다.
-              </div>
-            )}
-          </section>
+                {block.body}
+              </section>
+            ))}
+          </div>
 
           <section className="result-collapsible-panel">
             <div className="space-y-1">
