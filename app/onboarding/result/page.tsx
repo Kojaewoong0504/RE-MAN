@@ -1120,6 +1120,38 @@ export default function ResultPage() {
             </div>
           </section>
 
+          {(feedback.recommended_outfit.safety_basis?.length ||
+            feedback.recommended_outfit.avoid_notes?.length) ? (
+            <section className="result-safe-summary" aria-label="안전 추천 요약">
+              <div className="result-section-heading">
+                <div>
+                  <p className="poster-kicker">Safe Pick</p>
+                  <h2>오늘의 안전한 조합</h2>
+                </div>
+              </div>
+              <p className="result-safe-reason">{feedback.recommended_outfit.reason}</p>
+              {feedback.recommended_outfit.safety_basis?.length ? (
+                <ul className="result-safe-basis">
+                  {feedback.recommended_outfit.safety_basis.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              ) : null}
+              {feedback.recommended_outfit.avoid_notes?.length ? (
+                <div className="space-y-2">
+                  <h2 className="result-safe-subtitle">피해야 할 것</h2>
+                  <div className="result-avoid-chips">
+                    {feedback.recommended_outfit.avoid_notes.map((item) => (
+                      <span key={item} className="result-avoid-chip">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           {todayPlan ? (
             <section className="result-next-action">
               <span>오늘 실행 3단계</span>

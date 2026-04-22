@@ -77,6 +77,12 @@ const recommendedOutfit = {
   title: "기본 조합",
   items: ["상의", "하의", "신발"],
   reason: "지금 가진 옷으로 가능한 조합",
+  safety_basis: [
+    "상체를 과하게 키우지 않음",
+    "하체 라인이 안정적으로 보임",
+    "지금 옷장에서 바로 재현 가능"
+  ],
+  avoid_notes: ["짧은 상의는 제외", "붙는 하의는 제외", "강한 상하 대비는 제외"],
   try_on_prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
 };
 
@@ -235,6 +241,49 @@ test("closet batch shows progress summary for bulk capture", async ({ page }) =>
   await expect(page.getByLabel("옷장 대량 등록 상태").getByText("분석 대기")).toBeVisible();
   await expect(page.getByLabel("옷장 대량 등록 상태").getByText("확인 필요")).toBeVisible();
   await expect(page.getByLabel("옷장 대량 등록 상태").getByText("제외")).toBeVisible();
+});
+
+test("result shows safe recommendation summary and short avoid chips", async ({ page }) => {
+  await addTryOnSession(page, "e2e-safe-recommendation-user");
+
+  await page.addInitScript(({ outfit, image }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원",
+          style_goal: "전체적인 스타일 리셋",
+          confidence_level: "배우는 중"
+        },
+        image,
+        feedback: {
+          diagnosis: "상체 쪽 시선이 먼저 모여서 하체 균형을 같이 잡아주는 조합이 안전합니다.",
+          improvements: ["핏", "색", "신발"],
+          recommended_outfit: outfit,
+          recommendation_mix: {
+            primary_source: "closet",
+            closet_confidence: "medium",
+            system_support_needed: false,
+            missing_categories: [],
+            summary: "주 조합은 옷장 기준으로 구성하고 시스템 추천은 보조로 제공합니다."
+          },
+          system_recommendations: [],
+          today_action: "오늘은 상의 길이를 비교해보세요.",
+          day1_mission: "옷장 조합을 확인해보세요."
+        }
+      })
+    );
+  }, { outfit: recommendedOutfit, image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
+
+  await page.goto("/programs/style/onboarding/result");
+
+  await expect(page.getByRole("heading", { name: "오늘의 안전한 조합" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "피해야 할 것" })).toBeVisible();
+  await expect(page.getByText("짧은 상의는 제외")).toBeVisible();
+  await expect(page.getByText("붙는 하의는 제외")).toBeVisible();
+  await expect(page.getByText("강한 상하 대비는 제외")).toBeVisible();
 });
 
 test("closet review saves confirmed drafts and ignores deleted drafts", async ({ page }) => {

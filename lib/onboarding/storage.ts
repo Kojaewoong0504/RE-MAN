@@ -2,6 +2,7 @@
 
 import type {
   AgentRequest,
+  BodyProfile,
   ClosetStrategy,
   ClosetStrategyRole,
   ClosetProfile,
@@ -26,6 +27,7 @@ const HISTORY_SUMMARY_MAX_LENGTH = 64;
 
 export type OnboardingInput = {
   survey: SurveyInput;
+  body_profile?: BodyProfile;
   closet_profile?: ClosetProfile;
   closet_items?: ClosetItem[];
   image?: string;
@@ -792,7 +794,8 @@ export function clearOnboardingState() {
 }
 
 export function buildOnboardingRequest(state: OnboardingState): AgentRequest | null {
-  const { survey, closet_profile, closet_items, image, text_description, user_id } = state;
+  const { survey, body_profile, closet_profile, closet_items, image, text_description, user_id } =
+    state;
 
   if (
     !survey.current_style.trim() ||
@@ -809,6 +812,7 @@ export function buildOnboardingRequest(state: OnboardingState): AgentRequest | n
   return {
     user_id,
     survey,
+    body_profile,
     closet_profile: getClosetProfileOrUndefined(
       hasItemProfile
         ? {
