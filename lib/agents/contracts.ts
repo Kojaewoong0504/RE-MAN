@@ -60,6 +60,30 @@ export type ClosetStrategy = {
   items: ClosetStrategyItem[];
 };
 
+export type BodyProfileSignalLevel = "low" | "medium" | "high";
+export type BodyProfileLegImpression = "shorter" | "balanced" | "longer";
+export type BodyProfileShoulderShape = "rounded" | "narrow" | "balanced";
+export type BodyProfileNeckImpression = "short" | "balanced" | "long";
+export type BodyProfileFrame = "large" | "medium" | "compact";
+
+export type BodyFitRiskTag =
+  | "tight_top_risk"
+  | "cropped_top_risk"
+  | "strong_contrast_split_risk"
+  | "skinny_bottom_risk"
+  | "heavy_neckline_risk";
+
+export type BodyProfile = {
+  upper_body_presence?: BodyProfileSignalLevel;
+  lower_body_balance?: BodyProfileSignalLevel;
+  belly_visibility?: BodyProfileSignalLevel;
+  leg_length_impression?: BodyProfileLegImpression;
+  shoulder_shape?: BodyProfileShoulderShape;
+  neck_impression?: BodyProfileNeckImpression;
+  overall_frame?: BodyProfileFrame;
+  fit_risk_tags?: BodyFitRiskTag[];
+};
+
 export type RecommendationRole =
   | "base_top"
   | "mid_top"
@@ -127,6 +151,7 @@ export type AgentRequest = {
   image?: string;
   text_description?: string;
   survey: SurveyInput;
+  body_profile?: BodyProfile;
   closet_profile?: ClosetProfile;
   closet_items?: AgentClosetItem[];
   closet_strategy?: ClosetStrategy;
@@ -138,6 +163,8 @@ export type OutfitRecommendation = {
   title: string;
   items: [string, string, string];
   reason: string;
+  safety_basis?: [string, string, string];
+  avoid_notes?: [string, string, string];
   try_on_prompt: string;
   source_item_ids?: Partial<Record<AgentClosetItemCategory, string>>;
 };
