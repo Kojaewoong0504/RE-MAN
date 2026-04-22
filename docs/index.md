@@ -87,6 +87,8 @@
 - [2026-04-21-hybrid-outfit-recommendation-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-21-hybrid-outfit-recommendation-design.md)
 - [2026-04-21-hybrid-outfit-recommendation.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-21-hybrid-outfit-recommendation.md)
 - [2026-04-21-system-reference-and-vertex-validation-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-21-system-reference-and-vertex-validation-design.md)
+- [2026-04-22-selective-try-on-and-expanded-style-categories-design.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/specs/2026-04-22-selective-try-on-and-expanded-style-categories-design.md)
+- [2026-04-22-selective-try-on-and-expanded-style-categories.md](/Users/gojaewoong/Desktop/ko/nerd/docs/superpowers/plans/2026-04-22-selective-try-on-and-expanded-style-categories.md)
 
 ### Incidents
 
