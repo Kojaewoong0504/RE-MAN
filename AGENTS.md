@@ -207,6 +207,11 @@
 - 옷장 전략을 수정하면 깨끗하지만 거의 안 입는 옷이 `optional`, 불편하거나 오염/수선 필요 옷이 `use_with_care`, 자주 입고 잘 맞는 옷이 `core`로 분류되는지 단위 테스트와 payload E2E로 검증해야 한다.
 - hybrid recommendation을 수정하면 unit(`tests/unit/recommendation-mix.test.ts`), integration(`tests/integration/feedback-route.test.ts`), E2E(`tests/e2e/onboarding.spec.ts --grep "hybrid recommendation"`)를 함께 확인해야 한다.
 - 결과 화면의 hybrid recommendation 블록을 수정하면 `recommendation_mix.primary_source`와 실제 블록 순서가 일치하는지 E2E로 검증해야 한다.
+- body-aware recommendation을 수정하면 `/api/feedback` payload 또는 route 조합에 `body_profile`이 포함되는지 unit 또는 integration으로 검증해야 한다.
+- body-aware recommendation을 완료라고 보고하려면 위험 후보 제거 규칙 테스트와 결과 화면 UX 검증을 함께 통과해야 한다.
+- `recommended_outfit.safety_basis` 또는 `recommended_outfit.avoid_notes` 없이 체형 맞춤 추천이라고 보고하면 실패다.
+- 결과 화면에서 시스템 추천이 `내 옷장 기준`보다 더 앞서거나 더 크게 보이면 실패다.
+- 체형 관련 결과 문구에 직접 평가/비하 표현이 들어가면 실패다.
 - `system_recommendations[].mode = reference`일 때 구매 CTA나 상품 판매 문구가 결과 화면에 노출되면 실패다.
 - 분석 시작 조건을 수정하면 상의만 있는 상태에서 하의/신발 부족 안내가 보이고 `AI 분석 시작하기`가 비활성화되는지 E2E로 검증해야 한다.
 - 모바일 사진 업로드를 수정할 때 HEIC/HEIF 같은 모바일 원본 포맷을 "미리보기 불가지만 분석 가능" 같은 저품질 UX로 넘기지 않는다. 가능한 경우 JPEG로 변환해 미리보기와 분석 입력을 같은 정상 경로로 태우고, 변환 실패 시 명확히 재선택을 요구한다.
