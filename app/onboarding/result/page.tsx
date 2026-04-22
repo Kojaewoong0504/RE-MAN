@@ -13,7 +13,16 @@ import type {
 } from "@/lib/agents/contracts";
 import { fetchAuthSession } from "@/lib/auth/client";
 import type { AuthUser } from "@/lib/auth/types";
-import { saveRecommendationFeedbackToFirestore } from "@/lib/firebase/firestore";
+import {
+  buildClosetPreviewRequestKey,
+  fetchClosetPreviewUrls,
+  type ClosetPreviewMap
+} from "@/lib/closet/preview-client";
+import { patchCreditStatusCache } from "@/lib/credits/client";
+import {
+  readStyleProgramStateFromFirestore,
+  saveRecommendationFeedbackToFirestore
+} from "@/lib/firebase/firestore";
 import {
   buildClosetStrategy,
   buildHistoryFromState,
@@ -24,14 +33,18 @@ import {
   readOnboardingState,
   syncHistoryFromState,
   type ClosetItem,
+  type OnboardingState,
   type RecommendationFeedbackReaction,
-  type TryOnPreviewCacheEntry
+  type TryOnPreviewCacheEntry,
+  writeOnboardingState
 } from "@/lib/onboarding/storage";
+import { resolveResultPageState } from "@/lib/onboarding/result-state";
 import {
   buildClosetBasisMatches,
   buildClosetBasisSummary,
   type ClosetBasisItem
 } from "@/lib/product/closet-basis";
+import { SYSTEM_STYLE_LIBRARY } from "@/lib/product/system-style-library";
 import { buildTodayActionPlan } from "@/lib/product/today-action-plan";
 import { buildOutfitBoardDataUrl } from "@/lib/try-on/outfit-board";
 
@@ -45,6 +58,16 @@ type RecommendationBlock = {
   body: JSX.Element;
 };
 type OutfitPreviewCard = {
+  key: string;
+  category: AgentClosetItemCategory;
+  label: string;
+  title: string;
+  imageSrc: string;
+  fallbackSrc: string;
+  sourceLabel: string;
+};
+type TryOnInputSource = "system" | "closet";
+type TryOnBoardCard = {
   key: string;
   category: AgentClosetItemCategory;
   label: string;
@@ -67,7 +90,10 @@ const previewFallbacks: Record<AgentClosetItemCategory, string> = {
   shoes: "/system-catalog/reference-shoes.svg",
   outerwear: "/system-catalog/reference-outerwear.svg"
 };
+const legacyReferenceArtworkPattern =
+  /\/system-catalog\/reference-(top|bottom|shoes|outerwear)\.svg$/;
 const TRY_ON_CACHE_KEY = "recommended";
+const TRY_ON_CREDIT_COST = 1;
 const recommendationReactionOptions: Array<{
   reaction: RecommendationFeedbackReaction;
   label: string;
@@ -102,6 +128,33 @@ function compactUiText(value: string, maxLength = 58) {
 
 function resolveClosetImage(item: ClosetItem | undefined, category: AgentClosetItemCategory) {
   return item?.photo_data_url || item?.image_url || previewFallbacks[category];
+}
+
+function mergePreviewUrlsIntoItems(items: ClosetItem[], previewUrls: ClosetPreviewMap) {
+  let changed = false;
+  const nextItems = items.map((item) => {
+    const previewUrl = previewUrls[item.id];
+
+    if (!previewUrl || item.photo_data_url || item.image_url === previewUrl) {
+      return item;
+    }
+
+    changed = true;
+    return {
+      ...item,
+      image_url: previewUrl
+    };
+  });
+
+  return changed ? nextItems : items;
+}
+
+function getCanonicalSystemReference(category: AgentClosetItemCategory) {
+  return SYSTEM_STYLE_LIBRARY.find((item) => item.category === category);
+}
+
+function isLegacyReferenceArtwork(imageUrl: string | undefined) {
+  return !imageUrl || legacyReferenceArtworkPattern.test(imageUrl);
 }
 
 function buildResultClosetBasis(closetItems: ClosetItem[], feedback: OnboardingAgentResponse) {
@@ -153,10 +206,47 @@ function buildOutfitPreviewCards(closetItems: ClosetItem[], feedback: Onboarding
 }
 
 function buildSystemPreviewCards(feedback: OnboardingAgentResponse) {
-  return feedback.system_recommendations.slice(0, 3).map((item) => ({
-    ...item,
-    imageSrc: item.image_url || previewFallbacks[item.category]
-  }));
+  return feedback.system_recommendations.slice(0, 3).map((item) => {
+    const canonical = getCanonicalSystemReference(item.category);
+    const displayItem =
+      canonical && isLegacyReferenceArtwork(item.image_url)
+        ? {
+            ...canonical,
+            id: item.id,
+            reason: item.reason || canonical.reason
+          }
+        : item;
+
+    return {
+      ...displayItem,
+      imageSrc: displayItem.image_url || previewFallbacks[displayItem.category]
+    };
+  });
+}
+
+function buildSystemTryOnCards(
+  systemPreviewCards: Array<
+    SystemRecommendation & {
+      imageSrc: string;
+    }
+  >,
+  outfitPreviewCards: OutfitPreviewCard[]
+) {
+  return categoryOrder.map((category) => {
+    const systemMatch = systemPreviewCards.find((item) => item.category === category);
+    const closetFallback = outfitPreviewCards.find((item) => item.category === category);
+
+    return {
+      key: `try-on-${category}`,
+      category,
+      label: categoryLabels[category],
+      title: systemMatch?.title ?? closetFallback?.title ?? categoryLabels[category],
+      imageSrc:
+        systemMatch?.imageSrc ?? closetFallback?.imageSrc ?? previewFallbacks[category],
+      fallbackSrc: closetFallback?.fallbackSrc ?? previewFallbacks[category],
+      sourceLabel: systemMatch ? "시스템 추천" : "내 옷장 보조"
+    } satisfies TryOnBoardCard;
+  });
 }
 
 async function imageUrlToDataUrl(url: string) {
@@ -187,8 +277,21 @@ async function imageUrlToDataUrl(url: string) {
   });
 }
 
+function buildTryOnPrompt(
+  feedback: OnboardingAgentResponse,
+  cards: TryOnBoardCard[],
+  source: TryOnInputSource
+) {
+  const outfitLine = cards.map((card) => `${card.label}: ${card.title}`).join(", ");
+  const sourceLine =
+    source === "system" ? "시스템 추천 조합 전체를 함께 반영" : "내 옷장 조합 전체를 함께 반영";
+
+  return `${feedback.recommended_outfit.try_on_prompt} ${sourceLine}. 상의, 하의, 신발 전체 조합을 함께 반영: ${outfitLine}`;
+}
+
 export default function ResultPage() {
   const router = useRouter();
+  const [isHydrating, setIsHydrating] = useState(true);
   const [feedback, setFeedback] = useState<OnboardingAgentResponse | null>(null);
   const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
   const [personImage, setPersonImage] = useState<string | undefined>();
@@ -204,6 +307,10 @@ export default function ResultPage() {
   const [tryOnPreview, setTryOnPreview] = useState<TryOnPreviewCacheEntry | null>(null);
   const [tryOnMessage, setTryOnMessage] = useState<string | null>(null);
   const [tryOnError, setTryOnError] = useState<string | null>(null);
+  const [isTryOnComposerOpen, setIsTryOnComposerOpen] = useState(false);
+  const [isTryOnViewerOpen, setIsTryOnViewerOpen] = useState(false);
+  const [selectedTryOnSource, setSelectedTryOnSource] =
+    useState<TryOnInputSource>("system");
 
   const todayPlan = feedback
     ? buildTodayActionPlan({
@@ -220,12 +327,51 @@ export default function ResultPage() {
     () => (feedback ? buildSystemPreviewCards(feedback) : []),
     [feedback]
   );
+  const systemTryOnCards = useMemo(
+    () => buildSystemTryOnCards(systemPreviewCards, outfitPreviewCards),
+    [outfitPreviewCards, systemPreviewCards]
+  );
+  const closetPreviewRequestKey = useMemo(
+    () => buildClosetPreviewRequestKey(closetItems),
+    [closetItems]
+  );
+  const defaultTryOnSource: TryOnInputSource =
+    systemPreviewCards.length > 0 ? "system" : "closet";
   const effectivePersonImage =
     personImage ??
     (typeof window !== "undefined" ? readOnboardingState().image : undefined);
   const tryOnPersonImage =
     effectivePersonImage ??
     outfitPreviewCards.find((card) => card.imageSrc.startsWith("data:image/"))?.imageSrc;
+  const selectedTryOnCards =
+    selectedTryOnSource === "system" ? systemTryOnCards : outfitPreviewCards;
+
+  function applyResolvedState(state: OnboardingState) {
+    const normalizedClosetItems = normalizeClosetItems(state.closet_items);
+
+    setSelectedReaction(state.recommendation_feedback?.reaction ?? null);
+    setRecommendationNote(state.recommendation_feedback?.note ?? "");
+    setPersonImage(state.image);
+
+    if (state.feedback) {
+      setFallbackMessage(null);
+      setFeedback(state.feedback);
+      setClosetItems(normalizedClosetItems);
+      setClosetBasis(buildResultClosetBasis(normalizedClosetItems, state.feedback));
+      setTryOnPreview(state.try_on_previews?.[TRY_ON_CACHE_KEY] ?? null);
+      setTryOnMessage(state.try_on_previews?.[TRY_ON_CACHE_KEY]?.message ?? null);
+      setTryOnStatus(state.try_on_previews?.[TRY_ON_CACHE_KEY] ? "ready" : "idle");
+      return;
+    }
+
+    setFeedback(null);
+    setClosetItems(normalizedClosetItems);
+    setClosetBasis([]);
+    setTryOnPreview(null);
+    setTryOnMessage(null);
+    setTryOnStatus("idle");
+    setFallbackMessage(state.fallback_message ?? null);
+  }
 
   const recommendationBlocks: RecommendationBlock[] = feedback
     ? [
@@ -342,49 +488,91 @@ export default function ResultPage() {
     : [];
 
   useEffect(() => {
-    const state = readOnboardingState();
-    setSelectedReaction(state.recommendation_feedback?.reaction ?? null);
-    setRecommendationNote(state.recommendation_feedback?.note ?? "");
+    let active = true;
+    const localState = readOnboardingState();
 
-    if (state.feedback) {
-      const normalizedClosetItems = normalizeClosetItems(state.closet_items);
-      setFeedback(state.feedback);
-      setPersonImage(state.image);
-      setClosetItems(normalizedClosetItems);
-      setClosetBasis(buildResultClosetBasis(normalizedClosetItems, state.feedback));
-      setTryOnPreview(state.try_on_previews?.[TRY_ON_CACHE_KEY] ?? null);
-      setTryOnMessage(state.try_on_previews?.[TRY_ON_CACHE_KEY]?.message ?? null);
-      setTryOnStatus(state.try_on_previews?.[TRY_ON_CACHE_KEY] ? "ready" : "idle");
-      return;
+    if (localState.feedback || localState.fallback_message) {
+      applyResolvedState(localState);
+      setIsHydrating(false);
     }
 
-    if (state.fallback_message) {
-      setFallbackMessage(state.fallback_message);
-      return;
+    async function loadResultState() {
+      try {
+        const user = await fetchAuthSession();
+
+        if (!active) {
+          return;
+        }
+
+        setAccountUser(user);
+
+        if (!user) {
+          if (!localState.feedback && !localState.fallback_message) {
+            router.replace("/programs/style/onboarding/upload");
+          }
+          return;
+        }
+
+        const persistedProgramState = await readStyleProgramStateFromFirestore(user.uid);
+
+        if (!active) {
+          return;
+        }
+
+        const nextState = resolveResultPageState(localState, persistedProgramState);
+
+        writeOnboardingState(nextState);
+        applyResolvedState(nextState);
+
+        if (!nextState.feedback && !nextState.fallback_message) {
+          router.replace("/programs/style/onboarding/upload");
+        }
+      } catch {
+        if (!localState.feedback && !localState.fallback_message) {
+          router.replace("/programs/style/onboarding/upload");
+        }
+      } finally {
+        if (active) {
+          setIsHydrating(false);
+        }
+      }
     }
 
-    router.replace("/programs/style/onboarding/upload");
+    void loadResultState();
+
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   useEffect(() => {
-    let mounted = true;
+    let active = true;
 
-    async function loadAccountState() {
-      const user = await fetchAuthSession();
-
-      if (!mounted) {
+    async function syncClosetPreviews() {
+      if (!feedback || !accountUser || !closetPreviewRequestKey) {
         return;
       }
 
-      setAccountUser(user);
+      try {
+        const previewUrls = await fetchClosetPreviewUrls(closetItems);
+
+        if (!active || Object.keys(previewUrls).length === 0) {
+          return;
+        }
+
+        setClosetItems((currentItems) => mergePreviewUrlsIntoItems(currentItems, previewUrls));
+      } catch {
+        // Keep the existing preview state. Result page should still render
+        // even when signed preview refresh fails.
+      }
     }
 
-    void loadAccountState();
+    void syncClosetPreviews();
 
     return () => {
-      mounted = false;
+      active = false;
     };
-  }, []);
+  }, [accountUser, closetItems, closetPreviewRequestKey, feedback]);
 
   function handleStartNewCheck() {
     const state = readOnboardingState();
@@ -444,8 +632,14 @@ export default function ResultPage() {
   }
 
   async function handleGenerateTryOn() {
-    if (!feedback || !tryOnPersonImage || outfitPreviewCards.length === 0) {
-      setTryOnError("현재 사진과 추천 조합 이미지가 모두 있어야 실착을 만들 수 있습니다.");
+    if (!accountUser) {
+      setTryOnError("로그인 세션을 먼저 확인한 뒤 다시 시도해 주세요.");
+      setTryOnStatus("error");
+      return;
+    }
+
+    if (!feedback || !tryOnPersonImage || selectedTryOnCards.length === 0) {
+      setTryOnError("현재 사진과 실착 대상 아이템 이미지가 모두 있어야 실착을 만들 수 있습니다.");
       setTryOnStatus("error");
       return;
     }
@@ -455,16 +649,10 @@ export default function ResultPage() {
     setTryOnMessage(null);
 
     try {
-      const productImage = await buildOutfitBoardDataUrl(
-        outfitPreviewCards.map((card) => ({
-          title: card.title,
-          label: card.label,
-          imageSrc: card.imageSrc,
-          fallbackSrc: card.fallbackSrc
-        }))
-      );
+      const productImage = await buildOutfitBoardDataUrl(selectedTryOnCards);
       const response = await fetch("/api/try-on", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "Idempotency-Key": `try-on:${TRY_ON_CACHE_KEY}`
@@ -472,7 +660,7 @@ export default function ResultPage() {
         body: JSON.stringify({
           person_image: tryOnPersonImage,
           product_image: productImage,
-          prompt: feedback.recommended_outfit.try_on_prompt
+          prompt: buildTryOnPrompt(feedback, selectedTryOnCards, selectedTryOnSource)
         })
       });
       const data = (await response.json().catch(() => null)) as
@@ -480,6 +668,8 @@ export default function ResultPage() {
             preview_image?: string;
             message?: string;
             status?: "mocked" | "vertex";
+            credits_remaining?: number;
+            subscription_active?: boolean;
           }
         | null;
 
@@ -489,6 +679,13 @@ export default function ResultPage() {
             ? data.message
             : "실착 이미지를 만들지 못했습니다."
         );
+      }
+
+      if (typeof data.credits_remaining === "number") {
+        patchCreditStatusCache({
+          balance: data.credits_remaining,
+          subscription_active: data.subscription_active
+        });
       }
 
       const entry: TryOnPreviewCacheEntry = {
@@ -514,6 +711,8 @@ export default function ResultPage() {
       setTryOnPreview(entry);
       setTryOnMessage(entry.message);
       setTryOnStatus("ready");
+      setIsTryOnComposerOpen(false);
+      setIsTryOnViewerOpen(true);
     } catch (error) {
       setTryOnStatus("error");
       setTryOnError(error instanceof Error ? error.message : "실착 이미지를 만들지 못했습니다.");
@@ -545,7 +744,19 @@ export default function ResultPage() {
         </div>
       </div>
 
-      {feedback ? (
+      {isHydrating ? (
+        <section className="result-recommendation-card" aria-label="결과 불러오는 중">
+          <div className="result-section-heading">
+            <div>
+              <p className="poster-kicker">Result</p>
+              <h2>결과를 불러오는 중</h2>
+            </div>
+          </div>
+          <p className="result-recommendation-copy">
+            저장된 스타일 체크 결과를 확인하고 있습니다.
+          </p>
+        </section>
+      ) : feedback ? (
         <div className="space-y-5">
           <section className="result-hero-card" aria-label="스타일 체크 핵심 결과">
             <div className="result-hero-grid">
@@ -585,7 +796,7 @@ export default function ResultPage() {
           {todayPlan ? (
             <section className="result-next-action">
               <span>오늘 실행 3단계</span>
-              <p>{compactUiText(todayPlan.summary, 50)}</p>
+              <p>{todayPlan.summary}</p>
               <ol className="result-action-plan">
                 {todayPlan.steps.map((step, index) => (
                   <li key={step.title}>
@@ -633,19 +844,25 @@ export default function ResultPage() {
               </span>
             </div>
             <p className="result-recommendation-copy">
-              추천 상의, 하의, 신발을 한 장의 조합 보드로 묶어 현재 전신 사진에 입혀 봅니다.
+              실착은 상의, 하의, 신발을 한 장의 조합 보드로 묶어 현재 전신 사진에 반영합니다. 기본은 시스템 추천 조합입니다.
             </p>
             <div className="result-try-on-layout">
               <div className="result-try-on-output">
                 {tryOnPreview ? (
-                  <Image
-                    alt="실착 미리보기"
-                    className="h-full w-full object-cover"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 320px"
-                    src={tryOnPreview.preview_image}
-                    unoptimized
-                  />
+                  <button
+                    className="result-try-on-preview-button"
+                    onClick={() => setIsTryOnViewerOpen(true)}
+                    type="button"
+                  >
+                    <Image
+                      alt="실착 미리보기"
+                      className="h-full w-full object-contain"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 320px"
+                      src={tryOnPreview.preview_image}
+                      unoptimized
+                    />
+                  </button>
                 ) : (
                   <div className="result-try-on-empty">
                     <strong>아직 실착 이미지가 없습니다.</strong>
@@ -656,17 +873,34 @@ export default function ResultPage() {
               <div className="result-try-on-actions">
                 <div className="result-try-on-source">
                   <span>실착 입력</span>
-                  <strong>{feedback ? compactUiText(feedback.recommended_outfit.title, 22) : "추천 이미지 없음"}</strong>
+                  <strong>
+                    {selectedTryOnSource === "system"
+                      ? "시스템 추천 조합"
+                      : feedback
+                        ? compactUiText(feedback.recommended_outfit.title, 22)
+                        : "추천 이미지 없음"}
+                  </strong>
                   <small>
-                    {outfitPreviewCards.length > 0
-                      ? "추천 상의 · 하의 · 신발 3개 조합 보드"
-                      : "추천 조합 이미지가 필요합니다."}
+                    {selectedTryOnCards.length > 0
+                      ? selectedTryOnCards
+                          .map((card) => `${card.label} · ${compactUiText(card.title, 14)}`)
+                          .join(" / ")
+                      : "실착 대상 이미지가 필요합니다."}
                   </small>
                 </div>
                 <button
                   className="ui-button-secondary justify-between py-4 disabled:opacity-60"
-                  disabled={!tryOnPersonImage || outfitPreviewCards.length === 0 || tryOnStatus === "generating"}
-                  onClick={() => void handleGenerateTryOn()}
+                  disabled={
+                    !accountUser ||
+                    !tryOnPersonImage ||
+                    selectedTryOnCards.length === 0 ||
+                    tryOnStatus === "generating"
+                  }
+                  onClick={() => {
+                    setSelectedTryOnSource(defaultTryOnSource);
+                    setTryOnError(null);
+                    setIsTryOnComposerOpen(true);
+                  }}
                   type="button"
                 >
                   <span>
@@ -678,6 +912,7 @@ export default function ResultPage() {
                   </span>
                   <span>→</span>
                 </button>
+                <p className="result-try-on-credit-note">크레딧 1회 차감</p>
                 {tryOnMessage ? <p className="result-try-on-message">{tryOnMessage}</p> : null}
                 {tryOnError ? (
                   <p className="text-sm font-bold leading-6 text-red-700">{tryOnError}</p>
@@ -769,11 +1004,163 @@ export default function ResultPage() {
           </section>
 
           <section className="result-action-dock" aria-label="스타일 체크 다음 단계">
-            <button onClick={handleStartNewCheck} type="button">
+            <button
+              disabled={tryOnStatus === "generating"}
+              onClick={handleStartNewCheck}
+              type="button"
+            >
               새 체크
             </button>
             <Link href="/history">기록에서 보기</Link>
           </section>
+
+          {isTryOnComposerOpen ? (
+            <div className="result-modal-backdrop" role="presentation">
+              <div
+                aria-label={tryOnStatus === "generating" ? "실착 생성 중" : "실착 생성 설정"}
+                aria-modal="true"
+                className="result-modal"
+                role="dialog"
+              >
+                {tryOnStatus === "generating" ? (
+                  <div className="result-modal-blocking">
+                    <span aria-hidden="true" className="result-spinner" />
+                    <strong>실착 생성 중</strong>
+                    <p>생성이 끝날 때까지 다른 작업은 잠시 멈춥니다.</p>
+                    <small>
+                      {selectedTryOnSource === "system" ? "시스템 추천 조합" : "내 옷장 조합"} ·
+                      조합 전체 반영 · 1 크레딧 차감
+                    </small>
+                  </div>
+                ) : (
+                  <>
+                    <div className="result-modal-header">
+                      <div>
+                        <p className="poster-kicker">Try On Setup</p>
+                        <h2>실착 생성 설정</h2>
+                      </div>
+                      <button
+                        className="result-modal-close"
+                        onClick={() => setIsTryOnComposerOpen(false)}
+                        type="button"
+                      >
+                        닫기
+                      </button>
+                    </div>
+                    <p className="result-recommendation-copy">
+                      상의, 하의, 신발을 한 장의 조합 보드로 묶어 실착합니다. 기본은 시스템 추천 조합이고, 원하면 내 옷장 기준으로 바꿀 수 있습니다.
+                    </p>
+                    <div className="result-try-on-source-picker">
+                      <button
+                        aria-pressed={selectedTryOnSource === "system"}
+                        className={`ui-choice p-4 ${selectedTryOnSource === "system" ? "ui-choice-selected" : ""}`}
+                        onClick={() => setSelectedTryOnSource("system")}
+                        type="button"
+                      >
+                        <strong>시스템 추천 조합</strong>
+                        <small>추천 스타일 전체를 기준으로 실착을 만듭니다.</small>
+                      </button>
+                      <button
+                        aria-pressed={selectedTryOnSource === "closet"}
+                        className={`ui-choice p-4 ${selectedTryOnSource === "closet" ? "ui-choice-selected" : ""}`}
+                        onClick={() => setSelectedTryOnSource("closet")}
+                        type="button"
+                      >
+                        <strong>내 옷장 조합</strong>
+                        <small>지금 가진 옷 조합으로 실착을 만듭니다.</small>
+                      </button>
+                    </div>
+                    <div className="result-try-on-modal-summary">
+                      <strong>
+                        {selectedTryOnSource === "system" ? "시스템 추천 기준" : "내 옷장 기준"}
+                      </strong>
+                      <span>
+                        {selectedTryOnSource === "system"
+                          ? "추천 조합 전체를 한 번에 실착 대상으로 씁니다."
+                          : "내 옷장 조합 전체를 한 번에 실착 대상으로 씁니다."}
+                      </span>
+                      <small>크레딧 1회 차감</small>
+                    </div>
+                    <div className="result-try-on-modal-grid">
+                      {selectedTryOnCards.map((card) => (
+                        <article className="result-try-on-modal-card" key={card.key}>
+                          <div className="result-try-on-modal-image">
+                            <SafePreviewImage
+                              alt={`${selectedTryOnSource === "system" ? "시스템 추천" : "내 옷장"} ${card.label}`}
+                              className="h-full w-full object-cover"
+                              fallbackSrc={card.fallbackSrc}
+                              src={card.imageSrc}
+                            />
+                          </div>
+                          <strong>{card.label}</strong>
+                          <span>{compactUiText(card.title, 20)}</span>
+                        </article>
+                      ))}
+                    </div>
+                    <div className="result-try-on-modal-summary">
+                      <strong>실착 대상</strong>
+                      <span>
+                        {selectedTryOnCards.length > 0
+                          ? selectedTryOnCards
+                              .map((card) => `${card.label}: ${card.title}`)
+                              .join(" / ")
+                          : "실착 대상 이미지가 필요합니다."}
+                      </span>
+                      <small>
+                        {selectedTryOnSource === "system" ? "시스템 추천 조합 전체" : "내 옷장 조합 전체"}
+                      </small>
+                    </div>
+                    <button
+                      className="ui-button-accent justify-between py-4"
+                      onClick={() => void handleGenerateTryOn()}
+                      type="button"
+                    >
+                      <span>실착 생성 시작</span>
+                      <span>→</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          {isTryOnViewerOpen && tryOnPreview ? (
+            <div className="result-modal-backdrop" role="presentation">
+              <div
+                aria-label="실착 결과 보기"
+                aria-modal="true"
+                className="result-modal result-viewer-modal"
+                role="dialog"
+              >
+                <div className="result-modal-header">
+                  <div>
+                    <p className="poster-kicker">Try On Result</p>
+                    <h2>실착 결과 보기</h2>
+                  </div>
+                  <button
+                    className="result-modal-close"
+                    onClick={() => setIsTryOnViewerOpen(false)}
+                    type="button"
+                  >
+                    닫기
+                  </button>
+                </div>
+                <div className="result-viewer-surface">
+                  <Image
+                    alt="실착 결과 전체 보기"
+                    className="h-full w-full object-contain"
+                    fill
+                    sizes="100vw"
+                    src={tryOnPreview.preview_image}
+                    unoptimized
+                  />
+                </div>
+                <p className="result-try-on-message">
+                  {tryOnPreview.provider === "vertex" ? "1 크레딧 차감" : tryOnPreview.message}
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="ui-panel">

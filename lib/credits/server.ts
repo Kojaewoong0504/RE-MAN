@@ -386,6 +386,28 @@ export function grantPaidCreditsForTests(userId: string, amount: number) {
   return getCreditBalance(userId);
 }
 
+async function grantFirestorePaidCredits(userId: string, amount: number) {
+  const { accountRef } = getFirestoreCreditRefs(userId);
+  const account = await getOrCreateFirestoreAccount(userId);
+  const nextAccount = {
+    ...account,
+    paidCredits: account.paidCredits + amount,
+    updatedAt: new Date().toISOString()
+  };
+
+  await accountRef.set(serializeFirestoreAccount(nextAccount), { merge: true });
+  await appendFirestoreTransaction({
+    userId,
+    account: nextAccount,
+    type: "grant_paid",
+    eventDelta: 0,
+    paidDelta: amount,
+    reason: "paid_credit_grant"
+  });
+
+  return toCreditBalance(nextAccount, "firestore");
+}
+
 export function reserveEntitledUsage(
   userId: string,
   cost: number,
@@ -857,6 +879,14 @@ export async function getCreditTransactionsAsync(userId: string, limit = 50) {
   }
 
   return getFirestoreTransactions(userId, limit);
+}
+
+export async function grantPaidCreditsAsync(userId: string, amount: number) {
+  if (resolveCreditLedgerProvider() !== "firestore") {
+    return grantPaidCreditsForTests(userId, amount);
+  }
+
+  return grantFirestorePaidCredits(userId, amount);
 }
 
 export async function getCreditAuditSnapshotAsync(userId: string): Promise<CreditAuditSnapshot> {

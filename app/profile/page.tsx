@@ -63,6 +63,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfileDocument | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isGrantingCredits, setIsGrantingCredits] = useState(false);
+  const [grantStatus, setGrantStatus] = useState("");
   const [programSnapshot, setProgramSnapshot] =
     useState<StyleProgramSnapshot>(emptyProgramSnapshot);
   const [dataSummary, setDataSummary] = useState<ProfileDataSummary>(emptyDataSummary);
@@ -121,6 +123,34 @@ export default function ProfilePage() {
       router.replace("/");
     } finally {
       setIsLoggingOut(false);
+    }
+  }
+
+  async function handleGrantDevCredits() {
+    setIsGrantingCredits(true);
+    setGrantStatus("");
+
+    try {
+      const response = await fetch("/api/dev/credits/grant", {
+        method: "POST",
+        credentials: "include"
+      });
+
+      if (!response.ok) {
+        throw new Error("dev_credit_grant_failed");
+      }
+
+      const data = (await response.json().catch(() => null)) as
+        | { balance?: number; granted?: number }
+        | null;
+
+      setGrantStatus(
+        `테스트 크레딧 ${data?.granted ?? 10} 지급 · 잔액 ${data?.balance ?? "-"}`
+      );
+    } catch {
+      setGrantStatus("테스트 크레딧 지급 실패");
+    } finally {
+      setIsGrantingCredits(false);
     }
   }
 
@@ -241,6 +271,26 @@ export default function ProfilePage() {
           </button>
         </div>
       </section>
+
+      {process.env.NODE_ENV !== "production" ? (
+        <section aria-label="개발용 크레딧" className="mt-5 space-y-3">
+          <div className="section-heading">
+            <p className="poster-kicker">Dev Credits</p>
+            <h2>로컬 테스트 충전</h2>
+          </div>
+          <button
+            className="ui-button-secondary h-14 w-full"
+            disabled={isGrantingCredits}
+            onClick={() => void handleGrantDevCredits()}
+            type="button"
+          >
+            {isGrantingCredits ? "테스트 크레딧 지급 중..." : "테스트 크레딧 10 지급"}
+          </button>
+          {grantStatus ? (
+            <p className="text-sm font-black leading-6 text-ink">{grantStatus}</p>
+          ) : null}
+        </section>
+      ) : null}
     </main>
   );
 }

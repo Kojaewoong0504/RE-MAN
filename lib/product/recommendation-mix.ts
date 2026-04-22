@@ -71,13 +71,31 @@ function buildSummary(input: {
 function buildSystemRecommendations(
   missingCategories: AgentClosetItemCategory[]
 ): SystemRecommendation[] {
-  if (missingCategories.length === 0) {
-    return SYSTEM_STYLE_LIBRARY;
+  const preferredCategories =
+    missingCategories.length > 0 ? missingCategories : REQUIRED_RECOMMENDATION_CATEGORIES;
+  const selected = new Map<AgentClosetItemCategory, SystemRecommendation>();
+
+  for (const category of preferredCategories) {
+    const match = SYSTEM_STYLE_LIBRARY.find((item) => item.category === category);
+
+    if (match) {
+      selected.set(category, match);
+    }
   }
 
-  return SYSTEM_STYLE_LIBRARY.filter((item) =>
-    missingCategories.includes(item.category)
-  );
+  for (const category of REQUIRED_RECOMMENDATION_CATEGORIES) {
+    if (selected.has(category)) {
+      continue;
+    }
+
+    const match = SYSTEM_STYLE_LIBRARY.find((item) => item.category === category);
+
+    if (match) {
+      selected.set(category, match);
+    }
+  }
+
+  return Array.from(selected.values());
 }
 
 export function buildHybridRecommendation(

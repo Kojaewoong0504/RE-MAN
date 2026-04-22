@@ -90,6 +90,7 @@ export function ClosetInventoryEditor({
   const [isModeChoosing, setIsModeChoosing] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [isItemActionOpen, setIsItemActionOpen] = useState(false);
   const [openCategories, setOpenCategories] = useState<ClosetItemCategory[]>([]);
   const [showOptionalDetails, setShowOptionalDetails] = useState(false);
 
@@ -162,7 +163,8 @@ export function ClosetInventoryEditor({
     setStoragePath(item.storage_path ?? "");
     setPhotoError(null);
     setEditingItemId(item.id);
-    setShowOptionalDetails(true);
+    setShowOptionalDetails(false);
+    setIsItemActionOpen(false);
     setIsAdding(true);
   }
 
@@ -236,6 +238,7 @@ export function ClosetInventoryEditor({
     if (selectedItemId === id) {
       setSelectedItemId(null);
     }
+    setIsItemActionOpen(false);
   }
 
   function toggleCategory(nextCategory: ClosetItemCategory) {
@@ -304,9 +307,10 @@ export function ClosetInventoryEditor({
                           selectedItemId === item.id ? "closet-item-tile-selected" : ""
                         }`}
                         key={item.id}
-                        onClick={() =>
-                          setSelectedItemId(selectedItemId === item.id ? null : item.id)
-                        }
+                        onClick={() => {
+                          setSelectedItemId(item.id);
+                          setIsItemActionOpen(true);
+                        }}
                         type="button"
                       >
                         <span className="closet-item-photo">
@@ -345,42 +349,6 @@ export function ClosetInventoryEditor({
         </div>
       </div>
 
-      {selectedItem ? (
-        <section className="closet-detail-drawer">
-          <div>
-            <p className="poster-kicker">{categoryLabels[selectedItem.category]}</p>
-            <h3>{getItemDisplayName(selectedItem)}</h3>
-            {[selectedItem.fit, selectedItem.size, selectedItem.wear_state, selectedItem.wear_frequency, selectedItem.season, selectedItem.condition, selectedItem.notes]
-              .filter(Boolean)
-              .length > 0 ? (
-              <p>
-                {[selectedItem.fit, selectedItem.size, selectedItem.wear_state, selectedItem.wear_frequency, selectedItem.season, selectedItem.condition, selectedItem.notes]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            ) : (
-              <p>추가 메모 없음</p>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              className="text-sm font-black text-muted underline underline-offset-4"
-              onClick={() => openEditModal(selectedItem)}
-              type="button"
-            >
-              수정
-            </button>
-            <button
-              className="text-sm font-black text-muted underline underline-offset-4"
-              onClick={() => handleRemoveItem(selectedItem.id)}
-              type="button"
-            >
-              삭제
-            </button>
-          </div>
-        </section>
-      ) : null}
-
       {items.length === 0 ? (
         <div className="closet-empty-state">
           <p>아직 옷장 사진이 없습니다.</p>
@@ -413,6 +381,7 @@ export function ClosetInventoryEditor({
       {isAdding ? (
         <div className="closet-modal-backdrop" role="presentation">
           <section
+            aria-label={isEditing ? "옷 수정" : "옷 추가"}
             aria-modal="true"
             className="closet-modal"
             role="dialog"
@@ -521,12 +490,15 @@ export function ClosetInventoryEditor({
 
             <button
               aria-expanded={showOptionalDetails}
+              aria-label={showOptionalDetails ? "선택 정보 접기" : "선택 정보 펼치기"}
               className="closet-optional-toggle"
               onClick={() => setShowOptionalDetails((current) => !current)}
               type="button"
             >
-              <span>{showOptionalDetails ? "선택 정보 닫기" : "선택 정보 열기"}</span>
-              <span>{showOptionalDetails ? "접기" : "→"}</span>
+              <span>선택 정보</span>
+              <span aria-hidden="true" className="closet-optional-toggle-icon">
+                {showOptionalDetails ? "⌃" : "⌄"}
+              </span>
             </button>
 
             {showOptionalDetails ? (
@@ -643,21 +615,85 @@ export function ClosetInventoryEditor({
               </div>
             ) : null}
 
-            <button
-              className="ui-button-secondary justify-between py-4 disabled:opacity-50"
-              disabled={!canAdd}
-              onClick={handleSubmitItem}
-              type="button"
-            >
-              <span>
-                {photoDataUrl
-                  ? isEditing
-                    ? "변경 저장"
-                    : "사진을 옷장에 추가"
-                  : "사진을 먼저 선택"}
-              </span>
-              <span>{isEditing ? "✓" : "+"}</span>
-            </button>
+            <div className="closet-modal-submit">
+              <button
+                className="ui-button-secondary justify-between py-4 disabled:opacity-50"
+                disabled={!canAdd}
+                onClick={handleSubmitItem}
+                type="button"
+              >
+                <span>
+                  {!canAdd
+                    ? "사진을 먼저 선택"
+                    : isEditing
+                      ? "수정 저장"
+                      : "사진을 옷장에 추가"}
+                </span>
+                <span>{isEditing ? "✓" : "+"}</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {isItemActionOpen && selectedItem ? (
+        <div className="closet-modal-backdrop" role="presentation">
+          <section
+            aria-label="옷 선택 행동"
+            aria-modal="true"
+            className="closet-modal"
+            role="dialog"
+          >
+            <div className="closet-modal-header">
+              <div>
+                <p className="poster-kicker">{categoryLabels[selectedItem.category]}</p>
+                <h2>{getItemDisplayName(selectedItem)}</h2>
+              </div>
+              <button
+                aria-label="닫기"
+                className="closet-modal-close"
+                onClick={() => setIsItemActionOpen(false)}
+                type="button"
+              >
+                ×
+              </button>
+            </div>
+            <div className="closet-photo-preview">
+              {getItemImageSrc(selectedItem, previewUrls) ? (
+                <NextImage
+                  alt={`${getItemDisplayName(selectedItem)} 옷장 사진`}
+                  className="h-full w-full object-cover"
+                  height={450}
+                  src={getItemImageSrc(selectedItem, previewUrls)}
+                  unoptimized
+                  width={360}
+                />
+              ) : (
+                <div>
+                  <p>사진 없음</p>
+                  <span>수정에서 다시 추가할 수 있습니다.</span>
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <p className="poster-kicker">Detail</p>
+              <p className="text-sm font-bold leading-6 text-muted">
+                {[selectedItem.fit, selectedItem.size, selectedItem.wear_state, selectedItem.wear_frequency, selectedItem.season, selectedItem.condition, selectedItem.notes]
+                  .filter(Boolean)
+                  .join(" · ") || "추가 메모 없음"}
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <button className="ui-button-secondary py-4" onClick={() => openEditModal(selectedItem)} type="button">
+                수정
+              </button>
+              <button className="ui-button-secondary py-4" onClick={() => handleRemoveItem(selectedItem.id)} type="button">
+                삭제
+              </button>
+              <button className="ui-button-secondary py-4" onClick={() => setIsItemActionOpen(false)} type="button">
+                닫기
+              </button>
+            </div>
           </section>
         </div>
       ) : null}

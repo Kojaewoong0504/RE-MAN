@@ -23,6 +23,11 @@ describe("hybrid recommendation mix", () => {
     });
     expect(result.recommendation_mix.summary).toContain("시스템 추천");
     expect(result.system_recommendations.length).toBeGreaterThan(0);
+    expect(result.system_recommendations.map((item) => item.category)).toEqual([
+      "tops",
+      "bottoms",
+      "shoes"
+    ]);
     expect(result.system_recommendations.every((item) => item.mode === "reference")).toBe(true);
     expect(result.system_recommendations.every((item) => item.product === null)).toBe(true);
   });
@@ -84,8 +89,58 @@ describe("hybrid recommendation mix", () => {
       summary: "주 조합은 옷장 기준으로 구성하고 시스템 추천은 보조로 제공합니다."
     });
     expect(result.system_recommendations.length).toBeGreaterThan(0);
+    expect(result.system_recommendations.map((item) => item.category)).toEqual([
+      "tops",
+      "bottoms",
+      "shoes"
+    ]);
     expect(result.system_recommendations.every((item) => item.mode === "reference")).toBe(true);
     expect(result.system_recommendations.every((item) => item.product === null)).toBe(true);
+  });
+
+  it("fills missing system support with a balanced outfit set instead of a single category", () => {
+    const result = buildHybridRecommendation({
+      survey: {
+        current_style: "기본 티셔츠 + 반바지",
+        motivation: "주말 외출",
+        budget: "기존 옷 활용"
+      },
+      closetItems: [
+        {
+          id: "top-1",
+          category: "tops",
+          name: "검정 티셔츠"
+        },
+        {
+          id: "shoe-1",
+          category: "shoes",
+          name: "검정 운동화"
+        }
+      ],
+      closetStrategy: {
+        core_item_ids: ["top-1", "shoe-1"],
+        caution_item_ids: [],
+        optional_item_ids: [],
+        items: [
+          {
+            id: "top-1",
+            category: "tops",
+            role: "core",
+            reason: "자주 입고 잘 맞음"
+          }
+        ]
+      },
+      verifiedSourceItemIds: {
+        tops: "top-1"
+      }
+    });
+
+    expect(result.recommendation_mix.missing_categories).toEqual(["bottoms"]);
+    expect(result.system_recommendations.map((item) => item.category)).toEqual([
+      "bottoms",
+      "tops",
+      "shoes"
+    ]);
   });
 
   it("uses shipped non-placeholder image assets for core system references", () => {

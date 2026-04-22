@@ -531,7 +531,10 @@ export default function UploadPage() {
             feedback_history: currentState.feedback_history ?? [],
             fallback_message: undefined
           });
-          void syncSurveyToFirestore(nextState);
+          void syncSurveyToFirestore(nextState).catch(() => {
+            // Survey/firestore sync is best-effort here. Route analysis must keep
+            // moving even when local Firestore rules block the client write.
+          });
           router.push("/programs/style/onboarding/analyzing");
         }}
       />

@@ -33,7 +33,7 @@ SMOKE_BASE_URL=https://<deployment-url> npm run smoke:production:mvp
 - `check:deploy`는 배포 환경이 실제 AI인지 mock인지 드러낸다.
 - `check:deploy:strict`는 MVP 필수 AI 기능인 스타일 분석과 옷장 대량 등록이 real provider가 아니면 실패로 처리한다.
 - 실착 이미지는 현재 MVP 필수 경로가 아니므로 `TRY_ON_PROVIDER=mock`이면 경고만 낸다.
-- `check:deploy:vercel`은 Vercel production env를 `.env.vercel.local`로 pull한 뒤 strict 검사를 실행한다.
+- `check:deploy:vercel`은 Vercel production env를 `.env.vercel.local`로 pull한 뒤 strict 검사와 production runtime(`/api/try-on`) 검증을 같이 실행한다.
 - `check:deploy`는 `package.json` 직접 의존성에 Vercel/Linux 설치 단계에서 깨지는 platform package가 있는지도 같이 확인한다.
 - `perf:app-shell`은 주요 화면의 응답 시간을 budget 기준으로 측정한다.
 - `smoke:production:mvp`는 배포 URL에서 로그인 세션, 크레딧 잔액, 옷장 등록, 스타일 분석, 반응 저장, 기록 이동을 한 번에 확인한다.
@@ -56,6 +56,26 @@ npm run check:deploy:vercel
 ```
 
 `.env.vercel.local`은 커밋하지 않는다.
+
+## Vercel Env Masking
+
+- Vercel `env pull`은 production sensitive env 값을 빈 문자열처럼 마스킹할 수 있다.
+- 그래서 pulled file만 보고 `TRY_ON_PROVIDER=mock`처럼 단정하면 안 된다.
+- `check:deploy:vercel`은 pulled env를 참고하되, 실제 provider 판단은 runtime endpoint 응답으로 교차 검증한다.
+- CLI로 production env를 추가/수정할 때는 interactive 입력에 맡기지 말고 `--value`를 명시한다.
+
+```bash
+npx vercel env add TRY_ON_PROVIDER production --value vertex --force --yes
+npx vercel env add VERTEX_PROJECT_ID production --value fitreco-vto --force --yes
+npx vercel env add VERTEX_LOCATION production --value us-central1 --force --yes
+```
+
+- 변경 후에는 아래 순서로 확인한다.
+
+```bash
+npm run check:deploy:vercel
+SMOKE_BASE_URL=https://re-man.vercel.app npm run smoke:try-on:vertex
+```
 
 ## Reporting Rules
 

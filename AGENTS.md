@@ -211,6 +211,8 @@
 - 사용자가 사진을 업로드하는 핵심 경로를 수정하면 모바일 갤러리 선택과 카메라 촬영을 모두 제공해야 한다. `accept="image/*"`와 카메라 input의 `capture="environment"`를 E2E로 검증한다.
 - 배포 버전에서 실제 AI와 크레딧 소모가 시나리오대로 동작한다고 말하려면 `npm run check:deploy:strict`로 real provider/env readiness를 확인하고, 배포 URL을 대상으로 `npm run smoke:production:mvp`까지 성공해야 한다.
 - Vercel production 배포 상태를 말하려면 `npm run check:deploy:vercel` 또는 동등한 Vercel env pull + strict 검증을 먼저 실행해야 한다.
+- `vercel env pull` 결과에서 sensitive production env는 빈 문자열처럼 마스킹될 수 있다. 이 경우 pulled file만 보고 `mock`이라고 단정하지 말고, `npm run check:deploy:vercel`의 runtime 검증 결과(`/api/try-on` 등)를 함께 확인해야 한다.
+- Vercel production env를 CLI로 추가할 때는 이름만 만들지 말고 실제 값을 넣어야 한다. `vercel env add <KEY> production --value <VALUE> --force --yes`처럼 non-interactive 값 주입을 사용하고, 추가 직후 runtime 검증으로 alias가 최신 설정을 읽는지 확인한다.
 - `npm run check:deploy`에서 mock provider 또는 미구현 provider 경고가 나오면 "배포 UI는 가능하지만 실제 AI/크레딧 기능은 준비되지 않았다"고 보고한다.
 - 크레딧 원장이 memory 기반이면 배포 크레딧 원장으로 보고하지 않는다. 서버리스 배포에서는 영속 저장소 기반 원장 또는 그에 준하는 저장소가 필요하다.
 - 배포 크레딧 원장은 `CREDIT_LEDGER_PROVIDER=firestore`와 Firebase Admin env가 있어야 Firestore 영속 저장소로 동작한다.

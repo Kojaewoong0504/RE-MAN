@@ -4,7 +4,9 @@ import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  MAX_BATCH_CAPTURE_ITEMS,
   getClosetDraftAnalysisIdempotencyKey,
+  getClosetBatchSessionIdempotencyKey,
   getClosetBatchSummary,
   normalizeClosetDraft,
   selectAnalyzableDrafts,
@@ -20,6 +22,10 @@ import {
 
 function createDraftId() {
   return `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createBatchSessionId() {
+  return `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function getDraftStatusLabel(status: ClosetItemDraft["analysis_status"]) {
@@ -64,8 +70,14 @@ export function BatchCaptureClient() {
 
     setError("");
     const nextDrafts: ClosetItemDraft[] = [];
+    const remainingSlots = Math.max(0, MAX_BATCH_CAPTURE_ITEMS - drafts.length);
+    const filesToHandle = Array.from(files).slice(0, remainingSlots);
 
-    for (const file of Array.from(files)) {
+    if (files.length > remainingSlots) {
+      setError(`한 번에 최대 ${MAX_BATCH_CAPTURE_ITEMS}장까지 등록할 수 있습니다.`);
+    }
+
+    for (const file of filesToHandle) {
       const validation = validatePhotoFile(file);
 
       if (!validation.ok) {
@@ -108,6 +120,8 @@ export function BatchCaptureClient() {
     setError("");
     const analyzed: ClosetItemDraft[] = [];
     const analyzableIds = new Set(selectAnalyzableDrafts(drafts).map((draft) => draft.id));
+    const batchSessionId = createBatchSessionId();
+    const batchIdempotencyKey = getClosetBatchSessionIdempotencyKey(batchSessionId);
 
     for (const draft of drafts) {
       if (!analyzableIds.has(draft.id)) {
@@ -120,9 +134,14 @@ export function BatchCaptureClient() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Idempotency-Key": getClosetDraftAnalysisIdempotencyKey(draft.id)
+            "Idempotency-Key": batchIdempotencyKey,
+            "X-Closet-Draft-Key": getClosetDraftAnalysisIdempotencyKey(draft.id)
           },
-          body: JSON.stringify({ image: draft.photo_data_url })
+          body: JSON.stringify({
+            image: draft.photo_data_url,
+            batch_session_id: batchSessionId,
+            draft_id: draft.id
+          })
         });
 
         if (!response.ok) {
@@ -161,7 +180,7 @@ export function BatchCaptureClient() {
       <div className="closet-batch-hero">
         <p className="poster-kicker">Batch Capture</p>
         <h1>빠른 옷장 등록</h1>
-        <p>여러 장을 한 번에 추가하세요. AI가 초안을 만들고 저장 전 확인만 합니다.</p>
+        <p>여러 장을 한 번에 추가하세요. AI 초안 1회 실행은 배치당 1크레딧만 사용합니다.</p>
       </div>
 
       <div aria-label="옷장 대량 등록 상태" className="closet-batch-summary">
@@ -180,6 +199,10 @@ export function BatchCaptureClient() {
         <div>
           <span>제외</span>
           <strong>{summary.deletedCount}</strong>
+        </div>
+        <div>
+          <span>최대 장수</span>
+          <strong>{MAX_BATCH_CAPTURE_ITEMS}</strong>
         </div>
       </div>
 

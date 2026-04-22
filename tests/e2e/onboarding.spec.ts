@@ -37,7 +37,7 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await expect(page.locator("#closet-photo-camera")).toHaveAttribute("capture", "environment");
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
-  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
+  await page.getByRole("button", { name: /선택 정보/ }).click();
   await page.getByLabel("아이템 이름").fill("무지 티셔츠");
   await page.getByLabel("색").fill("흰색");
   await page.getByLabel("핏").fill("레귤러");
@@ -51,7 +51,7 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("bottoms");
-  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
+  await page.getByRole("button", { name: /선택 정보/ }).click();
   await page.getByLabel("아이템 이름").fill("검정 슬랙스");
   await page.getByLabel("색").fill("검정");
   await page.getByLabel("사이즈").fill("32");
@@ -62,7 +62,7 @@ async function fillClosetSnapshot(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("shoes");
-  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
+  await page.getByRole("button", { name: /선택 정보/ }).click();
   await page.getByLabel("아이템 이름").fill("스니커즈");
   await page.getByLabel("색").fill("흰색");
   await page.getByLabel("사이즈").fill("270");
@@ -175,8 +175,10 @@ test("closet batch analysis sends idempotency keys and skips reviewed drafts", a
   await expect(page).toHaveURL(/\/closet\/review$/);
 
   expect(analyzeRequests).toHaveLength(1);
-  expect(analyzeRequests[0]).toMatchObject({
-    idempotencyKey: "closet-analyze:draft-pending"
+  expect(analyzeRequests[0].idempotencyKey).toMatch(/^closet-analyze:batch-/);
+  expect(analyzeRequests[0].body).toMatchObject({
+    batch_session_id: expect.stringMatching(/^batch-/),
+    draft_id: "draft-pending"
   });
 });
 
@@ -331,6 +333,55 @@ test("closet review saves confirmed drafts and ignores deleted drafts", async ({
   expect(savedState.closet_items[0].image_url).toBe(
     "https://storage.example.com/closet-draft-top.jpg"
   );
+});
+
+test("closet item click opens action modal and edit modal exposes explicit save controls", async ({
+  page
+}) => {
+  await addTryOnSession(page, "e2e-closet-item-actions-user");
+
+  await page.addInitScript(({ image }) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {},
+        closet_items: [
+          {
+            id: "closet-top-1",
+            category: "tops",
+            name: "블랙 그래픽 티셔츠",
+            photo_data_url: image,
+            color: "블랙",
+            fit: "오버핏",
+            size: "2XL",
+            wear_frequency: "자주 입음",
+            season: "여름",
+            condition: "사용감 있음",
+            notes: "AI 초안: 티셔츠"
+          }
+        ]
+      })
+    );
+  }, { image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}` });
+
+  await page.goto("/closet?from=review&saved=1");
+  await page.getByRole("button", { name: /상의 행거 · 1/ }).click();
+  await page.getByRole("button", { name: /블랙 그래픽 티셔츠/ }).click();
+
+  const actionDialog = page.getByRole("dialog", { name: "옷 선택 행동" });
+  await expect(actionDialog).toBeVisible();
+  await expect(actionDialog.getByRole("button", { name: "수정" })).toBeVisible();
+  await expect(actionDialog.getByRole("button", { name: "삭제" })).toBeVisible();
+
+  await actionDialog.getByRole("button", { name: "수정" }).click();
+
+  const editDialog = page.getByRole("dialog", { name: "옷 수정" });
+  await expect(editDialog).toBeVisible();
+  await expect(editDialog.getByRole("button", { name: "수정 저장" })).toBeVisible();
+  await expect(editDialog.getByRole("button", { name: "선택 정보 펼치기" })).toBeVisible();
+
+  await editDialog.getByRole("button", { name: "선택 정보 펼치기" }).click();
+  await expect(editDialog.getByRole("button", { name: "선택 정보 접기" })).toBeVisible();
 });
 
 test("closet review shows saveable and review summary", async ({ page }) => {
@@ -793,6 +844,7 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(
     page.getByRole("heading", { name: "오늘 조합" })
   ).toBeVisible();
+  await expect(page.getByText("체크 2회")).toBeVisible();
   await expect(page.getByRole("heading", { name: "내 옷장 기준" })).toBeVisible();
   const resultBasisRegion = page.getByRole("region", { name: "내 옷장 기준" });
   await expect(resultBasisRegion).toBeVisible();
@@ -1039,10 +1091,14 @@ test("result action hub can start a new style check", async ({ page }) => {
   await expect(page.getByRole("button", { name: "AI 분석 시작하기" })).toBeDisabled();
 });
 
-test("saved result shows outfit previews and allows try-on generation", async ({ page }) => {
+test("saved result uses try-on modal with system source by default and viewer modal", async ({ page }) => {
   let deepDiveRequests = 0;
   const tryOnRequests: Array<Record<string, unknown>> = [];
   const uploadedImage = `data:image/png;base64,${tinyPng.buffer.toString("base64")}`;
+  let releaseTryOn: () => void = () => {
+    throw new Error("try-on route was not intercepted");
+  };
+  let tryOnIntercepted = false;
 
   await page.route("**/api/deep-dive", async (route) => {
     deepDiveRequests += 1;
@@ -1051,6 +1107,12 @@ test("saved result shows outfit previews and allows try-on generation", async ({
   await page.route("**/api/try-on", async (route) => {
     const body = route.request().postDataJSON() as Record<string, unknown>;
     tryOnRequests.push(body);
+    await new Promise<void>((resolve) => {
+      releaseTryOn = () => {
+        tryOnIntercepted = true;
+        resolve();
+      };
+    });
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -1148,6 +1210,28 @@ test("saved result shows outfit previews and allows try-on generation", async ({
               reason: "얼굴 주변을 정리합니다.",
               image_url: uploadedImage,
               product: null
+            },
+            {
+              id: "sys-bottom-1",
+              mode: "reference",
+              category: "bottoms",
+              title: "검정 테이퍼드 슬랙스",
+              color: "검정",
+              fit: "테이퍼드",
+              reason: "실루엣을 정리합니다.",
+              image_url: uploadedImage,
+              product: null
+            },
+            {
+              id: "sys-shoes-1",
+              mode: "reference",
+              category: "shoes",
+              title: "화이트 미니멀 스니커즈",
+              color: "화이트",
+              fit: "로우탑",
+              reason: "무게를 가볍게 정리합니다.",
+              image_url: uploadedImage,
+              product: null
             }
           ],
           today_action: "오늘 바로 할 것",
@@ -1162,6 +1246,7 @@ test("saved result shows outfit previews and allows try-on generation", async ({
   await expect(
     page.getByRole("heading", { name: "오늘 조합" })
   ).toBeVisible();
+  await expect(page.getByText("체크 3회")).toBeVisible();
   await expect(page.getByRole("img", { name: /추천 상의/i })).toBeVisible();
   await expect(page.getByRole("img", { name: /추천 하의/i })).toBeVisible();
   await expect(page.getByRole("img", { name: /추천 신발/i })).toBeVisible();
@@ -1171,28 +1256,57 @@ test("saved result shows outfit previews and allows try-on generation", async ({
   await expect(page.getByRole("link", { name: /크레딧 확인/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "실착 이미지 만들기" })).toBeVisible();
   await page.getByRole("button", { name: "실착 이미지 만들기" }).click();
-  await expect(page.getByRole("img", { name: "실착 미리보기" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "실착 생성 설정" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "실착 생성 설정" })).toContainText(
+    "추천 조합 전체"
+  );
+  await expect(page.getByRole("button", { name: "시스템 추천 조합" })).toHaveAttribute(
+    "aria-pressed",
+    "true"
+  );
+  await expect(
+    page.getByRole("dialog", { name: "실착 생성 설정" }).getByText("크레딧 1회 차감")
+  ).toBeVisible();
+  const tryOnStartButton = page
+    .getByRole("dialog", { name: "실착 생성 설정" })
+    .getByRole("button", { name: "실착 생성 시작" });
+  await tryOnStartButton.scrollIntoViewIfNeeded();
+  await tryOnStartButton.click();
+  await expect(page.getByRole("dialog", { name: "실착 생성 중" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "실착 생성 시작" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "새 체크" })).toBeDisabled();
+  if (!tryOnIntercepted && tryOnRequests.length === 0) {
+    throw new Error("try-on route was not intercepted");
+  }
+  releaseTryOn();
+  await expect(page.getByRole("dialog", { name: "실착 결과 보기" })).toBeVisible();
+  await expect(page.getByText("체크 2회")).toBeVisible();
+  await expect(page.getByRole("img", { name: "실착 결과 전체 보기" })).toBeVisible();
   expect(tryOnRequests).toHaveLength(1);
   expect(tryOnRequests[0]).toMatchObject({
-    person_image: uploadedImage,
-    prompt: recommendedOutfit.try_on_prompt
+    person_image: uploadedImage
   });
+  expect(String(tryOnRequests[0].prompt)).toContain(recommendedOutfit.try_on_prompt);
+  expect(String(tryOnRequests[0].prompt)).toContain("상의, 하의, 신발 전체 조합을 함께 반영");
   expect(typeof tryOnRequests[0].product_image).toBe("string");
   expect(String(tryOnRequests[0].product_image)).toMatch(/^data:image\/png;base64,/);
   expect(String(tryOnRequests[0].product_image)).not.toBe(uploadedImage);
-  expect(String(tryOnRequests[0].product_image).length).toBeGreaterThan(uploadedImage.length);
-  await expect(page.getByText("체크 3회")).toBeVisible();
+  await expect(page.getByText("1 크레딧 차감")).toBeVisible();
+  await expect(page.getByText("체크 2회")).toBeVisible();
   await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /사이즈 후보 보기/ })).toHaveCount(0);
   await expect(page.getByText("평소 사이즈 기준입니다.")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "내 옷장 기준" })).toBeVisible();
   await expect(page.getByRole("link", { name: /구매/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "닫기" }).click();
+  await expect(page.getByRole("dialog", { name: "실착 결과 보기" })).toHaveCount(0);
   expect(deepDiveRequests).toBe(0);
   const savedState = await page.evaluate(() =>
     JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}")
   );
   expect(savedState.try_on_previews?.recommended?.preview_image).toBe(uploadedImage);
 });
+
 
 test("result preview falls back to placeholder when a closet image fails to load", async ({ page }) => {
   await page.addInitScript((outfit) => {
@@ -1272,6 +1386,203 @@ test("result preview falls back to placeholder when a closet image fails to load
       { timeout: 5000 }
     )
     .toContain("/system-catalog/reference-top.svg");
+});
+
+test("result page fetches signed closet previews for stored closet items", async ({
+  page
+}) => {
+  const signedPreview =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR42mP8//8/Azbw////fwYAgOkD/Qo5OVcAAAAASUVORK5CYII=";
+
+  await page.route("**/api/closet/previews", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        previews: [
+          { id: "stored-top", preview_url: signedPreview },
+          { id: "stored-bottom", preview_url: signedPreview },
+          { id: "stored-shoes", preview_url: signedPreview }
+        ]
+      })
+    });
+  });
+
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원",
+          style_goal: "전체적인 스타일 리셋",
+          confidence_level: "배우는 중"
+        },
+        closet_profile: {
+          tops: "검정 티셔츠",
+          bottoms: "회색 반바지",
+          shoes: "검정 운동화"
+        },
+        closet_items: [
+          {
+            id: "stored-top",
+            category: "tops",
+            name: "검정 반팔 티셔츠",
+            storage_bucket: "closet",
+            storage_path: "users/demo/top.jpg"
+          },
+          {
+            id: "stored-bottom",
+            category: "bottoms",
+            name: "회색 FCMM 무한도전 반바지",
+            storage_bucket: "closet",
+            storage_path: "users/demo/bottom.jpg"
+          },
+          {
+            id: "stored-shoes",
+            category: "shoes",
+            name: "검정 운동화",
+            storage_bucket: "closet",
+            storage_path: "users/demo/shoes.jpg"
+          }
+        ],
+        feedback: {
+          diagnosis: "저장된 스타일 체크 진단",
+          improvements: ["핏", "색", "신발"],
+          recommended_outfit: {
+            title: "검정 반팔 티셔츠 중심으로 시작",
+            items: ["검정 반팔 티셔츠", "회색 FCMM 무한도전 반바지", "검정 운동화"],
+            reason: "지금 가진 옷들 중에서 가장 편안하고 잘 맞는 조합이에요.",
+            try_on_prompt: "uploaded outfit board",
+            source_item_ids: {
+              tops: "stored-top",
+              bottoms: "stored-bottom",
+              shoes: "stored-shoes"
+            }
+          },
+          recommendation_mix: {
+            primary_source: "closet",
+            closet_confidence: "high",
+            system_support_needed: false,
+            missing_categories: [],
+            summary: "옷장 조합"
+          },
+          system_recommendations: [],
+          today_action: "오늘 바로 할 것",
+          day1_mission: "Day 1 미션"
+        }
+      })
+    );
+  });
+
+  await addTryOnSession(page);
+  await page.goto("/programs/style/onboarding/result");
+
+  await expect
+    .poll(
+      () =>
+        page
+          .getByRole("img", { name: "추천 상의" })
+          .evaluate((element) => (element as HTMLImageElement).getAttribute("src") ?? ""),
+      { timeout: 5000 }
+    )
+    .toContain(signedPreview);
+});
+
+test("result page replaces legacy system placeholder artwork with current system assets", async ({
+  page
+}) => {
+  const uploadedImage = `data:image/png;base64,${tinyPng.buffer.toString("base64")}`;
+
+  await page.addInitScript((uploadedImage) => {
+    window.localStorage.setItem(
+      "reman:onboarding",
+      JSON.stringify({
+        survey: {
+          current_style: "청바지 + 무지 티셔츠",
+          motivation: "소개팅 / 이성 만남",
+          budget: "15~30만원",
+          style_goal: "전체적인 스타일 리셋",
+          confidence_level: "배우는 중"
+        },
+        closet_profile: {
+          tops: "무지 티셔츠",
+          bottoms: "청바지",
+          shoes: "흰색 스니커즈"
+        },
+        closet_items: [],
+        feedback: {
+          diagnosis: "저장된 스타일 체크 진단",
+          improvements: ["핏", "색", "신발"],
+          recommended_outfit: {
+            title: "기준 조합",
+            items: ["검정 반팔 티셔츠", "검정 테이퍼드 슬랙스", "화이트 미니멀 스니커즈"],
+            reason: "기본 조합",
+            try_on_prompt: "prompt"
+          },
+          recommendation_mix: {
+            primary_source: "system",
+            closet_confidence: "low",
+            system_support_needed: true,
+            missing_categories: ["tops", "bottoms", "shoes"],
+            summary: "시스템 추천"
+          },
+          system_recommendations: [
+            {
+              id: "legacy-top",
+              mode: "reference",
+              category: "tops",
+              title: "하늘색 옥스퍼드 셔츠",
+              color: "하늘색",
+              fit: "레귤러",
+              reason: "얼굴 주변을 정리합니다.",
+              image_url: "/system-catalog/reference-top.svg",
+              product: null
+            },
+            {
+              id: "legacy-bottom",
+              mode: "reference",
+              category: "bottoms",
+              title: "검정 테이퍼드 슬랙스",
+              color: "검정",
+              fit: "테이퍼드",
+              reason: "실루엣을 정리합니다.",
+              image_url: "/system-catalog/reference-bottom.svg",
+              product: null
+            },
+            {
+              id: "legacy-shoes",
+              mode: "reference",
+              category: "shoes",
+              title: "화이트 미니멀 스니커즈",
+              color: "화이트",
+              fit: "로우탑",
+              reason: "전체 코디를 가볍게 정리합니다.",
+              image_url: "/system-catalog/reference-shoes.svg",
+              product: null
+            }
+          ],
+          today_action: "오늘 바로 할 것",
+          day1_mission: "Day 1 미션"
+        },
+        image: uploadedImage
+      })
+    );
+  }, uploadedImage);
+
+  await addTryOnSession(page);
+  await page.goto("/programs/style/onboarding/result");
+
+  await expect
+    .poll(
+      () =>
+        page
+          .getByRole("img", { name: /시스템 추천 tops/i })
+          .evaluate((element) => (element as HTMLImageElement).getAttribute("src") ?? ""),
+      { timeout: 5000 }
+    )
+    .toContain("/system-catalog/tops/");
 });
 
 test("hybrid recommendation shows system block first when system is the primary source", async ({
@@ -1550,7 +1861,7 @@ test("upload requires top bottom and shoes closet context before analysis", asyn
   await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
-  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
+  await page.getByRole("button", { name: /선택 정보/ }).click();
   await page.getByLabel("아이템 이름").fill("네이비 셔츠");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
 
@@ -1581,7 +1892,7 @@ test("style upload closet edits persist before analysis starts", async ({ page }
   await expect(page.locator("#closet-photo-camera")).toHaveAttribute("capture", "environment");
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
-  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
+  await page.getByRole("button", { name: /선택 정보/ }).click();
   await page.getByLabel("아이템 이름").fill("업로드 단계 셔츠");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
 
@@ -2037,7 +2348,7 @@ test("closet page saves items into the next style check context", async ({ page 
   await expect(page.locator("#closet-photo-camera")).toHaveAttribute("capture", "environment");
   await page.locator("#closet-photo-upload").setInputFiles(tinyPng);
   await page.getByLabel("종류").selectOption("tops");
-  await page.getByRole("button", { name: /선택 정보 열기/ }).click();
+  await page.getByRole("button", { name: /선택 정보/ }).click();
   await expect(page.getByLabel("아이템 이름")).toBeVisible();
   await page.getByLabel("아이템 이름").fill("옥스포드 셔츠");
   await page.getByLabel("색").fill("하늘색");

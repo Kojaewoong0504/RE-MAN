@@ -3,6 +3,7 @@ import {
   CONFIDENCE_REVIEW_THRESHOLD,
   draftToClosetItem,
   getClosetDraftAnalysisIdempotencyKey,
+  getClosetBatchSessionIdempotencyKey,
   getClosetBatchSummary,
   normalizeClosetDraft,
   selectAnalyzableDrafts,
@@ -129,6 +130,15 @@ describe("closet batch drafts", () => {
     );
     expect(getClosetDraftAnalysisIdempotencyKey("  draft with spaces  ")).toBe(
       "closet-analyze:draft-with-spaces"
+    );
+  });
+
+  it("builds stable idempotency keys per batch session", () => {
+    expect(getClosetBatchSessionIdempotencyKey("batch-1")).toBe(
+      "closet-analyze:batch-1"
+    );
+    expect(getClosetBatchSessionIdempotencyKey("  batch with spaces  ")).toBe(
+      "closet-analyze:batch-with-spaces"
     );
   });
 

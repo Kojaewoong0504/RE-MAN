@@ -9,6 +9,7 @@ import {
 import {
   clearCreditStatusCache,
   loadCreditStatus,
+  subscribeCreditStatusChange,
   readFreshCachedCreditStatus
 } from "@/lib/credits/client";
 import type { CreditStatusPayload } from "@/lib/credits/types";
@@ -78,10 +79,14 @@ export function CreditStatus({ compact = false, variant = "panel" }: CreditStatu
 
       void sync();
     });
+    const unsubscribeCredits = subscribeCreditStatusChange((nextCredits) => {
+      setCredits(nextCredits);
+    });
 
     return () => {
       active = false;
       unsubscribe();
+      unsubscribeCredits();
     };
   }, []);
 

@@ -116,6 +116,41 @@ describe("POST /api/closet/analyze", () => {
     ).toHaveLength(1);
   });
 
+  it("charges only once across a batch session even when multiple draft ids are analyzed", async () => {
+    const { POST } = await loadRouteWithCookies(await buildAuthCookies());
+    const first = await POST(
+      buildRequest(
+        { image, batch_session_id: "batch-session-1", draft_id: "draft-top" },
+        { "Idempotency-Key": "closet-analyze:batch-session-1" }
+      )
+    );
+    const firstBody = await first.json();
+    const second = await POST(
+      buildRequest(
+        { image, batch_session_id: "batch-session-1", draft_id: "draft-bottom" },
+        { "Idempotency-Key": "closet-analyze:batch-session-1" }
+      )
+    );
+    const secondBody = await second.json();
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(firstBody).toMatchObject({
+      credits_charged: 1,
+      credits_remaining: 2,
+      idempotent_replay: false
+    });
+    expect(secondBody).toMatchObject({
+      credits_charged: 0,
+      credits_remaining: 2,
+      idempotent_replay: true,
+      credit_reference_id: firstBody.credit_reference_id
+    });
+    expect(
+      getCreditTransactions(authUser.uid).filter((transaction) => transaction.type === "debit")
+    ).toHaveLength(1);
+  });
+
   it("refunds the reserved credit when closet analysis fails", async () => {
     process.env.CLOSET_ANALYSIS_PROVIDER = "gemini";
     const { POST } = await loadRouteWithCookies(await buildAuthCookies());

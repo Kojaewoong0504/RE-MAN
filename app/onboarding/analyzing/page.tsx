@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { OnboardingAgentResponse } from "@/lib/agents/contracts";
 import { fetchAuthSession } from "@/lib/auth/client";
 import { saveOnboardingFeedbackToFirestore } from "@/lib/firebase/firestore";
+import { patchCreditStatusCache } from "@/lib/credits/client";
 import {
   buildOnboardingRequest,
   patchOnboardingState,
@@ -37,6 +38,12 @@ type FeedbackErrorPayload = {
   detail?: string;
   error?: string;
   message?: string;
+  credits_remaining?: number;
+  subscription_active?: boolean;
+};
+type FeedbackSuccessPayload = OnboardingAgentResponse & {
+  credits_remaining?: number;
+  subscription_active?: boolean;
 };
 type AnalysisError = {
   message: string;
@@ -233,7 +240,7 @@ export default function AnalyzingPage() {
 
       advanceStep(2);
       const data = (await response.json().catch(() => null)) as
-        | OnboardingAgentResponse
+        | FeedbackSuccessPayload
         | { fallback_message?: string; detail?: string; error?: string }
         | null;
 
@@ -253,13 +260,23 @@ export default function AnalyzingPage() {
         return;
       }
 
+      if (typeof data.credits_remaining === "number") {
+        patchCreditStatusCache({
+          balance: data.credits_remaining,
+          subscription_active: data.subscription_active
+        });
+      }
+
       const nextState = patchOnboardingState({
         feedback: data,
         daily_feedbacks: {},
         fallback_message: undefined
       });
       const syncedState = syncHistoryFromState(nextState);
-      void saveOnboardingFeedbackToFirestore(syncedState, data);
+      void saveOnboardingFeedbackToFirestore(syncedState, data).catch(() => {
+        // Feedback persistence is best-effort. The result route should still open
+        // even when client Firestore rules reject direct writes in local/dev.
+      });
       await new Promise((resolve) => window.setTimeout(resolve, 420));
       router.replace("/programs/style/onboarding/result");
     }

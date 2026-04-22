@@ -27,7 +27,7 @@
     "check:mvp": "python3 harness/mvp/run.py",
     "check:deploy": "node scripts/check-deploy-readiness.mjs",
     "check:deploy:strict": "node scripts/check-deploy-readiness.mjs --strict",
-    "check:deploy:vercel": "node scripts/pull-vercel-production-env.mjs && node scripts/check-deploy-readiness.mjs --strict",
+    "check:deploy:vercel": "node scripts/pull-vercel-production-env.mjs && node scripts/check-deploy-readiness.mjs --strict --runtime-from-vercel-project",
     "check": "python3 harness/repository/run.py && python3 harness/application/run.py && python3 harness/application/content_rules.py && python3 harness/architecture/run.py && python3 harness/gc/run.py && npm run check:mvp && tsc --noEmit && next lint && next build"
   },
   "dependencies": {

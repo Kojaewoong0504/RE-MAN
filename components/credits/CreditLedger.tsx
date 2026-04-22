@@ -41,6 +41,8 @@ const typeLabels: Record<CreditTransactionType, string> = {
 const reasonLabels: Record<string, string> = {
   initial_event_allowance: "시작 크레딧",
   paid_credit_grant: "유료 크레딧",
+  closet_analysis: "옷장 AI 초안",
+  closet_analysis_failed_refund: "옷장 AI 실패 환불",
   style_feedback: "스타일 체크",
   style_feedback_failed_refund: "분석 실패 환불",
   try_on_generation: "실착 생성",

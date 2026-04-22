@@ -1,6 +1,7 @@
 import type { ClosetItem, ClosetItemCategory } from "@/lib/onboarding/storage";
 
 export const CONFIDENCE_REVIEW_THRESHOLD = 0.7;
+export const MAX_BATCH_CAPTURE_ITEMS = 12;
 
 export type ClosetAnalysisStatus =
   | "pending"
@@ -144,6 +145,16 @@ export function getClosetDraftAnalysisIdempotencyKey(draftId: string) {
     .slice(0, 120);
 
   return `closet-analyze:${normalizedId || "draft"}`;
+}
+
+export function getClosetBatchSessionIdempotencyKey(batchSessionId: string) {
+  const normalizedId = batchSessionId
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9:._-]/g, "")
+    .slice(0, 120);
+
+  return `closet-analyze:${normalizedId || "batch"}`;
 }
 
 export function draftToClosetItem(draft: ClosetItemDraft): ClosetItem {

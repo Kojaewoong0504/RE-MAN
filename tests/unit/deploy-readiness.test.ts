@@ -1,5 +1,6 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
+import http from "node:http";
 import { describe, expect, it } from "vitest";
 
 const strictRealAiEnv = {
@@ -101,6 +102,10 @@ describe("deployment readiness", () => {
     expect(packageJson.scripts["perf:app-shell"]).toBe("node scripts/perf-app-shell.mjs");
     expect(deploymentReadiness).toContain("platform package");
     expect(deploymentReadiness).toContain("`npm install`");
+    expect(packageJson.scripts["check:deploy:vercel"]).toContain("--runtime-from-vercel-project");
+    expect(deploymentReadiness).toContain("runtime(`/api/try-on`)");
+    expect(deploymentReadiness).toContain("env pull");
+    expect(deploymentReadiness).toContain("--value vertex");
     expect(fs.existsSync("scripts/perf-app-shell.mjs")).toBe(true);
     expect(fs.existsSync("scripts/smoke-production-mvp.mjs")).toBe(true);
     expect(matrix).toContain("`npm run smoke:production:mvp`");
@@ -108,5 +113,116 @@ describe("deployment readiness", () => {
     expect(matrix).toContain("`npm run perf:app-shell`");
     expect(matrix).toContain("install compatibility");
     expect(deploymentReadiness).toContain("canonical production host");
+  });
+
+  it("allows try-on readiness when vertex uses Firebase service account auth", () => {
+    const result = spawnSync(
+      "node",
+      ["scripts/check-deploy-readiness.mjs", "--strict"],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...strictRealAiEnv,
+          CREDIT_LEDGER_PROVIDER: "firestore",
+          TRY_ON_PROVIDER: "vertex",
+          VERTEX_PROJECT_ID: "fitreco-vto",
+          VERTEX_LOCATION: "us-central1",
+          VERTEX_ACCESS_TOKEN: ""
+        },
+        encoding: "utf-8"
+      }
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("PASS try-on-real-provider");
+  });
+
+  it("fails runtime verification when deployed try-on provider falls back to mock", async () => {
+    const server = http.createServer((request, response) => {
+      if (request.url === "/api/try-on") {
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.end(
+          JSON.stringify({
+            provider: "mock",
+            real_generation_enabled: false,
+            model_id: "virtual-try-on-001",
+            missing_config: [],
+            auth_source: "service_account"
+          })
+        );
+        return;
+      }
+
+      response.writeHead(404);
+      response.end("not found");
+    });
+
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", () => resolve());
+    });
+
+    const address = server.address();
+
+    if (!address || typeof address === "string") {
+      throw new Error("server did not start");
+    }
+
+    try {
+      const result = await new Promise<{
+        status: number | null;
+        stdout: string;
+        stderr: string;
+      }>((resolve) => {
+        const child = spawn(
+          "node",
+          [
+            "scripts/check-deploy-readiness.mjs",
+            "--strict",
+            `--runtime-url=http://127.0.0.1:${address.port}`
+          ],
+          {
+            cwd: process.cwd(),
+            env: {
+              ...strictRealAiEnv,
+              CREDIT_LEDGER_PROVIDER: "firestore",
+              TRY_ON_PROVIDER: "vertex",
+              VERTEX_PROJECT_ID: "fitreco-vto",
+              VERTEX_LOCATION: "us-central1"
+            },
+            stdio: ["ignore", "pipe", "pipe"]
+          }
+        );
+
+        let stdout = "";
+        let stderr = "";
+
+        child.stdout.on("data", (chunk) => {
+          stdout += chunk.toString();
+        });
+
+        child.stderr.on("data", (chunk) => {
+          stderr += chunk.toString();
+        });
+
+        child.on("close", (status) => {
+          resolve({ status, stdout, stderr });
+        });
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toContain("FAIL try-on-runtime-provider");
+      expect(result.stdout).toContain("runtime provider=mock");
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          resolve();
+        });
+      });
+    }
   });
 });

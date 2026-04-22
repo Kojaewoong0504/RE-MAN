@@ -2,8 +2,22 @@ import type { ClosetItem } from "@/lib/onboarding/storage";
 
 export type ClosetPreviewMap = Record<string, string>;
 
+function isPreviewRequestTarget(item: ClosetItem) {
+  return Boolean(item.storage_bucket && item.storage_path && !item.photo_data_url);
+}
+
+export function buildClosetPreviewRequestKey(items: ClosetItem[]) {
+  return items
+    .filter(isPreviewRequestTarget)
+    .map((item) => `${item.id}:${item.storage_bucket}:${item.storage_path}`)
+    .sort()
+    .join("|");
+}
+
 export async function fetchClosetPreviewUrls(items: ClosetItem[]): Promise<ClosetPreviewMap> {
-  if (!items.length) {
+  const requestItems = items.filter(isPreviewRequestTarget);
+
+  if (!requestItems.length) {
     return {};
   }
 
@@ -13,7 +27,7 @@ export async function fetchClosetPreviewUrls(items: ClosetItem[]): Promise<Close
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ items })
+    body: JSON.stringify({ items: requestItems })
   });
 
   const body = (await response.json().catch(() => null)) as

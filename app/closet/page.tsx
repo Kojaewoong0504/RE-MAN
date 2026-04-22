@@ -59,18 +59,22 @@ function getInitialClosetItems(localItems: ClosetItem[], profile: UserProfileDoc
 }
 
 function mergePreviewUrlsIntoItems(items: ClosetItem[], previewUrls: ClosetPreviewMap) {
-  return items.map((item) => {
+  let changed = false;
+  const nextItems = items.map((item) => {
     const previewUrl = previewUrls[item.id];
 
-    if (!previewUrl || item.photo_data_url) {
+    if (!previewUrl || item.photo_data_url || item.image_url === previewUrl) {
       return item;
     }
 
+    changed = true;
     return {
       ...item,
       image_url: previewUrl
     };
   });
+
+  return changed ? nextItems : items;
 }
 
 function getPersistableClosetItems(items: ClosetItem[]) {
@@ -203,6 +207,8 @@ export default function ClosetPage() {
         });
       }
 
+      setStatus("saved");
+
       await updateCurrentUserProfile(user.uid, {
         displayName: profile?.displayName ?? user.name ?? "",
         bio: profile?.bio ?? "",
@@ -211,8 +217,10 @@ export default function ClosetPage() {
         closet_items: persisted.closet_items.length ? persisted.closet_items : persistableItems,
         closet_profile: persisted.closet_profile ?? closetProfile,
         size_profile: profile?.size_profile ?? nextState.size_profile
+      }).catch(() => {
+        // Server sync already persisted the closet. Client Firestore merge failure
+        // should not downgrade the save result to a visible hard failure.
       });
-      setStatus("saved");
     } catch {
       setStatus("error");
     } finally {

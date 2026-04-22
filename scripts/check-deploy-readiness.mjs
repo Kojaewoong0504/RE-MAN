@@ -6,11 +6,26 @@ import process from "node:process";
 
 const args = new Set(process.argv.slice(2));
 const strict = args.has("--strict") || process.env.DEPLOYMENT_STRICT_REAL_AI === "true";
+const runtimeFromVercelProject = args.has("--runtime-from-vercel-project");
 
 function getArgValue(name) {
   const prefix = `${name}=`;
   const match = process.argv.slice(2).find((arg) => arg.startsWith(prefix));
   return match ? match.slice(prefix.length) : null;
+}
+
+function normalizeBaseUrl(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.replace(/\/+$/, "");
 }
 
 function parseEnvLine(line) {
@@ -79,6 +94,10 @@ function present(env, key) {
   return typeof env[key] === "string" && env[key].trim().length > 0;
 }
 
+function declared(env, key) {
+  return Object.prototype.hasOwnProperty.call(env, key);
+}
+
 function missing(env, keys) {
   return keys.filter((key) => !present(env, key));
 }
@@ -91,6 +110,17 @@ function providerValue(env, key) {
   return present(env, key) ? env[key].trim() : "mock";
 }
 
+function tryOnHasSupportedAuth(env) {
+  if (present(env, "VERTEX_ACCESS_TOKEN")) {
+    return true;
+  }
+
+  return (
+    present(env, "FIREBASE_CLIENT_EMAIL") &&
+    present(env, "FIREBASE_PRIVATE_KEY")
+  );
+}
+
 function readRootPackageJson() {
   const packagePath = path.resolve(process.cwd(), "package.json");
 
@@ -99,6 +129,46 @@ function readRootPackageJson() {
   }
 
   return JSON.parse(fs.readFileSync(packagePath, "utf8"));
+}
+
+function readLocalVercelProject() {
+  const projectPath = path.resolve(process.cwd(), ".vercel/project.json");
+
+  if (!fs.existsSync(projectPath)) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(projectPath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function resolveRuntimeUrl(env) {
+  const derivedProjectUrl = (() => {
+    if (!runtimeFromVercelProject) {
+      return null;
+    }
+
+    const project = readLocalVercelProject();
+    const projectName =
+      project && typeof project.projectName === "string" ? project.projectName.trim() : "";
+
+    if (!projectName) {
+      return null;
+    }
+
+    return `https://${projectName}.vercel.app`;
+  })();
+
+  return (
+    normalizeBaseUrl(getArgValue("--runtime-url")) ||
+    normalizeBaseUrl(env.DEPLOY_RUNTIME_URL) ||
+    normalizeBaseUrl(env.PRODUCTION_BASE_URL) ||
+    normalizeBaseUrl(env.NEXT_PUBLIC_APP_URL) ||
+    derivedProjectUrl
+  );
 }
 
 function failWhenStrict(id, warningMessage, strictMessage = warningMessage) {
@@ -248,7 +318,7 @@ function checkCreditLedger(env) {
   );
 }
 
-function checkCreditLedgerPersistence() {
+function checkCreditLedgerPersistence(env) {
   const provider = providerValue(env, "CREDIT_LEDGER_PROVIDER");
   const creditsServerPath = path.resolve(process.cwd(), "lib/credits/server.ts");
 
@@ -304,7 +374,19 @@ function checkCreditLedgerPersistence() {
 }
 
 function checkTryOn(env) {
+  const runtimeUrl = resolveRuntimeUrl(env);
+  const declaredProvider = declared(env, "TRY_ON_PROVIDER")
+    ? String(env.TRY_ON_PROVIDER ?? "").trim()
+    : null;
   const provider = providerValue(env, "TRY_ON_PROVIDER");
+
+  if (declaredProvider === "" && runtimeUrl) {
+    return statusLine(
+      "WARN",
+      "try-on-real-provider",
+      "Vercel production env pull에서 TRY_ON_PROVIDER 값이 마스킹되었습니다. 실제 provider는 runtime 검증 결과를 따릅니다."
+    );
+  }
 
   if (provider === "mock") {
     return statusLine(
@@ -320,8 +402,7 @@ function checkTryOn(env) {
 
   const required = [
     "VERTEX_PROJECT_ID",
-    "VERTEX_LOCATION",
-    "VERTEX_ACCESS_TOKEN"
+    "VERTEX_LOCATION"
   ];
   const missingKeys = missing(env, required);
 
@@ -333,30 +414,111 @@ function checkTryOn(env) {
     );
   }
 
+  if (!tryOnHasSupportedAuth(env)) {
+    return statusLine(
+      "FAIL",
+      "try-on-real-provider",
+      "TRY_ON_PROVIDER=vertex 이지만 VERTEX_ACCESS_TOKEN 또는 Firebase service account env가 없습니다."
+    );
+  }
+
   return statusLine("PASS", "try-on-real-provider", "실착 provider env 형태가 준비되어 있습니다.");
 }
 
-const env = loadEnv();
-const results = [
-  checkInstallPlatformCompatibility(),
-  checkStyleFeedback(env),
-  checkClosetBatch(env),
-  checkCreditLedger(env),
-  checkCreditLedgerPersistence(),
-  checkTryOn(env)
-];
+async function checkTryOnRuntime(env) {
+  const declaredProvider = declared(env, "TRY_ON_PROVIDER")
+    ? String(env.TRY_ON_PROVIDER ?? "").trim()
+    : "";
+  const expectedProvider = declaredProvider || providerValue(env, "TRY_ON_PROVIDER");
+  const runtimeUrl = resolveRuntimeUrl(env);
 
-for (const result of results) {
-  console.log(`${result.status} ${result.id}: ${result.message}`);
+  if (!runtimeUrl) {
+    return statusLine(
+      "WARN",
+      "try-on-runtime-provider",
+      "배포 runtime URL이 없어 /api/try-on 실제 provider 검증을 건너뜁니다."
+    );
+  }
+
+  try {
+    const response = await fetch(`${runtimeUrl}/api/try-on`, {
+      headers: {
+        Accept: "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      return statusLine(
+        "FAIL",
+        "try-on-runtime-provider",
+        `배포 runtime 검증이 실패했습니다: GET ${runtimeUrl}/api/try-on -> ${response.status}`
+      );
+    }
+
+    const body = await response.json();
+    const runtimeProvider =
+      body && typeof body.provider === "string" ? body.provider.trim() : "unknown";
+
+    if (declaredProvider && runtimeProvider !== expectedProvider) {
+      return statusLine(
+        "FAIL",
+        "try-on-runtime-provider",
+        `배포 runtime provider=${runtimeProvider} 이고 기대값은 ${expectedProvider} 입니다. env 이름만 있고 값이 비었거나 배포 alias가 이전 버전을 가리키는 상태일 수 있습니다.`
+      );
+    }
+
+    if (!declaredProvider) {
+      return statusLine(
+        "PASS",
+        "try-on-runtime-provider",
+        `배포 runtime /api/try-on 이 provider=${runtimeProvider} 로 응답합니다. pulled env 값이 마스킹되어 runtime 응답을 기준으로 확인했습니다.`
+      );
+    }
+
+    return statusLine(
+      "PASS",
+      "try-on-runtime-provider",
+      `배포 runtime /api/try-on 이 기대 provider=${expectedProvider} 로 응답합니다.`
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return statusLine(
+      "FAIL",
+      "try-on-runtime-provider",
+      `배포 runtime 검증 요청에 실패했습니다: ${message}`
+    );
+  }
 }
 
-const failed = results.filter((result) => result.status === "FAIL");
-const warned = results.filter((result) => result.status === "WARN");
+async function main() {
+  const env = loadEnv();
+  const results = [
+    checkInstallPlatformCompatibility(),
+    checkStyleFeedback(env),
+    checkClosetBatch(env),
+    checkCreditLedger(env),
+    checkCreditLedgerPersistence(env),
+    checkTryOn(env)
+  ];
 
-console.log(
-  `\nDeployment readiness: ${failed.length} fail(s), ${warned.length} warning(s), strict=${strict}`
-);
+  if (resolveRuntimeUrl(env)) {
+    results.push(await checkTryOnRuntime(env));
+  }
 
-if (failed.length > 0) {
-  process.exit(1);
+  for (const result of results) {
+    console.log(`${result.status} ${result.id}: ${result.message}`);
+  }
+
+  const failed = results.filter((result) => result.status === "FAIL");
+  const warned = results.filter((result) => result.status === "WARN");
+
+  console.log(
+    `\nDeployment readiness: ${failed.length} fail(s), ${warned.length} warning(s), strict=${strict}`
+  );
+
+  if (failed.length > 0) {
+    process.exit(1);
+  }
 }
+
+await main();
