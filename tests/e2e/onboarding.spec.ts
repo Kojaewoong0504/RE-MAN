@@ -18,11 +18,11 @@ const invalidGif = {
 };
 
 async function selectClosetOptionalField(
-  page: import("@playwright/test").Page,
+  scope: import("@playwright/test").Page | import("@playwright/test").Locator,
   label: string,
   value: string
 ) {
-  await page
+  await scope
     .locator("label")
     .filter({ hasText: new RegExp(`^${label}`) })
     .locator("select")
@@ -2359,13 +2359,22 @@ test("closet page saves items into the next style check context", async ({ page 
   await page.getByLabel("계절").selectOption("봄/가을");
   await selectClosetOptionalField(page, "상태", "깨끗함");
   await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
-  await page.getByRole("button", { name: "수정" }).click();
-  await expect(page.getByRole("heading", { name: "옷 수정" })).toBeVisible();
-  await page.getByLabel("빈도").selectOption("가끔 입음");
-  await page.getByLabel("계절").selectOption("여름");
-  await selectClosetOptionalField(page, "상태", "수선 필요");
-  await page.getByRole("button", { name: /변경 저장/ }).click();
-  await expect(page.getByText("레귤러 · L · 잘 맞음 · 가끔 입음 · 여름 · 수선 필요")).toBeVisible();
+  const closedTopShelf = page.getByRole("button", { name: "상의 행거 · 1 열기" });
+  if (await closedTopShelf.count()) {
+    await closedTopShelf.click();
+  }
+  await expect(page.getByRole("button", { name: "상의 행거 · 1 닫기" })).toBeVisible();
+  await page.getByRole("button", { name: /하늘색 옥스포드 셔츠/ }).click();
+  const actionDialog = page.getByRole("dialog", { name: "옷 선택 행동" });
+  await expect(actionDialog).toBeVisible();
+  await actionDialog.getByRole("button", { name: "수정" }).click();
+  const editDialog = page.getByRole("dialog", { name: "옷 수정" });
+  await expect(editDialog).toBeVisible();
+  await editDialog.getByRole("button", { name: "선택 정보 펼치기" }).click();
+  await editDialog.getByLabel("빈도").selectOption("가끔 입음");
+  await editDialog.getByLabel("계절").selectOption("여름");
+  await selectClosetOptionalField(editDialog, "상태", "수선 필요");
+  await editDialog.getByRole("button", { name: "수정 저장" }).click();
 
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
   await page.getByRole("button", { name: /한 벌 직접 등록/ }).click();
