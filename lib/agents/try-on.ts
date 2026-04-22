@@ -251,9 +251,40 @@ function resolveSelectedItemsForProvider(payload: TryOnRequest): TryOnSelectedIt
   });
 }
 
+function countUpperLayerItems(selectedItems: TryOnSelectedItem[]) {
+  return selectedItems.filter((item) => {
+    const normalizedRole = item.role?.trim();
+    return (
+      item.category === "tops" ||
+      item.category === "outerwear" ||
+      normalizedRole === "base_top" ||
+      normalizedRole === "mid_top" ||
+      normalizedRole === "outerwear"
+    );
+  }).length;
+}
+
+function shouldForceSequentialLayeredPasses(payload: TryOnRequest) {
+  const selectedItems = resolveSelectedItemsForProvider(payload);
+
+  if (selectedItems.length < 2) {
+    return false;
+  }
+
+  return countUpperLayerItems(selectedItems) >= 2;
+}
+
+function resolveExecutionMaxProductImagesPerPass(payload: TryOnRequest) {
+  if (shouldForceSequentialLayeredPasses(payload)) {
+    return 1;
+  }
+
+  return getVertexMaxProductImagesPerPass();
+}
+
 export function estimateTryOnPassCount(payload: TryOnRequest) {
   const productImages = resolveProductImages(payload);
-  const maxProductImagesPerPass = getVertexMaxProductImagesPerPass();
+  const maxProductImagesPerPass = resolveExecutionMaxProductImagesPerPass(payload);
 
   return Math.max(1, Math.ceil(productImages.length / maxProductImagesPerPass));
 }
@@ -271,16 +302,7 @@ export function buildTryOnVisibilityGuidance(payload: TryOnRequest) {
     return null;
   }
 
-  const upperLayerCount = selectedItems.filter((item) => {
-    const normalizedRole = item.role?.trim();
-    return (
-      item.category === "tops" ||
-      item.category === "outerwear" ||
-      normalizedRole === "base_top" ||
-      normalizedRole === "mid_top" ||
-      normalizedRole === "outerwear"
-    );
-  }).length;
+  const upperLayerCount = countUpperLayerItems(selectedItems);
 
   if (upperLayerCount >= 2) {
     return LAYERED_TRY_ON_VISIBILITY_GUIDANCE;
@@ -607,7 +629,7 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
   const config = await getVertexConfig();
   let personImage = parseDataImage(payload.person_image);
   const productImages = resolveProductImages(payload);
-  let maxProductImagesPerPass = getVertexMaxProductImagesPerPass();
+  let maxProductImagesPerPass = resolveExecutionMaxProductImagesPerPass(payload);
   const endpoint = `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.modelId}:predict`;
   let finalImage: VertexGeneratedImage | null = null;
   let actualPassCount = 0;

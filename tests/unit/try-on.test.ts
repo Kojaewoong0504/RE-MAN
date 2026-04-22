@@ -404,17 +404,30 @@ describe("try-on provider contract", () => {
   });
 
   it("uses ordered_item_ids when selected_items are provided in manual order mode", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        predictions: [
-          {
-            mimeType: "image/png",
-            bytesBase64Encoded: "result123"
-          }
-        ]
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result123"
+            }
+          ]
+        })
       })
-    });
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result456"
+            }
+          ]
+        })
+      });
 
     vi.stubEnv("TRY_ON_PROVIDER", "vertex");
     vi.stubEnv("NODE_ENV", "production");
@@ -448,14 +461,19 @@ describe("try-on provider contract", () => {
       })
     ).resolves.toMatchObject({
       status: "vertex",
-      preview_image: "data:image/png;base64,result123"
+      preview_image: "data:image/png;base64,result456",
+      pass_count: 2
     });
 
-    const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(requestBody.instances[0].productImages).toEqual([
+    const firstRequestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const secondRequestBody = JSON.parse(fetchMock.mock.calls[1][1].body);
+    expect(firstRequestBody.instances[0].productImages).toEqual([
       { image: { bytesBase64Encoded: "out222" } },
+    ]);
+    expect(secondRequestBody.instances[0].productImages).toEqual([
       { image: { bytesBase64Encoded: "top111" } }
     ]);
+    expect(secondRequestBody.instances[0].personImage.image.bytesBase64Encoded).toBe("result123");
   });
 
   it("uses the official three-item direct request path before any fallback", async () => {
@@ -577,6 +595,112 @@ describe("try-on provider contract", () => {
       { image: { bytesBase64Encoded: "bottom222" } },
       { image: { bytesBase64Encoded: "shoes333" } }
     ]);
+  });
+
+  it("forces sequential single-item passes when layered upper-body items are selected", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result-stage-1"
+            }
+          ]
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result-stage-2"
+            }
+          ]
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result-stage-3"
+            }
+          ]
+        })
+      });
+
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      generateTryOnPreview({
+        person_image: image,
+        selected_items: [
+          {
+            id: "sys-base-top-1",
+            category: "tops",
+            role: "base_top",
+            title: "화이트 셔츠",
+            image_url: "data:image/png;base64,top111"
+          },
+          {
+            id: "sys-outer-1",
+            category: "outerwear",
+            role: "outerwear",
+            title: "블랙 블레이저",
+            image_url: "data:image/png;base64,outer222"
+          },
+          {
+            id: "sys-bottom-1",
+            category: "bottoms",
+            role: "bottom",
+            title: "검정 슬랙스",
+            image_url: "data:image/png;base64,bottom333"
+          }
+        ],
+        ordered_item_ids: ["sys-base-top-1", "sys-outer-1", "sys-bottom-1"],
+        manual_order_enabled: false,
+        prompt: "레이어드 조합 전체를 함께 반영"
+      })
+    ).resolves.toMatchObject({
+      status: "vertex",
+      preview_image: "data:image/png;base64,result-stage-3",
+      pass_count: 3
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    const firstRequestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const secondRequestBody = JSON.parse(fetchMock.mock.calls[1][1].body);
+    const thirdRequestBody = JSON.parse(fetchMock.mock.calls[2][1].body);
+
+    expect(firstRequestBody.instances[0].productImages).toHaveLength(1);
+    expect(firstRequestBody.instances[0].productImages[0]).toEqual({
+      image: { bytesBase64Encoded: "top111" }
+    });
+    expect(secondRequestBody.instances[0].productImages).toHaveLength(1);
+    expect(secondRequestBody.instances[0].productImages[0]).toEqual({
+      image: { bytesBase64Encoded: "outer222" }
+    });
+    expect(thirdRequestBody.instances[0].productImages).toHaveLength(1);
+    expect(thirdRequestBody.instances[0].productImages[0]).toEqual({
+      image: { bytesBase64Encoded: "bottom333" }
+    });
+    expect(secondRequestBody.instances[0].personImage.image.bytesBase64Encoded).toBe(
+      "result-stage-1"
+    );
+    expect(thirdRequestBody.instances[0].personImage.image.bytesBase64Encoded).toBe(
+      "result-stage-2"
+    );
   });
 
   it("falls back to sequential single-item passes when the runtime rejects a three-item request", async () => {
