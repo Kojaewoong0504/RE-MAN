@@ -89,7 +89,7 @@ export type TryOnPreviewCacheEntry = {
   reference_id?: string;
   prompt: string;
   provider: "mocked" | "vertex";
-  preview_image: string;
+  preview_image?: string;
   message: string;
   visibility_guidance?: string;
   review_required?: boolean;
@@ -106,7 +106,7 @@ export type TryOnPreviewCacheEntry = {
   }>;
   stage_previews?: Array<{
     step: number;
-    preview_image: string;
+    preview_image?: string;
     label?: string;
     retry_attempted?: boolean;
     auto_corrected?: boolean;
@@ -203,6 +203,78 @@ function getEmptyState(): OnboardingState {
 
 function isStorageAvailable() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+}
+
+function isQuotaExceededError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.name === "QuotaExceededError" ||
+    error.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+    /quota/i.test(error.message)
+  );
+}
+
+function stripClosetItemLocalImages(items: ClosetItem[] | undefined) {
+  return normalizeClosetItems(items).map((item) => ({
+    ...item,
+    photo_data_url: ""
+  }));
+}
+
+function stripClosetDraftLocalImages(drafts: ClosetItemDraft[] | undefined) {
+  return (drafts ?? []).map((draft) =>
+    normalizeClosetDraft({
+      ...draft,
+      photo_data_url: ""
+    })
+  );
+}
+
+function stripTryOnPreviewBinary(
+  previews: OnboardingState["try_on_previews"] | undefined
+): OnboardingState["try_on_previews"] {
+  if (!previews) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(previews).map(([key, preview]) => [
+      key,
+      {
+        ...preview,
+        preview_image: undefined,
+        stage_previews: preview.stage_previews?.map((stage) => ({
+          ...stage,
+          preview_image: undefined
+        }))
+      }
+    ])
+  );
+}
+
+function buildStorageReducedState(
+  state: OnboardingState,
+  options: {
+    dropTryOnBinary: boolean;
+    dropLocalImages: boolean;
+  }
+): OnboardingState {
+  return {
+    ...state,
+    try_on_previews: options.dropTryOnBinary
+      ? stripTryOnPreviewBinary(state.try_on_previews)
+      : state.try_on_previews,
+    image: options.dropLocalImages ? undefined : state.image,
+    closet_items: options.dropLocalImages
+      ? stripClosetItemLocalImages(state.closet_items)
+      : normalizeClosetItems(state.closet_items),
+    closet_item_drafts: options.dropLocalImages
+      ? stripClosetDraftLocalImages(state.closet_item_drafts)
+      : state.closet_item_drafts?.map((draft) => normalizeClosetDraft(draft)) ?? []
+  };
 }
 
 function compactText(value: string, maxLength = HISTORY_SUMMARY_MAX_LENGTH) {
@@ -746,7 +818,38 @@ export function writeOnboardingState(nextState: OnboardingState) {
     return;
   }
 
-  window.localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(nextState));
+  const write = (state: OnboardingState) =>
+    window.localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
+
+  try {
+    write(nextState);
+    return;
+  } catch (error) {
+    if (!isQuotaExceededError(error)) {
+      throw error;
+    }
+  }
+
+  try {
+    write(
+      buildStorageReducedState(nextState, {
+        dropTryOnBinary: true,
+        dropLocalImages: false
+      })
+    );
+    return;
+  } catch (error) {
+    if (!isQuotaExceededError(error)) {
+      throw error;
+    }
+  }
+
+  write(
+    buildStorageReducedState(nextState, {
+      dropTryOnBinary: true,
+      dropLocalImages: true
+    })
+  );
 }
 
 export function patchOnboardingState(patch: Partial<OnboardingState>) {

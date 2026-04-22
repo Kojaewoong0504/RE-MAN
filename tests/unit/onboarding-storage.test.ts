@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildClosetStrategy,
   buildClosetProfileFromItems,
@@ -13,6 +13,7 @@ import {
   normalizeRecommendationFeedback,
   normalizeSizeProfile,
   saveClosetContextToOnboardingState,
+  writeOnboardingState,
   type OnboardingState
 } from "@/lib/onboarding/storage";
 
@@ -58,6 +59,41 @@ const baseTryOnPreview = {
   message: "실착 결과",
   created_at: "2026-04-14T00:00:00.000Z"
 };
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  Reflect.deleteProperty(globalThis, "window");
+  Reflect.deleteProperty(globalThis, "localStorage");
+});
+
+function installLocalStorageMock() {
+  const store = new Map<string, string>();
+  const localStorageMock = {
+    getItem(key: string) {
+      return store.has(key) ? store.get(key)! : null;
+    },
+    setItem(key: string, value: string) {
+      store.set(key, value);
+    },
+    removeItem(key: string) {
+      store.delete(key);
+    },
+    clear() {
+      store.clear();
+    }
+  };
+
+  Object.defineProperty(globalThis, "localStorage", {
+    value: localStorageMock,
+    configurable: true
+  });
+  Object.defineProperty(globalThis, "window", {
+    value: { localStorage: localStorageMock },
+    configurable: true
+  });
+
+  return localStorageMock;
+}
 
 describe("onboarding state merge", () => {
   it("prefers a farther Firestore program state while preserving local image input", () => {
@@ -740,5 +776,100 @@ describe("onboarding feedback history", () => {
     ]);
     expect(timeline[1].label).toBe("Deep Dive");
     expect(timeline[1].title).toBe("핏 체크");
+  });
+});
+
+describe("onboarding storage quota fallback", () => {
+  it("drops try-on preview binaries first when localStorage quota is exceeded", () => {
+    const localStorageMock = installLocalStorageMock();
+    const originalSetItem = localStorageMock.setItem;
+    const setItemSpy = vi
+      .spyOn(localStorageMock, "setItem")
+      .mockImplementation((key: string, value: string) => {
+        if (value.includes("\"preview_image\":\"data:image/")) {
+          throw new DOMException("Setting the value exceeded the quota.", "QuotaExceededError");
+        }
+
+        return originalSetItem(key, value);
+      });
+
+    writeOnboardingState({
+      survey: baseSurvey,
+      image: "data:image/png;base64,person-image",
+      try_on_previews: {
+        recommended: {
+          ...baseTryOnPreview,
+          stage_previews: [
+            {
+              step: 1,
+              preview_image: "data:image/png;base64,stage-1"
+            }
+          ]
+        }
+      }
+    });
+
+    const savedState = JSON.parse(localStorageMock.getItem("reman:onboarding") ?? "{}");
+
+    expect(setItemSpy).toHaveBeenCalledTimes(2);
+    expect(savedState.image).toBe("data:image/png;base64,person-image");
+    expect(savedState.try_on_previews.recommended.preview_image).toBeUndefined();
+    expect(savedState.try_on_previews.recommended.stage_previews[0].preview_image).toBeUndefined();
+  });
+
+  it("drops local images too when reduced try-on state still exceeds quota", () => {
+    const localStorageMock = installLocalStorageMock();
+    const originalSetItem = localStorageMock.setItem;
+    const setItemSpy = vi
+      .spyOn(localStorageMock, "setItem")
+      .mockImplementation((key: string, value: string) => {
+        if (value.includes("data:image/")) {
+          throw new DOMException("Setting the value exceeded the quota.", "QuotaExceededError");
+        }
+
+        return originalSetItem(key, value);
+      });
+
+    writeOnboardingState({
+      survey: baseSurvey,
+      image: "data:image/png;base64,person-image",
+      closet_items: [
+        {
+          id: "top-1",
+          category: "tops",
+          name: "기본 티셔츠",
+          photo_data_url: "data:image/jpeg;base64,closet-image"
+        }
+      ],
+      closet_item_drafts: [
+        {
+          id: "draft-1",
+          analysis_status: "confirmed",
+          category: "tops",
+          name: "드래프트 상의",
+          photo_data_url: "data:image/jpeg;base64,draft-image",
+          color: "",
+          fit: "",
+          size: "",
+          season: "",
+          condition: "",
+          detected_type: "",
+          error_message: ""
+        }
+      ],
+      try_on_previews: {
+        recommended: {
+          ...baseTryOnPreview
+        }
+      }
+    });
+
+    const savedState = JSON.parse(localStorageMock.getItem("reman:onboarding") ?? "{}");
+
+    expect(setItemSpy).toHaveBeenCalledTimes(3);
+    expect(savedState.image).toBeUndefined();
+    expect(savedState.closet_items[0].photo_data_url).toBe("");
+    expect(savedState.closet_item_drafts[0].photo_data_url).toBe("");
+    expect(savedState.try_on_previews.recommended.preview_image).toBeUndefined();
   });
 });

@@ -438,10 +438,13 @@ function getPreviewStageItems(preview: TryOnPreviewCacheEntry | null): Array<
     return [];
   }
 
-  return preview.stage_previews.map((stage) => ({
-    ...stage,
-    key: `stage-${stage.step}`
-  }));
+  return preview.stage_previews
+    .filter((stage) => Boolean(stage.preview_image))
+    .map((stage) => ({
+      ...stage,
+      preview_image: stage.preview_image!,
+      key: `stage-${stage.step}`
+    }));
 }
 
 export default function ResultPage() {
@@ -538,9 +541,11 @@ export default function ResultPage() {
       setFeedback(state.feedback);
       setClosetItems(normalizedClosetItems);
       setClosetBasis(buildResultClosetBasis(normalizedClosetItems, state.feedback));
-      setTryOnPreview(state.try_on_previews?.[TRY_ON_CACHE_KEY] ?? null);
-      setTryOnMessage(state.try_on_previews?.[TRY_ON_CACHE_KEY]?.message ?? null);
-      setTryOnStatus(state.try_on_previews?.[TRY_ON_CACHE_KEY] ? "ready" : "idle");
+      const persistedTryOnPreview = state.try_on_previews?.[TRY_ON_CACHE_KEY];
+
+      setTryOnPreview(persistedTryOnPreview?.preview_image ? persistedTryOnPreview : null);
+      setTryOnMessage(persistedTryOnPreview?.message ?? null);
+      setTryOnStatus(persistedTryOnPreview?.preview_image ? "ready" : "idle");
       return;
     }
 
@@ -1218,7 +1223,7 @@ export default function ResultPage() {
                       className="h-full w-full object-contain"
                       fill
                       sizes="(max-width: 768px) 100vw, 320px"
-                      src={tryOnPreview.preview_image}
+                      src={tryOnPreview.preview_image!}
                       unoptimized
                     />
                   </button>
@@ -1555,7 +1560,7 @@ export default function ResultPage() {
                     className="h-full w-full object-contain"
                     fill
                     sizes="100vw"
-                    src={tryOnPreview.preview_image}
+                    src={tryOnPreview.preview_image!}
                     unoptimized
                   />
                 </div>
@@ -1585,7 +1590,7 @@ export default function ResultPage() {
                               className="h-full w-full object-cover"
                               fill
                               sizes="(max-width: 768px) 33vw, 120px"
-                              src={stage.preview_image}
+                              src={stage.preview_image!}
                               unoptimized
                             />
                           </div>
