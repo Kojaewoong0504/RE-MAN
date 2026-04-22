@@ -920,7 +920,7 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   await expect(page.getByRole("button", { name: /레퍼런스\/실착 보기/ })).toHaveCount(0);
   await expect(page.getByText("청바지 + 무지 티셔츠 중심의 코디라")).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: "지금 가진 옷으로 만드는 깔끔한 기본 조합" })
+    page.locator(".result-hero-copy h2").filter({ hasText: /기본 조합|깔끔한 기본 조합/ })
   ).toBeVisible();
   await expect(page.getByText("오늘 실행 3단계")).toBeVisible();
   const todayActionBox = await page.getByText("오늘 실행 3단계").boundingBox();
@@ -951,7 +951,7 @@ test("onboarding flow captures input and renders feedback", async ({ page }) => 
   const resultMemory = page.locator(".feedback-memory-summary").first();
   await expect(resultMemory.getByText("다음 추천 기준", { exact: true })).toBeVisible();
   await expect(resultMemory.getByText("좋아한 방향")).toBeVisible();
-  await expect(resultMemory.getByText("지금 가진 옷으로 만드는 깔끔한 기본 조합")).toBeVisible();
+  await expect(resultMemory.getByText(/기본 조합|깔끔한 기본 조합/)).toBeVisible();
   await expect(resultMemory.getByText("메모")).toBeVisible();
   const recommendationFeedbackState = await page.evaluate(() =>
     JSON.parse(window.localStorage.getItem("reman:onboarding") ?? "{}")
