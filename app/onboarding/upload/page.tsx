@@ -35,6 +35,8 @@ const emptyClosetProfile: ClosetProfile = {
   bottoms: "",
   shoes: "",
   outerwear: "",
+  hats: "",
+  bags: "",
   avoid: ""
 };
 

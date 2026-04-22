@@ -9,6 +9,15 @@ export type TryOnRequest = {
   person_image: string;
   product_image?: string;
   product_images?: string[];
+  selected_items?: Array<{
+    id: string;
+    category: string;
+    role?: string;
+    title: string;
+    image_url: string;
+  }>;
+  manual_order_enabled?: boolean;
+  ordered_item_ids?: string[];
   prompt: string;
   user_id?: string;
 };
@@ -17,6 +26,7 @@ export type TryOnResponse = {
   status: "mocked" | "vertex";
   preview_image: string;
   message: string;
+  pass_count?: number;
 };
 export type TryOnErrorCode =
   | "missing_vertex_config"
@@ -44,6 +54,8 @@ type ParsedDataImage = {
   base64: string;
 };
 
+type TryOnSelectedItem = NonNullable<TryOnRequest["selected_items"]>[number];
+
 type VertexTryOnPrediction = {
   mimeType?: string;
   bytesBase64Encoded?: string;
@@ -69,13 +81,37 @@ export type TryOnRuntimeStatus = {
   max_product_images_per_pass: number;
 };
 
-const DEFAULT_VERTEX_MAX_PRODUCT_IMAGES = 1;
+const DEFAULT_VERTEX_MAX_PRODUCT_IMAGES = 3;
+const TRY_ON_BILLING_ITEM_UNIT = 3;
 
 function isDataImageArray(value: unknown) {
   return (
     Array.isArray(value) &&
     value.length >= 1 &&
     value.every((entry) => isDataImage(entry))
+  );
+}
+
+function isValidSelectedItems(value: unknown) {
+  return (
+    Array.isArray(value) &&
+    value.length >= 1 &&
+    value.every((item) => {
+      if (!item || typeof item !== "object") {
+        return false;
+      }
+
+      const record = item as Record<string, unknown>;
+      return (
+        typeof record.id === "string" &&
+        record.id.trim().length > 0 &&
+        typeof record.category === "string" &&
+        record.category.trim().length > 0 &&
+        typeof record.title === "string" &&
+        record.title.trim().length > 0 &&
+        isDataImage(record.image_url)
+      );
+    })
   );
 }
 
@@ -150,9 +186,10 @@ export function validateTryOnRequest(payload: unknown): payload is TryOnRequest 
   const request = payload as Record<string, unknown>;
   const hasSingleProductImage = isDataImage(request.product_image);
   const hasProductImageArray = isDataImageArray(request.product_images);
+  const hasSelectedItems = isValidSelectedItems(request.selected_items);
   return (
     isDataImage(request.person_image) &&
-    (hasSingleProductImage || hasProductImageArray) &&
+    (hasSingleProductImage || hasProductImageArray || hasSelectedItems) &&
     isNonEmptyString(request.prompt)
   );
 }
@@ -166,7 +203,47 @@ function resolveProductImages(payload: TryOnRequest) {
     return [parseDataImage(payload.product_image)];
   }
 
+  if (Array.isArray(payload.selected_items) && payload.selected_items.length > 0) {
+    const items = resolveSelectedItemsForProvider(payload);
+    return items.map((item) => parseDataImage(item.image_url));
+  }
+
   throw new TryOnProviderError("invalid_try_on_image", "missing_product_images", 400);
+}
+
+function resolveSelectedItemsForProvider(payload: TryOnRequest): TryOnSelectedItem[] {
+  const selectedItems = payload.selected_items ?? [];
+
+  if (selectedItems.length === 0) {
+    return [];
+  }
+
+  if (!payload.manual_order_enabled || !Array.isArray(payload.ordered_item_ids)) {
+    return selectedItems;
+  }
+
+  const rank = new Map(
+    payload.ordered_item_ids.map((id, index) => [id, index] as const)
+  );
+
+  return [...selectedItems].sort((left, right) => {
+    const leftRank = rank.get(left.id);
+    const rightRank = rank.get(right.id);
+
+    if (leftRank !== undefined && rightRank !== undefined && leftRank !== rightRank) {
+      return leftRank - rightRank;
+    }
+
+    if (leftRank !== undefined) {
+      return -1;
+    }
+
+    if (rightRank !== undefined) {
+      return 1;
+    }
+
+    return 0;
+  });
 }
 
 export function estimateTryOnPassCount(payload: TryOnRequest) {
@@ -176,14 +253,17 @@ export function estimateTryOnPassCount(payload: TryOnRequest) {
   return Math.max(1, Math.ceil(productImages.length / maxProductImagesPerPass));
 }
 
-function chunkProductImages<T>(items: T[], size: number) {
-  const chunks: T[][] = [];
+export function estimateTryOnCreditCost(payload: TryOnRequest) {
+  const productImages = resolveProductImages(payload);
 
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
+  return Math.max(1, Math.ceil(productImages.length / TRY_ON_BILLING_ITEM_UNIT));
+}
 
-  return chunks;
+function isInvalidProductImageCountError(error: TryOnProviderError) {
+  return (
+    error.code === "vertex_http_error" &&
+    /invalid number of product images/i.test(error.message)
+  );
 }
 
 type VertexGeneratedImage = {
@@ -497,23 +577,42 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
   const config = await getVertexConfig();
   let personImage = parseDataImage(payload.person_image);
   const productImages = resolveProductImages(payload);
-  const maxProductImagesPerPass = getVertexMaxProductImagesPerPass();
+  let maxProductImagesPerPass = getVertexMaxProductImagesPerPass();
   const endpoint = `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.modelId}:predict`;
-  const stages = chunkProductImages(productImages, maxProductImagesPerPass);
   let finalImage: VertexGeneratedImage | null = null;
+  let actualPassCount = 0;
+  let index = 0;
 
-  for (const stage of stages) {
-    finalImage = await requestVertexTryOnStage({
-      endpoint,
-      accessToken: config.accessToken,
-      personImage,
-      productImages: stage,
-      storageUri: config.storageUri
-    });
-    personImage = {
-      mimeType: finalImage.mimeType,
-      base64: finalImage.base64
-    };
+  while (index < productImages.length) {
+    const stage = productImages.slice(index, index + maxProductImagesPerPass);
+
+    try {
+      finalImage = await requestVertexTryOnStage({
+        endpoint,
+        accessToken: config.accessToken,
+        personImage,
+        productImages: stage,
+        storageUri: config.storageUri
+      });
+      actualPassCount += 1;
+      personImage = {
+        mimeType: finalImage.mimeType,
+        base64: finalImage.base64
+      };
+      index += stage.length;
+    } catch (error) {
+      if (
+        error instanceof TryOnProviderError &&
+        maxProductImagesPerPass > 1 &&
+        stage.length > 1 &&
+        isInvalidProductImageCountError(error)
+      ) {
+        maxProductImagesPerPass = 1;
+        continue;
+      }
+
+      throw error;
+    }
   }
 
   if (!finalImage) {
@@ -523,7 +622,8 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
   return {
     status: "vertex",
     preview_image: `data:${finalImage.mimeType};base64,${finalImage.base64}`,
-    message: "Vertex AI Virtual Try-On 실착 미리보기가 준비됐습니다."
+    message: "Vertex AI Virtual Try-On 실착 미리보기가 준비됐습니다.",
+    pass_count: actualPassCount
   };
 }
 
@@ -536,6 +636,7 @@ export async function generateTryOnPreview(payload: TryOnRequest): Promise<TryOn
     status: "mocked",
     preview_image: payload.person_image,
     message:
-      "로컬 mock try-on입니다. 실제 실착 생성은 Vertex AI Virtual Try-On provider 구현 후 활성화합니다."
+      "로컬 mock try-on입니다. 실제 실착 생성은 Vertex AI Virtual Try-On provider 구현 후 활성화합니다.",
+    pass_count: 0
   };
 }

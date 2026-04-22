@@ -197,7 +197,31 @@ def main() -> int:
     ]
     payload = {
         "person_image": f"data:image/png;base64,{build_person_like_png()}",
-        "product_images": product_images,
+        "selected_items": [
+            {
+                "id": "sys-top-1",
+                "category": "tops",
+                "role": "base_top",
+                "title": "화이트 에센셜 티셔츠",
+                "image_url": product_images[0],
+            },
+            {
+                "id": "sys-bottom-1",
+                "category": "bottoms",
+                "role": "bottom",
+                "title": "검정 슬랙스",
+                "image_url": product_images[1],
+            },
+            {
+                "id": "sys-shoes-1",
+                "category": "shoes",
+                "role": "shoes",
+                "title": "화이트 스니커즈",
+                "image_url": product_images[2],
+            },
+        ],
+        "ordered_item_ids": ["sys-top-1", "sys-bottom-1", "sys-shoes-1"],
+        "manual_order_enabled": False,
         "prompt": "전신 정면 사진 기준 자연스러운 실착 미리보기",
     }
     status, data = post_json("/api/try-on", payload)
@@ -274,9 +298,9 @@ def main() -> int:
         )
         return 1
 
-    expected_pass_count = len(product_images)
+    expected_credit_charge = 1
 
-    if data.get("credits_charged") != expected_pass_count:
+    if data.get("credits_charged") != expected_credit_charge:
         print(
             json.dumps(
                 {
@@ -286,23 +310,22 @@ def main() -> int:
                     "error": "unexpected credit charge",
                     "credits_charged": data.get("credits_charged"),
                     "credits_remaining": data.get("credits_remaining"),
-                    "expected_pass_count": expected_pass_count,
+                    "expected_credit_charge": expected_credit_charge,
                 },
                 ensure_ascii=False,
             )
         )
         return 1
 
-    if data.get("try_on_pass_count") != expected_pass_count:
+    if not isinstance(data.get("try_on_pass_count"), int) or data.get("try_on_pass_count", 0) < 1:
         print(
             json.dumps(
                 {
                     "ok": False,
                     "status": status,
                     "duration_ms": duration_ms,
-                    "error": "unexpected try_on_pass_count",
+                    "error": "invalid try_on_pass_count",
                     "try_on_pass_count": data.get("try_on_pass_count"),
-                    "expected_pass_count": expected_pass_count,
                 },
                 ensure_ascii=False,
             )
@@ -318,6 +341,7 @@ def main() -> int:
                 "provider_status": data.get("status"),
                 "credits_charged": data.get("credits_charged"),
                 "credits_remaining": data.get("credits_remaining"),
+                "try_on_pass_count": data.get("try_on_pass_count"),
                 "preview_length": len(preview),
                 "message": data.get("message"),
             },

@@ -16,10 +16,18 @@ export type ClosetProfile = {
   bottoms: string;
   shoes: string;
   outerwear?: string;
+  hats?: string;
+  bags?: string;
   avoid?: string;
 };
 
-export type AgentClosetItemCategory = "tops" | "bottoms" | "shoes" | "outerwear";
+export type AgentClosetItemCategory =
+  | "tops"
+  | "bottoms"
+  | "shoes"
+  | "outerwear"
+  | "hats"
+  | "bags";
 
 export type AgentClosetItem = {
   id: string;
@@ -52,6 +60,14 @@ export type ClosetStrategy = {
   items: ClosetStrategyItem[];
 };
 
+export type RecommendationRole =
+  | "base_top"
+  | "mid_top"
+  | "outerwear"
+  | "bottom"
+  | "shoes"
+  | "addon";
+
 export type RecommendationPrimarySource = "closet" | "system";
 export type ClosetConfidence = "high" | "medium" | "low";
 
@@ -67,6 +83,7 @@ export type SystemRecommendation = {
   id: string;
   mode: "reference";
   category: AgentClosetItemCategory;
+  role?: RecommendationRole;
   title: string;
   color?: string;
   fit?: string;
@@ -75,6 +92,20 @@ export type SystemRecommendation = {
   reason: string;
   image_url?: string;
   product: null;
+  compatibility_tags?: string[];
+  layer_order_default?: number;
+};
+
+export type PrimaryOutfit = {
+  title: string;
+  item_ids: string[];
+  reason: string;
+};
+
+export type SelectableRecommendation = SystemRecommendation & {
+  role: RecommendationRole;
+  compatibility_tags?: string[];
+  layer_order_default?: number;
 };
 
 export type FeedbackHistoryItem = {
@@ -117,6 +148,8 @@ export type OnboardingAgentResponse = {
   recommended_outfit: OutfitRecommendation;
   recommendation_mix: RecommendationMix;
   system_recommendations: SystemRecommendation[];
+  primary_outfit?: PrimaryOutfit;
+  selectable_recommendations?: SelectableRecommendation[];
   today_action: string;
   day1_mission: string;
 };
@@ -194,8 +227,38 @@ function hasClosetSignal(value: unknown): value is ClosetProfile {
   }
 
   const closet = value as Record<string, unknown>;
-  return [closet.tops, closet.bottoms, closet.shoes, closet.outerwear, closet.avoid].some(
+  return [
+    closet.tops,
+    closet.bottoms,
+    closet.shoes,
+    closet.outerwear,
+    closet.hats,
+    closet.bags,
+    closet.avoid
+  ].some(
     (item) => typeof item === "string" && item.trim().length > 0
+  );
+}
+
+function isValidClosetCategory(value: unknown): value is AgentClosetItemCategory {
+  return (
+    value === "tops" ||
+    value === "bottoms" ||
+    value === "shoes" ||
+    value === "outerwear" ||
+    value === "hats" ||
+    value === "bags"
+  );
+}
+
+function isValidRecommendationRole(value: unknown): value is RecommendationRole {
+  return (
+    value === "base_top" ||
+    value === "mid_top" ||
+    value === "outerwear" ||
+    value === "bottom" ||
+    value === "shoes" ||
+    value === "addon"
   );
 }
 
@@ -214,14 +277,11 @@ function validateClosetItems(value: unknown): value is AgentClosetItem[] {
     }
 
     const record = item as Record<string, unknown>;
-    return (
-      isNonEmptyString(record.id) &&
-      (record.category === "tops" ||
-        record.category === "bottoms" ||
-        record.category === "shoes" ||
-        record.category === "outerwear") &&
-      isNonEmptyString(record.name)
-    );
+      return (
+        isNonEmptyString(record.id) &&
+        isValidClosetCategory(record.category) &&
+        isNonEmptyString(record.name)
+      );
   });
 }
 
@@ -256,10 +316,7 @@ function validateClosetStrategy(value: unknown): value is ClosetStrategy {
       const record = item as Record<string, unknown>;
       return (
         isNonEmptyString(record.id) &&
-        (record.category === "tops" ||
-          record.category === "bottoms" ||
-          record.category === "shoes" ||
-          record.category === "outerwear") &&
+        isValidClosetCategory(record.category) &&
         (record.role === "core" ||
           record.role === "use_with_care" ||
           record.role === "optional") &&
@@ -379,7 +436,12 @@ function validateOutfitRecommendation(value: unknown): value is OutfitRecommenda
       sourceItemIds !== null &&
       Object.entries(sourceItemIds).every(
         ([key, itemId]) =>
-          (key === "tops" || key === "bottoms" || key === "shoes" || key === "outerwear") &&
+          (key === "tops" ||
+            key === "bottoms" ||
+            key === "shoes" ||
+            key === "outerwear" ||
+            key === "hats" ||
+            key === "bags") &&
           typeof itemId === "string"
       ));
 
@@ -420,13 +482,7 @@ function validateRecommendationMix(value: unknown): value is RecommendationMix {
       mix.closet_confidence === "low") &&
     typeof mix.system_support_needed === "boolean" &&
     Array.isArray(mix.missing_categories) &&
-    mix.missing_categories.every(
-      (category) =>
-        category === "tops" ||
-        category === "bottoms" ||
-        category === "shoes" ||
-        category === "outerwear"
-    ) &&
+    mix.missing_categories.every((category) => isValidClosetCategory(category)) &&
     isNonEmptyString(mix.summary)
   );
 }
@@ -440,10 +496,8 @@ function validateSystemRecommendation(value: unknown): value is SystemRecommenda
   return (
     isNonEmptyString(recommendation.id) &&
     recommendation.mode === "reference" &&
-    (recommendation.category === "tops" ||
-      recommendation.category === "bottoms" ||
-      recommendation.category === "shoes" ||
-      recommendation.category === "outerwear") &&
+    isValidClosetCategory(recommendation.category) &&
+    (recommendation.role === undefined || isValidRecommendationRole(recommendation.role)) &&
     isNonEmptyString(recommendation.title) &&
     (recommendation.color === undefined || typeof recommendation.color === "string") &&
     (recommendation.fit === undefined || typeof recommendation.fit === "string") &&
@@ -455,7 +509,26 @@ function validateSystemRecommendation(value: unknown): value is SystemRecommenda
         recommendation.style_tags.every((item) => typeof item === "string"))) &&
     isNonEmptyString(recommendation.reason) &&
     (recommendation.image_url === undefined || typeof recommendation.image_url === "string") &&
-    recommendation.product === null
+    recommendation.product === null &&
+    (recommendation.compatibility_tags === undefined ||
+      (Array.isArray(recommendation.compatibility_tags) &&
+        recommendation.compatibility_tags.every((item) => typeof item === "string"))) &&
+    (recommendation.layer_order_default === undefined ||
+      typeof recommendation.layer_order_default === "number")
+  );
+}
+
+function validatePrimaryOutfit(value: unknown): value is PrimaryOutfit {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const outfit = value as Record<string, unknown>;
+  return (
+    isNonEmptyString(outfit.title) &&
+    Array.isArray(outfit.item_ids) &&
+    outfit.item_ids.every((item) => typeof item === "string" && item.trim().length > 0) &&
+    isNonEmptyString(outfit.reason)
   );
 }
 
@@ -466,7 +539,7 @@ function normalizeSourceItemIds(
     return undefined;
   }
 
-  return (["tops", "bottoms", "shoes", "outerwear"] as AgentClosetItemCategory[]).reduce<
+  return (["tops", "bottoms", "shoes", "outerwear", "hats", "bags"] as AgentClosetItemCategory[]).reduce<
     NonNullable<OutfitRecommendation["source_item_ids"]>
   >((acc, category) => {
     const itemId = value[category]?.trim();
@@ -486,6 +559,7 @@ function normalizeSystemRecommendation(
     id: recommendation.id.trim(),
     mode: "reference",
     category: recommendation.category,
+    role: recommendation.role,
     title: compactResponseText(recommendation.title, RESPONSE_LIMITS.outfitTitle),
     color: recommendation.color ? compactResponseText(recommendation.color, RESPONSE_LIMITS.improvement) : undefined,
     fit: recommendation.fit ? compactResponseText(recommendation.fit, RESPONSE_LIMITS.improvement) : undefined,
@@ -493,7 +567,9 @@ function normalizeSystemRecommendation(
     style_tags: recommendation.style_tags,
     reason: compactResponseText(recommendation.reason, RESPONSE_LIMITS.outfitReason),
     image_url: recommendation.image_url?.trim() || undefined,
-    product: null
+    product: null,
+    compatibility_tags: recommendation.compatibility_tags,
+    layer_order_default: recommendation.layer_order_default
   };
 }
 
@@ -507,7 +583,7 @@ export function sanitizeSourceItemIdsForCloset(
     return undefined;
   }
 
-  const sanitized = (["tops", "bottoms", "shoes", "outerwear"] as AgentClosetItemCategory[])
+  const sanitized = (["tops", "bottoms", "shoes", "outerwear", "hats", "bags"] as AgentClosetItemCategory[])
     .reduce<NonNullable<OutfitRecommendation["source_item_ids"]>>((acc, category) => {
       const itemId = normalized[category];
 
@@ -539,6 +615,10 @@ export function validateOnboardingResponse(
     validateRecommendationMix(response.recommendation_mix) &&
     Array.isArray(response.system_recommendations) &&
     response.system_recommendations.every(validateSystemRecommendation) &&
+    (response.primary_outfit === undefined || validatePrimaryOutfit(response.primary_outfit)) &&
+    (response.selectable_recommendations === undefined ||
+      (Array.isArray(response.selectable_recommendations) &&
+        response.selectable_recommendations.every(validateSystemRecommendation))) &&
     isNonEmptyString(response.today_action) &&
     isNonEmptyString(response.day1_mission) &&
     response.tomorrow_preview === undefined
@@ -617,6 +697,18 @@ export function normalizeOnboardingResponse(
       )
     },
     system_recommendations: response.system_recommendations.map(normalizeSystemRecommendation),
+    primary_outfit: response.primary_outfit
+      ? {
+          title: compactResponseText(response.primary_outfit.title, RESPONSE_LIMITS.outfitTitle),
+          item_ids: response.primary_outfit.item_ids
+            .map((itemId) => itemId.trim())
+            .filter((itemId) => itemId.length > 0),
+          reason: compactResponseText(response.primary_outfit.reason, RESPONSE_LIMITS.outfitReason)
+        }
+      : undefined,
+    selectable_recommendations: response.selectable_recommendations?.map(
+      normalizeSystemRecommendation
+    ) as SelectableRecommendation[] | undefined,
     today_action: compactResponseText(response.today_action, RESPONSE_LIMITS.action),
     day1_mission: compactResponseText(response.day1_mission, RESPONSE_LIMITS.mission)
   };

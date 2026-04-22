@@ -119,6 +119,7 @@ describe("agent response contracts", () => {
           id: "sys-top-1",
           mode: "reference",
           category: "tops",
+          role: "base_top",
           title: longText,
           color: "네이비",
           fit: "레귤러",
@@ -126,7 +127,56 @@ describe("agent response contracts", () => {
           style_tags: ["clean"],
           reason: longText,
           image_url: longText,
-          product: null
+          product: null,
+          compatibility_tags: ["clean"],
+          layer_order_default: 10
+        }
+      ],
+      primary_outfit: {
+        title: "기본 추천 조합",
+        item_ids: ["sys-top-1", "sys-bottom-1", "sys-shoes-1"],
+        reason: longText
+      },
+      selectable_recommendations: [
+        {
+          id: "sys-top-1",
+          mode: "reference",
+          category: "tops",
+          role: "base_top",
+          title: longText,
+          color: "네이비",
+          fit: "레귤러",
+          season: ["봄", "가을"],
+          style_tags: ["clean"],
+          reason: longText,
+          image_url: longText,
+          product: null,
+          compatibility_tags: ["clean"],
+          layer_order_default: 10
+        },
+        {
+          id: "sys-hat-1",
+          mode: "reference",
+          category: "hats",
+          role: "addon",
+          title: "네이비 볼캡",
+          reason: "얼굴선을 가볍게 정리합니다.",
+          image_url: "/system-catalog/hats/navy-ballcap.svg",
+          product: null,
+          compatibility_tags: ["clean"],
+          layer_order_default: 60
+        },
+        {
+          id: "sys-bag-1",
+          mode: "reference",
+          category: "bags",
+          role: "addon",
+          title: "블랙 크로스백",
+          reason: "가벼운 외출에 정리감을 줍니다.",
+          image_url: "/system-catalog/bags/black-crossbag.svg",
+          product: null,
+          compatibility_tags: ["daily"],
+          layer_order_default: 70
         }
       ],
       today_action: longText,
@@ -134,6 +184,8 @@ describe("agent response contracts", () => {
     });
 
     expect(validateOnboardingResponse(normalized)).toBe(true);
+    expect(normalized.selectable_recommendations).toBeDefined();
+    expect(normalized.primary_outfit).toBeDefined();
     expect(normalized.diagnosis.length).toBeLessThanOrEqual(96);
     expect(normalized.improvements.every((item) => item.length <= 72)).toBe(true);
     expect(normalized.recommended_outfit.title.length).toBeLessThanOrEqual(32);
@@ -141,7 +193,15 @@ describe("agent response contracts", () => {
     expect(normalized.recommendation_mix.primary_source).toBe("closet");
     expect(normalized.recommendation_mix.summary.length).toBeLessThanOrEqual(110);
     expect(normalized.system_recommendations[0].mode).toBe("reference");
+    expect(normalized.system_recommendations[0].role).toBe("base_top");
     expect(normalized.system_recommendations[0].product).toBeNull();
+    expect(normalized.selectable_recommendations?.[1]?.category).toBe("hats");
+    expect(normalized.selectable_recommendations?.[2]?.category).toBe("bags");
+    expect(normalized.primary_outfit?.item_ids).toEqual([
+      "sys-top-1",
+      "sys-bottom-1",
+      "sys-shoes-1"
+    ]);
     expect(normalized.today_action.length).toBeLessThanOrEqual(72);
     expect(normalized.diagnosis.endsWith("…")).toBe(true);
   });

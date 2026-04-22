@@ -1,0 +1,20 @@
+<svg width="960" height="1200" viewBox="0 0 960 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="1200" rx="56" fill="#F4EEDF"/>
+  <rect x="72" y="72" width="816" height="1056" rx="40" fill="#FBF7ED" stroke="#D8CCB4" stroke-width="8"/>
+  <text x="120" y="162" fill="#2F3B52" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="700" letter-spacing="8">RE:MAN HAT</text>
+  <text x="120" y="222" fill="#7A7467" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="6">NAVY BALLCAP</text>
+  <ellipse cx="480" cy="570" rx="218" ry="176" fill="url(#capTop)"/>
+  <path d="M282 597C282 486.543 371.543 397 482 397H484C594.457 397 684 486.543 684 597V664H282V597Z" fill="#1F365A"/>
+  <path d="M232 673C295 608 390 566 482 566C576 566 666 609 728 677C746 696 750 727 736 748C722 769 692 775 669 764C610 735 548 720 482 720C418 720 357 734 299 761C276 772 247 766 233 746C219 726 216 694 232 673Z" fill="#274471"/>
+  <path d="M420 514C436 500 457 492 480 492C503 492 524 500 540 514" stroke="#6F87AB" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="480" cy="597" r="14" fill="#A7B8D4"/>
+  <path d="M690 702C644 682 574 666 482 666C386 666 318 681 272 702" stroke="#182B47" stroke-width="14" stroke-linecap="round"/>
+  <text x="120" y="1034" fill="#2F3B52" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" letter-spacing="5">추천 포인트</text>
+  <text x="120" y="1088" fill="#5A5660" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="500">얼굴 주변에 포인트를 더하고 캐주얼 무드를 정리합니다.</text>
+  <defs>
+    <linearGradient id="capTop" x1="480" y1="394" x2="480" y2="746" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3F5A87"/>
+      <stop offset="1" stop-color="#223758"/>
+    </linearGradient>
+  </defs>
+</svg>

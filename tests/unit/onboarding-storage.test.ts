@@ -34,7 +34,7 @@ const baseHybridFeedback = {
     primary_source: "closet" as const,
     closet_confidence: "medium" as const,
     system_support_needed: false,
-    missing_categories: [] as ("tops" | "bottoms" | "shoes" | "outerwear")[],
+    missing_categories: [] as ("tops" | "bottoms" | "shoes" | "outerwear" | "hats" | "bags")[],
     summary: "옷장 기준 추천"
   },
   system_recommendations: []
@@ -229,6 +229,28 @@ describe("closet item modeling", () => {
     expect(profile.tops).toContain("상태:깨끗함");
     expect(profile.bottoms).toContain("검정 슬랙스");
     expect(profile.avoid).toBe("너무 튀는 색");
+  });
+
+  it("preserves hats and bags in closet profile serialization", () => {
+    const items = normalizeClosetItems([
+      {
+        id: "hat-1",
+        category: "hats",
+        name: "볼캡",
+        color: "네이비"
+      },
+      {
+        id: "bag-1",
+        category: "bags",
+        name: "크로스백",
+        color: "검정"
+      }
+    ]);
+
+    const profile = buildClosetProfileFromItems(items, "");
+
+    expect(profile.hats).toContain("네이비 볼캡");
+    expect(profile.bags).toContain("검정 크로스백");
   });
 
   it("uses closet items in onboarding payload before legacy closet text", () => {

@@ -16,7 +16,14 @@ export type ClosetAnalysisResult = {
   size_confidence: number;
 };
 
-const categories: ClosetItemCategory[] = ["tops", "bottoms", "shoes", "outerwear"];
+const categories: ClosetItemCategory[] = [
+  "tops",
+  "bottoms",
+  "shoes",
+  "outerwear",
+  "hats",
+  "bags"
+];
 const sizeSources: ClosetAnalysisResult["size_source"][] = [
   "manual",
   "label_ocr",
@@ -153,7 +160,7 @@ function buildClosetInstruction() {
     "반드시 JSON만 반환하세요.",
     `JSON 스키마:
 {
-  "category": "tops | bottoms | shoes | outerwear 중 하나",
+    "category": "tops | bottoms | shoes | outerwear | hats | bags 중 하나",
   "name": "짧은 옷 이름",
   "color": "대표 색상",
   "detected_type": "셔츠/티셔츠/슬랙스/스니커즈 등",

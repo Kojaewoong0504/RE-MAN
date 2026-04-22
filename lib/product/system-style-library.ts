@@ -3,6 +3,21 @@ import type {
   SystemRecommendation
 } from "@/lib/agents/contracts";
 
+const SYSTEM_REFERENCE_IMAGE_PATHS = {
+  whiteEssentialTshirt: "/system-catalog/tops/white-essential-tshirt.jpg",
+  navyPoloKnit: "/system-catalog/tops/navy-polo-knit.jpg",
+  stripeOxfordShirt: "/system-catalog/tops/stripe-oxford-shirt.jpg",
+  blackTaperedSlacks: "/system-catalog/bottoms/black-tapered-slacks.jpg",
+  charcoalWideSlacks: "/system-catalog/bottoms/charcoal-wide-slacks.jpg",
+  khakiChinoPants: "/system-catalog/bottoms/khaki-chino-pants.jpg",
+  whiteMinimalSneakers: "/system-catalog/shoes/white-minimal-sneakers.svg",
+  darkBrownChelseaBoots: "/system-catalog/shoes/dark-brown-chelsea-boots.png",
+  blackBlazerJacket: "/system-catalog/outerwear/black-blazer-jacket.jpg",
+  beigeClassicCoat: "/system-catalog/outerwear/beige-classic-coat.jpg",
+  navyBallcap: "/system-catalog/hats/navy-ballcap.svg",
+  blackCrossbag: "/system-catalog/bags/black-crossbag.svg"
+} as const;
+
 function buildSystemRecommendation(
   id: string,
   category: AgentClosetItemCategory,
@@ -14,12 +29,16 @@ function buildSystemRecommendation(
     season?: string[];
     style_tags?: string[];
     image_url?: string;
+    role?: SystemRecommendation["role"];
+    compatibility_tags?: string[];
+    layer_order_default?: number;
   }
 ): SystemRecommendation {
   return {
     id,
     mode: "reference",
     category,
+    role: options?.role,
     title,
     color: options?.color,
     fit: options?.fit,
@@ -27,7 +46,9 @@ function buildSystemRecommendation(
     style_tags: options?.style_tags,
     reason,
     image_url: options?.image_url,
-    product: null
+    product: null,
+    compatibility_tags: options?.compatibility_tags,
+    layer_order_default: options?.layer_order_default
   };
 }
 
@@ -42,7 +63,10 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       fit: "레귤러",
       season: ["사계절"],
       style_tags: ["clean", "basic", "daily"],
-      image_url: "/system-catalog/tops/white-essential-tshirt.jpg"
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.whiteEssentialTshirt,
+      role: "base_top",
+      compatibility_tags: ["clean", "starter"],
+      layer_order_default: 10
     }
   ),
   buildSystemRecommendation(
@@ -55,7 +79,10 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       fit: "레귤러",
       season: ["봄", "여름", "가을"],
       style_tags: ["clean", "date"],
-      image_url: "/system-catalog/tops/navy-polo-knit.jpg"
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.navyPoloKnit,
+      role: "mid_top",
+      compatibility_tags: ["clean", "date"],
+      layer_order_default: 20
     }
   ),
   buildSystemRecommendation(
@@ -68,7 +95,10 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       fit: "레귤러",
       season: ["봄", "가을"],
       style_tags: ["clean", "smart-casual"],
-      image_url: "/system-catalog/tops/stripe-oxford-shirt.jpg"
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.stripeOxfordShirt,
+      role: "base_top",
+      compatibility_tags: ["clean", "smart-casual"],
+      layer_order_default: 10
     }
   ),
   buildSystemRecommendation(
@@ -81,7 +111,10 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       fit: "테이퍼드",
       season: ["사계절"],
       style_tags: ["clean", "date"],
-      image_url: "/system-catalog/bottoms/black-tapered-slacks.jpg"
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.blackTaperedSlacks,
+      role: "bottom",
+      compatibility_tags: ["clean", "starter"],
+      layer_order_default: 40
     }
   ),
   buildSystemRecommendation(
@@ -94,7 +127,10 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       fit: "와이드",
       season: ["사계절"],
       style_tags: ["clean", "modern"],
-      image_url: "/system-catalog/bottoms/charcoal-wide-slacks.jpg"
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.charcoalWideSlacks,
+      role: "bottom",
+      compatibility_tags: ["clean", "modern"],
+      layer_order_default: 40
     }
   ),
   buildSystemRecommendation(
@@ -107,7 +143,26 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       fit: "레귤러",
       season: ["봄", "가을"],
       style_tags: ["casual", "daily"],
-      image_url: "/system-catalog/bottoms/khaki-chino-pants.jpg"
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.khakiChinoPants,
+      role: "bottom",
+      compatibility_tags: ["casual", "daily"],
+      layer_order_default: 40
+    }
+  ),
+  buildSystemRecommendation(
+    "sys-shoes-white-minimal-sneakers",
+    "shoes",
+    "화이트 미니멀 스니커즈",
+    "무난한 색 조합을 유지하면서도 전체 코디를 가볍게 정리해줍니다.",
+    {
+      color: "화이트",
+      fit: "로우탑",
+      season: ["사계절"],
+      style_tags: ["clean", "starter"],
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.whiteMinimalSneakers,
+      role: "shoes",
+      compatibility_tags: ["clean", "starter"],
+      layer_order_default: 50
     }
   ),
   buildSystemRecommendation(
@@ -120,7 +175,10 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       fit: "첼시 부츠",
       season: ["가을", "겨울", "봄"],
       style_tags: ["clean", "date", "smart-casual"],
-      image_url: "/system-catalog/shoes/dark-brown-chelsea-boots.png"
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.darkBrownChelseaBoots,
+      role: "shoes",
+      compatibility_tags: ["clean", "smart-casual"],
+      layer_order_default: 50
     }
   ),
   buildSystemRecommendation(
@@ -133,7 +191,10 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       fit: "테일러드",
       season: ["봄", "가을", "겨울"],
       style_tags: ["clean", "formal"],
-      image_url: "/system-catalog/outerwear/black-blazer-jacket.jpg"
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.blackBlazerJacket,
+      role: "outerwear",
+      compatibility_tags: ["clean", "formal"],
+      layer_order_default: 30
     }
   ),
   buildSystemRecommendation(
@@ -146,7 +207,42 @@ export const SYSTEM_STYLE_LIBRARY: SystemRecommendation[] = [
       fit: "클래식",
       season: ["가을", "겨울"],
       style_tags: ["clean", "date"],
-      image_url: "/system-catalog/outerwear/beige-classic-coat.jpg"
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.beigeClassicCoat,
+      role: "outerwear",
+      compatibility_tags: ["clean", "date"],
+      layer_order_default: 30
+    }
+  ),
+  buildSystemRecommendation(
+    "sys-hat-navy-ballcap",
+    "hats",
+    "네이비 볼캡",
+    "얼굴선을 가볍게 정리하고 캐주얼한 외출 느낌을 더해줍니다.",
+    {
+      color: "네이비",
+      fit: "볼캡",
+      season: ["사계절"],
+      style_tags: ["daily", "casual"],
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.navyBallcap,
+      role: "addon",
+      compatibility_tags: ["daily"],
+      layer_order_default: 60
+    }
+  ),
+  buildSystemRecommendation(
+    "sys-bag-black-crossbag",
+    "bags",
+    "블랙 크로스백",
+    "소지품 정리와 함께 전체 코디를 더 완성된 외출 느낌으로 묶어줍니다.",
+    {
+      color: "블랙",
+      fit: "크로스백",
+      season: ["사계절"],
+      style_tags: ["daily", "clean"],
+      image_url: SYSTEM_REFERENCE_IMAGE_PATHS.blackCrossbag,
+      role: "addon",
+      compatibility_tags: ["daily", "clean"],
+      layer_order_default: 70
     }
   )
 ];

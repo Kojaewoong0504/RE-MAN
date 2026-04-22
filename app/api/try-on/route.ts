@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  estimateTryOnCreditCost,
   estimateTryOnPassCount,
   generateTryOnPreview,
   getTryOnRuntimeStatus,
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   let creditReferenceId = crypto.randomUUID();
   const idempotencyKey = getIdempotencyKey(request);
   const tryOnPassCount = estimateTryOnPassCount(payload);
-  const tryOnCreditCost = TRY_ON_CREDIT_COST * tryOnPassCount;
+  const tryOnCreditCost = TRY_ON_CREDIT_COST * estimateTryOnCreditCost(payload);
 
   try {
     const user = await getAuthenticatedSessionUser();
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
         ...preview,
         credits_remaining: credits.balance,
         credits_charged: reservedCredits ? tryOnCreditCost : 0,
-        try_on_pass_count: tryOnPassCount,
+        try_on_pass_count: preview.pass_count ?? tryOnPassCount,
         idempotent_replay: runtimeStatus.real_generation_enabled && !reservedCredits,
         credit_reference_id: runtimeStatus.real_generation_enabled ? creditReferenceId : null
       },

@@ -139,7 +139,9 @@ export async function POST(request: Request) {
         source_item_ids: verifiedSourceItemIds
       },
       recommendation_mix: hybrid.recommendation_mix,
-      system_recommendations: hybrid.system_recommendations
+      system_recommendations: hybrid.system_recommendations,
+      primary_outfit: hybrid.primary_outfit,
+      selectable_recommendations: hybrid.selectable_recommendations
     };
 
     return NextResponse.json(

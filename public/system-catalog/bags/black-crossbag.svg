@@ -1,0 +1,23 @@
+<svg width="960" height="1200" viewBox="0 0 960 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="1200" rx="56" fill="#F4EEDF"/>
+  <rect x="72" y="72" width="816" height="1056" rx="40" fill="#FBF7ED" stroke="#D8CCB4" stroke-width="8"/>
+  <text x="120" y="162" fill="#232A33" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="700" letter-spacing="8">RE:MAN BAG</text>
+  <text x="120" y="222" fill="#7A7467" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="6">BLACK CROSSBAG</text>
+  <path d="M285 374C372 300 507 298 596 370L726 475C743 489 752 511 750 534C748 557 735 577 717 589L663 626" stroke="#353F49" stroke-width="28" stroke-linecap="round"/>
+  <rect x="246" y="472" width="472" height="360" rx="54" fill="url(#bagBody)"/>
+  <rect x="278" y="512" width="408" height="280" rx="34" fill="#1C2128"/>
+  <rect x="356" y="432" width="252" height="94" rx="34" fill="#2A323C"/>
+  <rect x="408" y="618" width="146" height="24" rx="12" fill="#87909A"/>
+  <rect x="442" y="642" width="78" height="52" rx="16" fill="#ADB5BE"/>
+  <path d="M318 545H646" stroke="#454E59" stroke-width="10" stroke-linecap="round"/>
+  <path d="M332 745H632" stroke="#303844" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="482" cy="652" r="16" fill="#D7DCE1"/>
+  <text x="120" y="1034" fill="#232A33" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" letter-spacing="5">추천 포인트</text>
+  <text x="120" y="1088" fill="#5A5660" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="500">외출 인상을 완성하고 실용성을 더하는 기본 액세서리입니다.</text>
+  <defs>
+    <linearGradient id="bagBody" x1="482" y1="472" x2="482" y2="832" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3A434E"/>
+      <stop offset="1" stop-color="#20262D"/>
+    </linearGradient>
+  </defs>
+</svg>

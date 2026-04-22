@@ -1,6 +1,12 @@
 import type { ClosetProfile } from "@/lib/agents/contracts";
 
-export type ClosetItemCategory = "tops" | "bottoms" | "shoes" | "outerwear";
+export type ClosetItemCategory =
+  | "tops"
+  | "bottoms"
+  | "shoes"
+  | "outerwear"
+  | "hats"
+  | "bags";
 
 export type ClosetItem = {
   id: string;
@@ -29,7 +35,7 @@ export type SizeProfile = {
   fit_preference?: string;
 };
 
-const closetCategories = ["tops", "bottoms", "shoes", "outerwear"] as const;
+const closetCategories = ["tops", "bottoms", "shoes", "outerwear", "hats", "bags"] as const;
 const sizeProfileKeys = [
   "height_cm",
   "weight_kg",
@@ -150,6 +156,8 @@ export function buildClosetProfileFromItems(
     bottoms: byCategory.bottoms.join(", "),
     shoes: byCategory.shoes.join(", "),
     outerwear: byCategory.outerwear.join(", "),
+    hats: byCategory.hats.join(", "),
+    bags: byCategory.bags.join(", "),
     avoid: avoid?.trim() ?? ""
   };
 }

@@ -2,7 +2,9 @@ import type {
   AgentClosetItem,
   AgentClosetItemCategory,
   ClosetStrategy,
+  PrimaryOutfit,
   RecommendationMix,
+  SelectableRecommendation,
   SurveyInput,
   SystemRecommendation
 } from "@/lib/agents/contracts";
@@ -21,6 +23,12 @@ const REQUIRED_RECOMMENDATION_CATEGORIES: AgentClosetItemCategory[] = [
   "tops",
   "bottoms",
   "shoes"
+];
+
+const PHASE_ONE_SUPPORT_CATEGORIES: AgentClosetItemCategory[] = [
+  "outerwear",
+  "hats",
+  "bags"
 ];
 
 function getMissingCategories(closetItems: AgentClosetItem[]) {
@@ -95,7 +103,108 @@ function buildSystemRecommendations(
     }
   }
 
+  for (const category of PHASE_ONE_SUPPORT_CATEGORIES) {
+    if (selected.has(category)) {
+      continue;
+    }
+
+    const match = SYSTEM_STYLE_LIBRARY.find((item) => item.category === category);
+
+    if (match) {
+      selected.set(category, match);
+    }
+  }
+
   return Array.from(selected.values());
+}
+
+function toSelectableRecommendation(
+  item: SystemRecommendation
+): SelectableRecommendation | null {
+  if (!item.role) {
+    return null;
+  }
+
+  return {
+    ...item,
+    role: item.role,
+    compatibility_tags: item.compatibility_tags,
+    layer_order_default: item.layer_order_default
+  };
+}
+
+function buildSelectableRecommendations(
+  missingCategories: AgentClosetItemCategory[]
+): SelectableRecommendation[] {
+  const preferredCoreCategories =
+    missingCategories.length > 0
+      ? [
+          ...missingCategories,
+          ...REQUIRED_RECOMMENDATION_CATEGORIES.filter(
+            (category) => !missingCategories.includes(category)
+          )
+        ]
+      : REQUIRED_RECOMMENDATION_CATEGORIES;
+
+  const selectedIds = new Set<string>();
+  const result: SelectableRecommendation[] = [];
+
+  for (const category of preferredCoreCategories) {
+    const match = SYSTEM_STYLE_LIBRARY.find(
+      (item) => item.category === category && item.role
+    );
+    const selectable = match ? toSelectableRecommendation(match) : null;
+
+    if (selectable && !selectedIds.has(selectable.id)) {
+      selectedIds.add(selectable.id);
+      result.push(selectable);
+    }
+  }
+
+  for (const category of PHASE_ONE_SUPPORT_CATEGORIES) {
+    const match = SYSTEM_STYLE_LIBRARY.find(
+      (item) => item.category === category && item.role
+    );
+    const selectable = match ? toSelectableRecommendation(match) : null;
+
+    if (selectable && !selectedIds.has(selectable.id)) {
+      selectedIds.add(selectable.id);
+      result.push(selectable);
+    }
+  }
+
+  return result;
+}
+
+function buildPrimaryOutfit(
+  selectableRecommendations: SelectableRecommendation[]
+): PrimaryOutfit {
+  const requiredRoles: Array<SelectableRecommendation["role"]> = [
+    "base_top",
+    "bottom",
+    "shoes"
+  ];
+  const requiredItems = requiredRoles
+    .map((role) => selectableRecommendations.find((item) => item.role === role))
+    .filter((item): item is SelectableRecommendation => Boolean(item));
+
+  const supportItem =
+    selectableRecommendations.find((item) => item.role === "outerwear") ??
+    selectableRecommendations.find((item) => item.role === "addon");
+  const itemIds = [...requiredItems.map((item) => item.id)];
+
+  if (supportItem && !itemIds.includes(supportItem.id)) {
+    itemIds.push(supportItem.id);
+  }
+
+  return {
+    title: requiredItems.length >= 3 ? "기본 추천 조합" : "추천 시작 조합",
+    item_ids: itemIds,
+    reason:
+      requiredItems.length >= 3
+        ? "상의, 하의, 신발의 기본 축을 먼저 맞추고 보조 아이템으로 분위기를 더합니다."
+        : "현재 가능한 후보 안에서 바로 조합을 시작할 수 있는 기본 축입니다."
+  };
 }
 
 export function buildHybridRecommendation(
@@ -103,6 +212,8 @@ export function buildHybridRecommendation(
 ): {
   recommendation_mix: RecommendationMix;
   system_recommendations: SystemRecommendation[];
+  primary_outfit: PrimaryOutfit;
+  selectable_recommendations: SelectableRecommendation[];
 } {
   const missingCategories = getMissingCategories(input.closetItems);
   const coreCount = input.closetStrategy?.core_item_ids.length ?? 0;
@@ -113,6 +224,9 @@ export function buildHybridRecommendation(
     verifiedCount
   });
   const primarySource = closetConfidence === "low" ? "system" : "closet";
+  const systemRecommendations = buildSystemRecommendations(missingCategories);
+  const selectableRecommendations = buildSelectableRecommendations(missingCategories);
+  const primaryOutfit = buildPrimaryOutfit(selectableRecommendations);
 
   return {
     recommendation_mix: {
@@ -126,6 +240,8 @@ export function buildHybridRecommendation(
         missingCategories
       })
     },
-    system_recommendations: buildSystemRecommendations(missingCategories)
+    system_recommendations: systemRecommendations,
+    primary_outfit: primaryOutfit,
+    selectable_recommendations: selectableRecommendations
   };
 }

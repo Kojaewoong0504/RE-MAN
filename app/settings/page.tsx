@@ -35,6 +35,8 @@ function toClosetProfile(input: Partial<ClosetProfile> | null | undefined): Clos
     bottoms: input.bottoms ?? "",
     shoes: input.shoes ?? "",
     outerwear: input.outerwear ?? "",
+    hats: input.hats ?? "",
+    bags: input.bags ?? "",
     avoid: input.avoid ?? ""
   };
 }

@@ -34,14 +34,18 @@ const closetCategoryLabels: Record<ClosetItemCategory, string> = {
   tops: "상의",
   bottoms: "하의",
   shoes: "신발",
-  outerwear: "겉옷"
+  outerwear: "겉옷",
+  hats: "모자",
+  bags: "가방"
 };
 
 const closetCategoryRoles: Record<ClosetItemCategory, string> = {
   tops: "얼굴 주변 인상을 정하는 기준",
   bottoms: "전체 비율과 실루엣 기준",
   shoes: "코디가 흩어지지 않게 묶는 기준",
-  outerwear: "추천 조합에 더할 수 있는 선택지"
+  outerwear: "추천 조합에 더할 수 있는 선택지",
+  hats: "인상에 포인트를 더하는 선택지",
+  bags: "실용성과 무드를 함께 보강하는 선택지"
 };
 
 const recommendationCategoryIndex: Partial<Record<ClosetItemCategory, number>> = {
@@ -146,7 +150,14 @@ export function buildClosetBasisMatches(input: {
   strategyItems?: ClosetBasisStrategyItem[];
 }): ClosetBasisItem[] {
   const basis: ClosetBasisItem[] = [];
-  const categories: ClosetItemCategory[] = ["tops", "bottoms", "shoes", "outerwear"];
+  const categories: ClosetItemCategory[] = [
+    "tops",
+    "bottoms",
+    "shoes",
+    "outerwear",
+    "hats",
+    "bags"
+  ];
 
   categories.forEach((category) => {
     const categoryItems = input.closetItems.filter((item) => item.category === category);
@@ -155,9 +166,9 @@ export function buildClosetBasisMatches(input: {
       return;
     }
 
-    if (category === "outerwear") {
-      const sourceItem = input.sourceItemIds?.outerwear
-        ? categoryItems.find((item) => item.id === input.sourceItemIds?.outerwear)
+    if (category === "outerwear" || category === "hats" || category === "bags") {
+      const sourceItem = input.sourceItemIds?.[category]
+        ? categoryItems.find((item) => item.id === input.sourceItemIds?.[category])
         : null;
       const basisItem = sourceItem ?? categoryItems[0];
       basis.push(

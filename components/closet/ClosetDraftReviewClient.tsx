@@ -28,14 +28,18 @@ const categoryOptions: Array<{ value: ClosetItemCategory; label: string }> = [
   { value: "tops", label: "상의" },
   { value: "bottoms", label: "하의" },
   { value: "shoes", label: "신발" },
-  { value: "outerwear", label: "겉옷" }
+  { value: "outerwear", label: "겉옷" },
+  { value: "hats", label: "모자" },
+  { value: "bags", label: "가방" }
 ];
 
 const categoryLabels: Record<ClosetItemCategory, string> = {
   tops: "상의",
   bottoms: "하의",
   shoes: "신발",
-  outerwear: "겉옷"
+  outerwear: "겉옷",
+  hats: "모자",
+  bags: "가방"
 };
 
 function getDraftName(draft: ClosetItemDraft) {

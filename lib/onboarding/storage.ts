@@ -32,7 +32,13 @@ export type OnboardingInput = {
   text_description?: string;
 };
 
-export type ClosetItemCategory = "tops" | "bottoms" | "shoes" | "outerwear";
+export type ClosetItemCategory =
+  | "tops"
+  | "bottoms"
+  | "shoes"
+  | "outerwear"
+  | "hats"
+  | "bags";
 
 export type ClosetItem = {
   id: string;
@@ -83,6 +89,7 @@ export type TryOnPreviewCacheEntry = {
   provider: "mocked" | "vertex";
   preview_image: string;
   message: string;
+  credits_charged?: number;
   created_at: string;
 };
 
@@ -134,16 +141,27 @@ const defaultClosetProfile: ClosetProfile = {
   bottoms: "",
   shoes: "",
   outerwear: "",
+  hats: "",
+  bags: "",
   avoid: ""
 };
 
-const closetCategories: ClosetItemCategory[] = ["tops", "bottoms", "shoes", "outerwear"];
+const closetCategories: ClosetItemCategory[] = [
+  "tops",
+  "bottoms",
+  "shoes",
+  "outerwear",
+  "hats",
+  "bags"
+];
 const requiredStyleClosetCategories = ["tops", "bottoms", "shoes"] as const satisfies ReadonlyArray<ClosetItemCategory>;
 const closetCategoryLabels: Record<ClosetItemCategory, string> = {
   tops: "상의",
   bottoms: "하의",
   shoes: "신발",
-  outerwear: "겉옷"
+  outerwear: "겉옷",
+  hats: "모자",
+  bags: "가방"
 };
 const sizeProfileKeys = [
   "height_cm",
@@ -396,6 +414,8 @@ export function buildClosetProfileFromItems(
     bottoms: byCategory.bottoms.join(", "),
     shoes: byCategory.shoes.join(", "),
     outerwear: byCategory.outerwear.join(", "),
+    hats: byCategory.hats.join(", "),
+    bags: byCategory.bags.join(", "),
     avoid: avoid?.trim() ?? ""
   };
 }

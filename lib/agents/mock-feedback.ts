@@ -19,7 +19,7 @@ const tomorrowPreviewByDay: Record<number, string> = {
 };
 
 function getFirstClosetItemIdByCategory(payload: AgentRequest) {
-  return (["tops", "bottoms", "shoes", "outerwear"] as const).reduce<
+  return (["tops", "bottoms", "shoes", "outerwear", "hats", "bags"] as const).reduce<
     NonNullable<OnboardingAgentResponse["recommended_outfit"]["source_item_ids"]>
   >((acc, category) => {
     const strategyItem =

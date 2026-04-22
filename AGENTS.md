@@ -154,8 +154,12 @@
 - `recommended_outfit`은 현재 옷장 컨텍스트를 우선 사용해야 함. Day 6 전까지 구매 유도 금지.
 - `recommended_outfit.source_item_ids`는 현재 요청의 `closet_items`에 같은 id와 같은 카테고리로 존재할 때만 직접 매칭 근거로 사용한다. 검증되지 않은 id는 제거하고 근거 후보로 낮춘다.
 - `/api/feedback`의 최종 응답은 provider가 보낸 `recommendation_mix`와 `system_recommendations`를 그대로 신뢰하지 않는다. 서버가 sanitize된 `source_item_ids`, `closet_items`, `closet_strategy` 기준으로 다시 합성한 값을 사용해야 한다.
+- `/api/feedback`가 `primary_outfit`과 `selectable_recommendations`를 반환하면 결과 화면 기본 선택 조합은 `primary_outfit.item_ids`를 우선 따른다. 기본 선택과 다른 조합을 보여주면 실패다.
 - `recommendation_mix.primary_source`가 `system`이면 결과 화면 메인 블록은 `시스템 추천`, `closet`이면 `내 옷장 기준`이 먼저 보여야 한다.
 - `system_recommendations`는 항상 `reference` 전용이다. 결과 화면에서 `시스템 추천 참고` 같은 출처 라벨을 보여야 하며 구매 CTA, 가격, 재고, 쇼핑 링크를 붙이면 실패다.
+- `selectable_recommendations`는 카테고리만 나열하는 배열이 아니라 역할 기반 조합 후보다. 기본 조합은 최소 `base_top`, `bottom`, `shoes` 축을 우선 채우고 `outerwear`, `hats`, `bags`는 선택 보강으로 취급한다.
+- 시스템 추천 실착은 사용자가 선택한 아이템 집합을 그대로 `/api/try-on`에 전달해야 한다. 결과 카드에 보인 조합과 API payload의 `selected_items`가 다르면 실패다.
+- 시스템 추천 실착에서 수동 순서를 허용하더라도 레이어 순서 규칙(`base_top → mid_top → outerwear → bottom → shoes → addon`)을 깨는 이동을 허용하면 실패다.
 - `closet_strategy.items[].score`는 착용감, 착용 빈도, 계절, 상태, 메모 기반 신뢰 점수다. 깨끗하지만 거의 안 입는 옷을 `core`로 올리면 실패다.
 - 추천 근거 UI는 내부 점수나 상태명을 노출하지 않는다. 사용자 label은 `추천에 사용`, `비슷한 후보`, `추가 후보`, `자주 입고 잘 맞음`, `핏/상태 확인`, `후보`처럼 짧게 표시한다.
 - 분석 시작 UI는 상의, 하의, 신발이 모두 준비되지 않았으면 비활성화되어야 한다.
@@ -186,6 +190,8 @@
 - 전역 UI(크레딧 배지, 하단 탭, 계정 버튼)를 수정하면 `npm run visual:app` 캡처와 브라우저 E2E로 실제 표시 여부를 확인해야 한다. 텍스트 assertion만으로 "보인다"고 보고하지 않는다.
 - 분석 진행 UI를 수정할 때 단순 순환 타이머로 `완료 → 대기`가 반복되게 만들면 실패다. 요청 lifecycle과 연결하거나, 최소한 단계 상태가 역행하지 않는 단방향(monotonic) 진행으로 검증해야 한다.
 - 결과 화면의 추천 조합을 수정할 때 텍스트 이름만 나열하면 실패다. 추천 상의/하의/신발마다 미리보기 이미지 또는 명시적 레퍼런스 placeholder가 보여야 하고, 실착 기능이 포함된 MVP 경로에서는 결과 화면에서 `/api/try-on` 호출 CTA가 실제로 동작하는지 E2E로 확인해야 한다.
+- 결과 화면의 선택형 실착 UI를 수정하면 `primary_outfit` 기본 선택, 추천 카드 선택/해제, 선택 개수 기반 크레딧 안내, `/api/try-on`의 `selected_items`/`ordered_item_ids` payload까지 E2E로 확인해야 한다.
+- 실착 또는 스타일 분석으로 크레딧이 차감되는 흐름을 수정하면 API 응답의 `credits_remaining`이 같은 화면의 크레딧 배지에 즉시 반영되는지 E2E로 확인해야 한다. 다른 페이지 이동 후에만 갱신되면 실패다.
 - 실제 Vertex 실착 생성이 된다고 말하려면 `TRY_ON_PROVIDER=vertex` 상태에서 `npm run smoke:try-on:vertex` 성공 결과를 확인해야 한다.
 - `npm run smoke:try-on:vertex`가 `PERMISSION_DENIED` 또는 `aiplatform.endpoints.predict` 오류로 실패하면 인증이 아니라 Vertex IAM 권한 누락으로 분리해 보고한다.
 - 크레딧 배지는 로그인 사용자의 모든 핵심 앱 화면에서 보여야 한다. 특정 화면에서 사라지면 실패다.
@@ -234,7 +240,8 @@ AI 응답 실패 시 노출할 기본 메시지:
 - `/api/feedback`는 사용자 현재 전신 사진 1장만 입력으로 받는다.
 - `try-on`은 사람 사진 1장 + 추천 아이템 이미지 N장을 앱 계약으로 허용하며, 사용자가 명시적으로 요청할 때만 호출한다.
 - 현재 Vertex adapter는 상품 이미지 다건 입력을 직접 처리하지 못할 수 있으므로 `product_images[]`를 1장씩 순차 pass로 합성한다. 계약을 1장으로 축소하지 말고 adapter에서 분할 처리한다.
-- 추천 아이템 수가 provider 1회 제한을 넘으면 pass 수만큼 순차 호출하고, 크레딧도 실제 pass 수 기준으로 차감한다.
+- 추천 아이템 수가 provider 1회 제한을 넘으면 순차 pass로 호출한다. 다만 사용자 과금은 provider pass 수와 직접 연결하지 않고, try-on 아이템 최대 3개당 1크레딧 기준으로 계산한다.
+- `try-on` billing은 provider pass 수가 아니라 사용자가 선택한 최종 아이템 수 기준이다. 1~3개는 1크레딧, 4~6개는 2크레딧처럼 3개 묶음 단위로 계산하고 UI 문구와 원장 기록이 다르면 실패다.
 - `TRY_ON_PROVIDER=mock` 상태를 실제 실착 이미지 생성으로 표현하지 않는다. mock 상태에서는 레퍼런스 확인까지만 제공한다.
 - 응답 토큰 제한: 500 tokens 이하 (간결함 유지)
 - 유저 데이터(사진/실착 생성 이미지)는 피드백 또는 미리보기 생성 후 서버에 영구 저장하지 않음 (개인정보)

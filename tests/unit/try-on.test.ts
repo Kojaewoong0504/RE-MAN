@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  estimateTryOnCreditCost,
   estimateTryOnPassCount,
   generateTryOnPreview,
   getTryOnRuntimeStatus,
@@ -40,6 +41,33 @@ describe("try-on provider contract", () => {
       validateTryOnRequest({
         person_image: image,
         product_images: [image, image, image],
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).toBe(true);
+  });
+
+  it("accepts selected try-on items without a separate product_images array", () => {
+    expect(
+      validateTryOnRequest({
+        person_image: image,
+        selected_items: [
+          {
+            id: "sys-top-1",
+            category: "tops",
+            role: "base_top",
+            title: "화이트 티셔츠",
+            image_url: image
+          },
+          {
+            id: "sys-bottom-1",
+            category: "bottoms",
+            role: "bottom",
+            title: "검정 슬랙스",
+            image_url: image
+          }
+        ],
+        ordered_item_ids: ["sys-top-1", "sys-bottom-1"],
+        manual_order_enabled: false,
         prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
       })
     ).toBe(true);
@@ -167,6 +195,26 @@ describe("try-on provider contract", () => {
         prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
       })
     ).toBe(3);
+  });
+
+  it("charges one credit for up to three try-on items", () => {
+    expect(
+      estimateTryOnCreditCost({
+        person_image: image,
+        product_images: [image, image, image],
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).toBe(1);
+  });
+
+  it("charges an extra credit only after the fourth try-on item", () => {
+    expect(
+      estimateTryOnCreditCost({
+        person_image: image,
+        product_images: [image, image, image, image],
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).toBe(2);
   });
 
   it("reports missing Vertex config only when Vertex provider is active", () => {
@@ -297,7 +345,62 @@ describe("try-on provider contract", () => {
     });
   });
 
-  it("splits productImages into sequential single-item passes at the Vertex adapter", async () => {
+  it("uses ordered_item_ids when selected_items are provided in manual order mode", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        predictions: [
+          {
+            mimeType: "image/png",
+            bytesBase64Encoded: "result123"
+          }
+        ]
+      })
+    });
+
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      generateTryOnPreview({
+        person_image: image,
+        selected_items: [
+          {
+            id: "top-1",
+            category: "tops",
+            role: "base_top",
+            title: "티셔츠",
+            image_url: "data:image/png;base64,top111"
+          },
+          {
+            id: "outer-1",
+            category: "outerwear",
+            role: "outerwear",
+            title: "블레이저",
+            image_url: "data:image/png;base64,out222"
+          }
+        ],
+        ordered_item_ids: ["outer-1", "top-1"],
+        manual_order_enabled: true,
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).resolves.toMatchObject({
+      status: "vertex",
+      preview_image: "data:image/png;base64,result123"
+    });
+
+    const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(requestBody.instances[0].productImages).toEqual([
+      { image: { bytesBase64Encoded: "out222" } },
+      { image: { bytesBase64Encoded: "top111" } }
+    ]);
+  });
+
+  it("uses the official three-item direct request path before any fallback", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -310,6 +413,122 @@ describe("try-on provider contract", () => {
             }
           ]
         })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result-stage-2"
+            }
+          ]
+        })
+      });
+
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      generateTryOnPreview({
+        person_image: image,
+        product_images: [image, image, image, image],
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).resolves.toMatchObject({
+      status: "vertex",
+      preview_image: "data:image/png;base64,result-stage-2",
+      pass_count: 2
+    });
+
+    const firstRequestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const secondRequestBody = JSON.parse(fetchMock.mock.calls[1][1].body);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(firstRequestBody.instances[0].productImages).toHaveLength(3);
+    expect(secondRequestBody.instances[0].productImages).toHaveLength(1);
+    expect(secondRequestBody.instances[0].personImage.image.bytesBase64Encoded).toBe(
+      "result-stage-1"
+    );
+  });
+
+  it("keeps a three-item system outfit in a single direct Vertex pass", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        predictions: [
+          {
+            mimeType: "image/png",
+            bytesBase64Encoded: "result123"
+          }
+        ]
+      })
+    });
+
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      generateTryOnPreview({
+        person_image: image,
+        selected_items: [
+          {
+            id: "sys-top-1",
+            category: "tops",
+            role: "base_top",
+            title: "화이트 티셔츠",
+            image_url: "data:image/png;base64,top111"
+          },
+          {
+            id: "sys-bottom-1",
+            category: "bottoms",
+            role: "bottom",
+            title: "검정 슬랙스",
+            image_url: "data:image/png;base64,bottom222"
+          },
+          {
+            id: "sys-shoes-1",
+            category: "shoes",
+            role: "shoes",
+            title: "화이트 스니커즈",
+            image_url: "data:image/png;base64,shoes333"
+          }
+        ],
+        ordered_item_ids: ["sys-top-1", "sys-bottom-1", "sys-shoes-1"],
+        manual_order_enabled: false,
+        prompt: "상의, 하의, 신발 전체 조합을 함께 반영"
+      })
+    ).resolves.toMatchObject({
+      status: "vertex",
+      preview_image: "data:image/png;base64,result123",
+      pass_count: 1
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(requestBody.instances[0].productImages).toEqual([
+      { image: { bytesBase64Encoded: "top111" } },
+      { image: { bytesBase64Encoded: "bottom222" } },
+      { image: { bytesBase64Encoded: "shoes333" } }
+    ]);
+  });
+
+  it("falls back to sequential single-item passes when the runtime rejects a three-item request", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        text: async () =>
+          '{ "error": { "code": 400, "message": "Image editing failed with the following error: Invalid number of product images. Expected 1, got 3.; ", "status": "INVALID_ARGUMENT" } }'
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -355,12 +574,13 @@ describe("try-on provider contract", () => {
     await expect(
       generateTryOnPreview({
         person_image: image,
-        product_images: [image, image, image, image],
+        product_images: [image, image, image],
         prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
       })
     ).resolves.toMatchObject({
       status: "vertex",
-      preview_image: "data:image/png;base64,result-stage-4"
+      preview_image: "data:image/png;base64,result-stage-4",
+      pass_count: 3
     });
 
     const firstRequestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
@@ -369,12 +589,12 @@ describe("try-on provider contract", () => {
     const fourthRequestBody = JSON.parse(fetchMock.mock.calls[3][1].body);
 
     expect(fetchMock).toHaveBeenCalledTimes(4);
-    expect(firstRequestBody.instances[0].productImages).toHaveLength(1);
+    expect(firstRequestBody.instances[0].productImages).toHaveLength(3);
     expect(secondRequestBody.instances[0].productImages).toHaveLength(1);
     expect(thirdRequestBody.instances[0].productImages).toHaveLength(1);
     expect(fourthRequestBody.instances[0].productImages).toHaveLength(1);
     expect(secondRequestBody.instances[0].personImage.image.bytesBase64Encoded).toBe(
-      "result-stage-1"
+      "abc123"
     );
     expect(thirdRequestBody.instances[0].personImage.image.bytesBase64Encoded).toBe(
       "result-stage-2"

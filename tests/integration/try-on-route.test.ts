@@ -140,7 +140,7 @@ describe("try-on API route", () => {
     });
   });
 
-  it("charges per staged pass after successful Vertex generation", async () => {
+  it("charges one credit for up to three try-on items even when the adapter uses staged passes", async () => {
     const { issueSessionTokens } = await import("@/lib/auth/server");
     const { accessToken } = await issueSessionTokens(
       authUser,
@@ -175,18 +175,91 @@ describe("try-on API route", () => {
     expect(body).toMatchObject({
       status: "vertex",
       preview_image: "data:image/png;base64,generated-image",
-      credits_charged: 3,
-      credits_remaining: 0,
-      try_on_pass_count: 3,
+      credits_charged: 1,
+      credits_remaining: 2,
+      try_on_pass_count: 1,
       credit_reference_id: expect.any(String)
     });
-    expect(getCreditBalance(authUser.uid).balance).toBe(0);
+    expect(getCreditBalance(authUser.uid).balance).toBe(2);
     expect(getCreditTransactions(authUser.uid)[0]).toMatchObject({
       type: "debit",
-      delta: -3,
+      delta: -1,
       reason: "try_on_generation",
       reference_id: body.credit_reference_id,
-      balance_after: 0
+      balance_after: 2
+    });
+  });
+
+  it("accepts selected_items payloads without requiring a separate product_images array", async () => {
+    const user = {
+      ...authUser,
+      uid: "try-on-selected-items-user"
+    };
+    const { issueSessionTokens } = await import("@/lib/auth/server");
+    const { accessToken } = await issueSessionTokens(
+      user,
+      "try-on-route-family-selected",
+      "try-on-route-token-selected"
+    );
+    const cookies = new Map([[SESSION_COOKIE_NAMES.access, accessToken]]);
+
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              bytesBase64Encoded: "generated-image"
+            }
+          ]
+        })
+      })
+    );
+
+    const { POST } = await loadRouteWithCookies(cookies);
+    const response = await POST(
+      buildRequest({
+        person_image: "data:image/png;base64,abc123",
+        selected_items: [
+          {
+            id: "sys-top-1",
+            category: "tops",
+            role: "base_top",
+            title: "화이트 티셔츠",
+            image_url: "data:image/png;base64,abc123"
+          },
+          {
+            id: "sys-bottom-1",
+            category: "bottoms",
+            role: "bottom",
+            title: "검정 슬랙스",
+            image_url: "data:image/png;base64,abc123"
+          },
+          {
+            id: "sys-shoes-1",
+            category: "shoes",
+            role: "shoes",
+            title: "화이트 스니커즈",
+            image_url: "data:image/png;base64,abc123"
+          }
+        ],
+        ordered_item_ids: ["sys-top-1", "sys-bottom-1", "sys-shoes-1"],
+        manual_order_enabled: false,
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      status: "vertex",
+      credits_charged: 1,
+      credits_remaining: 2
     });
   });
 
@@ -231,15 +304,15 @@ describe("try-on API route", () => {
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
     expect(firstBody).toMatchObject({
-      credits_charged: 3,
-      credits_remaining: 0,
-      try_on_pass_count: 3,
+      credits_charged: 1,
+      credits_remaining: 2,
+      try_on_pass_count: 1,
       idempotent_replay: false
     });
     expect(secondBody).toMatchObject({
       credits_charged: 0,
-      credits_remaining: 0,
-      try_on_pass_count: 3,
+      credits_remaining: 2,
+      try_on_pass_count: 1,
       idempotent_replay: true,
       credit_reference_id: firstBody.credit_reference_id
     });

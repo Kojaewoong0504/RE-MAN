@@ -21,7 +21,7 @@ const baseFeedback = {
     primary_source: "closet" as const,
     closet_confidence: "medium" as const,
     system_support_needed: false,
-    missing_categories: [] as ("tops" | "bottoms" | "shoes" | "outerwear")[],
+    missing_categories: [] as ("tops" | "bottoms" | "shoes" | "outerwear" | "hats" | "bags")[],
     summary: "옷장 기준 추천"
   },
   system_recommendations: [],

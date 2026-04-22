@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 type SafePreviewImageProps = {
@@ -22,16 +23,19 @@ export function SafePreviewImage({
   }, [src]);
 
   return (
-    <img
+    <Image
       alt={alt}
       className={className}
-      loading="lazy"
       onError={() => {
         if (currentSrc !== fallbackSrc) {
           setCurrentSrc(fallbackSrc);
         }
       }}
+      height={1200}
+      loading="lazy"
       src={currentSrc}
+      unoptimized
+      width={960}
     />
   );
 }

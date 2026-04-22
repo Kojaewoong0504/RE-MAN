@@ -9,6 +9,8 @@ import { CreditStatus } from "@/components/credits/CreditStatus";
 import type {
   AgentClosetItemCategory,
   OnboardingAgentResponse,
+  RecommendationRole,
+  SelectableRecommendation,
   SystemRecommendation
 } from "@/lib/agents/contracts";
 import { fetchAuthSession } from "@/lib/auth/client";
@@ -67,13 +69,16 @@ type OutfitPreviewCard = {
 };
 type TryOnInputSource = "system" | "closet";
 type TryOnBoardCard = {
+  id: string;
   key: string;
   category: AgentClosetItemCategory;
+  role?: RecommendationRole;
   label: string;
   title: string;
   imageSrc: string;
   fallbackSrc: string;
   sourceLabel: string;
+  layerOrder: number;
 };
 
 const categoryOrder: AgentClosetItemCategory[] = ["tops", "bottoms", "shoes"];
@@ -81,18 +86,40 @@ const categoryLabels: Record<AgentClosetItemCategory, string> = {
   tops: "상의",
   bottoms: "하의",
   shoes: "신발",
-  outerwear: "겉옷"
+  outerwear: "겉옷",
+  hats: "모자",
+  bags: "가방"
 };
 const previewFallbacks: Record<AgentClosetItemCategory, string> = {
   tops: "/system-catalog/reference-top.svg",
   bottoms: "/system-catalog/reference-bottom.svg",
   shoes: "/system-catalog/reference-shoes.svg",
-  outerwear: "/system-catalog/reference-outerwear.svg"
+  outerwear: "/system-catalog/reference-outerwear.svg",
+  hats: "/system-catalog/reference-top.svg",
+  bags: "/system-catalog/reference-bottom.svg"
 };
 const legacyReferenceArtworkPattern =
   /\/system-catalog\/reference-(top|bottom|shoes|outerwear)\.svg$/;
 const TRY_ON_CACHE_KEY = "recommended";
 const TRY_ON_CREDIT_COST = 1;
+const TRY_ON_CREDIT_ITEM_UNIT = 3;
+const TRY_ON_DIRECT_PASS_ITEM_LIMIT = 3;
+const roleOrder: Record<RecommendationRole, number> = {
+  base_top: 10,
+  mid_top: 20,
+  outerwear: 30,
+  bottom: 40,
+  shoes: 50,
+  addon: 60
+};
+const categoryTryOnOrder: Record<AgentClosetItemCategory, number> = {
+  tops: 10,
+  outerwear: 30,
+  bottoms: 40,
+  shoes: 50,
+  hats: 60,
+  bags: 70
+};
 const recommendationReactionOptions: Array<{
   reaction: RecommendationFeedbackReaction;
   label: string;
@@ -205,7 +232,12 @@ function buildOutfitPreviewCards(closetItems: ClosetItem[], feedback: Onboarding
 }
 
 function buildSystemPreviewCards(feedback: OnboardingAgentResponse) {
-  return feedback.system_recommendations.slice(0, 3).map((item) => {
+  const sourceRecommendations =
+    feedback.selectable_recommendations?.length && feedback.selectable_recommendations.length > 0
+      ? feedback.selectable_recommendations
+      : feedback.system_recommendations;
+
+  return sourceRecommendations.map((item) => {
     const canonical = getCanonicalSystemReference(item.category);
     const displayItem =
       canonical && isLegacyReferenceArtwork(item.image_url)
@@ -220,31 +252,97 @@ function buildSystemPreviewCards(feedback: OnboardingAgentResponse) {
       ...displayItem,
       imageSrc: displayItem.image_url || previewFallbacks[displayItem.category]
     };
-  });
+  }) as Array<
+    (SystemRecommendation | SelectableRecommendation) & {
+      imageSrc: string;
+    }
+  >;
 }
 
 function buildSystemTryOnCards(
   systemPreviewCards: Array<
-    SystemRecommendation & {
+    (SystemRecommendation | SelectableRecommendation) & {
       imageSrc: string;
     }
   >,
   outfitPreviewCards: OutfitPreviewCard[]
 ) {
-  return categoryOrder.map((category) => {
-    const systemMatch = systemPreviewCards.find((item) => item.category === category);
-    const closetFallback = outfitPreviewCards.find((item) => item.category === category);
+  return systemPreviewCards.map((item) => {
+    const closetFallback = outfitPreviewCards.find((card) => card.category === item.category);
 
     return {
-      key: `try-on-${category}`,
-      category,
-      label: categoryLabels[category],
-      title: systemMatch?.title ?? closetFallback?.title ?? categoryLabels[category],
-      imageSrc:
-        systemMatch?.imageSrc ?? closetFallback?.imageSrc ?? previewFallbacks[category],
-      fallbackSrc: closetFallback?.fallbackSrc ?? previewFallbacks[category],
-      sourceLabel: systemMatch ? "시스템 추천" : "내 옷장 보조"
+      id: item.id,
+      key: `try-on-${item.id}`,
+      category: item.category,
+      role: item.role,
+      label: categoryLabels[item.category],
+      title: item.title,
+      imageSrc: item.imageSrc ?? closetFallback?.imageSrc ?? previewFallbacks[item.category],
+      fallbackSrc: closetFallback?.fallbackSrc ?? previewFallbacks[item.category],
+      sourceLabel: "시스템 추천",
+      layerOrder:
+        item.layer_order_default ??
+        (item.role ? roleOrder[item.role] : categoryTryOnOrder[item.category])
     } satisfies TryOnBoardCard;
+  });
+}
+
+function buildDefaultTryOnSelection(
+  feedback: OnboardingAgentResponse | null,
+  cards: TryOnBoardCard[]
+) {
+  if (!feedback || cards.length === 0) {
+    return [] as string[];
+  }
+
+  const preferredIds =
+    feedback.primary_outfit?.item_ids.filter((itemId) => cards.some((card) => card.id === itemId)) ??
+    [];
+
+  if (preferredIds.length > 0) {
+    return preferredIds;
+  }
+
+  return cards
+    .slice()
+    .sort((left, right) => left.layerOrder - right.layerOrder)
+    .slice(0, 3)
+    .map((card) => card.id);
+}
+
+function sortSelectedTryOnCards(
+  cards: TryOnBoardCard[],
+  selectedIds: string[],
+  manualOrderIds: string[],
+  manualOrderEnabled: boolean
+) {
+  const selected = cards.filter((card) => selectedIds.includes(card.id));
+
+  if (manualOrderEnabled && manualOrderIds.length > 0) {
+    const rank = new Map(manualOrderIds.map((id, index) => [id, index]));
+
+    return selected.sort((left, right) => {
+      const leftRank = rank.get(left.id);
+      const rightRank = rank.get(right.id);
+
+      if (leftRank !== undefined && rightRank !== undefined && leftRank !== rightRank) {
+        return leftRank - rightRank;
+      }
+
+      if (left.layerOrder !== right.layerOrder) {
+        return left.layerOrder - right.layerOrder;
+      }
+
+      return left.title.localeCompare(right.title, "ko");
+    });
+  }
+
+  return selected.sort((left, right) => {
+    if (left.layerOrder !== right.layerOrder) {
+      return left.layerOrder - right.layerOrder;
+    }
+
+    return left.title.localeCompare(right.title, "ko");
   });
 }
 
@@ -281,11 +379,21 @@ function buildTryOnPrompt(
   cards: TryOnBoardCard[],
   source: TryOnInputSource
 ) {
-  const outfitLine = cards.map((card) => `${card.label}: ${card.title}`).join(", ");
+  const orderedOutfitLine = cards
+    .map((card, index) => `${index + 1}. ${card.label}: ${card.title}`)
+    .join(" / ");
   const sourceLine =
     source === "system" ? "시스템 추천 조합 전체를 함께 반영" : "내 옷장 조합 전체를 함께 반영";
 
-  return `${feedback.recommended_outfit.try_on_prompt} ${sourceLine}. 상의, 하의, 신발 전체 조합을 함께 반영: ${outfitLine}`;
+  return `${feedback.recommended_outfit.try_on_prompt} ${sourceLine}. 선택된 모든 아이템을 같은 최종 이미지 한 장에 함께 반영하고 어떤 아이템도 누락하지 말 것. 위에서 아래 순서를 유지할 것. 신발과 가방, 모자까지 선택된 경우 끝까지 모두 반영할 것: ${orderedOutfitLine}`;
+}
+
+function estimateTryOnCredits(cardCount: number) {
+  return Math.max(1, Math.ceil(cardCount / TRY_ON_CREDIT_ITEM_UNIT)) * TRY_ON_CREDIT_COST;
+}
+
+function estimateTryOnPasses(cardCount: number) {
+  return Math.max(1, Math.ceil(cardCount / TRY_ON_DIRECT_PASS_ITEM_LIMIT));
 }
 
 export default function ResultPage() {
@@ -310,6 +418,9 @@ export default function ResultPage() {
   const [isTryOnViewerOpen, setIsTryOnViewerOpen] = useState(false);
   const [selectedTryOnSource, setSelectedTryOnSource] =
     useState<TryOnInputSource>("system");
+  const [selectedSystemTryOnIds, setSelectedSystemTryOnIds] = useState<string[]>([]);
+  const [manualTryOnOrderEnabled, setManualTryOnOrderEnabled] = useState(false);
+  const [manualSystemTryOnOrderIds, setManualSystemTryOnOrderIds] = useState<string[]>([]);
 
   const todayPlan = feedback
     ? buildTodayActionPlan({
@@ -342,9 +453,28 @@ export default function ResultPage() {
   const tryOnPersonImage =
     effectivePersonImage ??
     outfitPreviewCards.find((card) => card.imageSrc.startsWith("data:image/"))?.imageSrc;
-  const selectedTryOnCards =
-    selectedTryOnSource === "system" ? systemTryOnCards : outfitPreviewCards;
-  const tryOnCreditEstimate = selectedTryOnCards.length * TRY_ON_CREDIT_COST;
+  const selectedTryOnCards: TryOnBoardCard[] =
+    selectedTryOnSource === "system"
+      ? sortSelectedTryOnCards(
+          systemTryOnCards,
+          selectedSystemTryOnIds,
+          manualSystemTryOnOrderIds,
+          manualTryOnOrderEnabled
+        )
+      : outfitPreviewCards.map((card, index) => ({
+          id: card.key,
+          key: card.key,
+          category: card.category,
+          role: categoryOrder[index] === "tops" ? "base_top" : categoryOrder[index] === "bottoms" ? "bottom" : "shoes",
+          label: card.label,
+          title: card.title,
+          imageSrc: card.imageSrc,
+          fallbackSrc: card.fallbackSrc,
+          sourceLabel: card.sourceLabel,
+          layerOrder: categoryOrder[index] === "tops" ? 10 : categoryOrder[index] === "bottoms" ? 40 : 50
+        } satisfies TryOnBoardCard));
+  const tryOnCreditEstimate = estimateTryOnCredits(selectedTryOnCards.length);
+  const tryOnPassEstimate = estimateTryOnPasses(selectedTryOnCards.length);
 
   function applyResolvedState(state: OnboardingState) {
     const normalizedClosetItems = normalizeClosetItems(state.closet_items);
@@ -438,27 +568,55 @@ export default function ResultPage() {
             <>
               <p className="result-recommendation-copy">{feedback.recommendation_mix.summary}</p>
               {systemPreviewCards.length > 0 ? (
-                <div className="result-system-grid">
-                  {systemPreviewCards.map((item) => (
-                    <article className="result-system-card" key={item.id}>
-                      <div className="result-system-card-media">
-                        <SafePreviewImage
-                          alt={`시스템 추천 ${item.category}`}
-                          className="h-full w-full object-cover"
-                          fallbackSrc={previewFallbacks[item.category]}
-                          src={item.imageSrc}
-                        />
-                      </div>
-                      <div className="result-system-card-copy">
-                        <p>{item.category}</p>
-                        <h3>{item.title}</h3>
-                        <span>
-                          {[item.color, item.fit].filter(Boolean).join(" · ") || "reference"}
-                        </span>
-                        <small>{item.reason}</small>
-                      </div>
-                    </article>
-                  ))}
+                <div className="space-y-4">
+                  <div className="result-basis-summary">
+                    <span>선택 실착 후보</span>
+                    <strong>원하는 아이템만 골라 조합합니다</strong>
+                  </div>
+                  <div className="result-item-strip" aria-label="선택된 시스템 추천 아이템">
+                    {selectedSystemTryOnIds.length > 0 ? (
+                      sortSelectedTryOnCards(
+                        systemTryOnCards,
+                        selectedSystemTryOnIds,
+                        manualSystemTryOnOrderIds,
+                        manualTryOnOrderEnabled
+                      ).map((card) => <span key={`selected-${card.id}`}>{card.title}</span>)
+                    ) : (
+                      <span>선택된 아이템 없음</span>
+                    )}
+                  </div>
+                  <div className="result-system-grid">
+                    {systemPreviewCards.map((item) => {
+                      const isSelected = selectedSystemTryOnIds.includes(item.id);
+
+                      return (
+                        <button
+                          aria-pressed={isSelected}
+                          className={`result-system-card text-left ${isSelected ? "ring-2 ring-black" : ""}`}
+                          key={item.id}
+                          onClick={() => handleToggleSystemTryOnCard(item.id)}
+                          type="button"
+                        >
+                          <div className="result-system-card-media">
+                            <SafePreviewImage
+                              alt={`시스템 추천 ${item.category}`}
+                              className="h-full w-full object-cover"
+                              fallbackSrc={previewFallbacks[item.category]}
+                              src={item.imageSrc}
+                            />
+                          </div>
+                          <div className="result-system-card-copy">
+                            <p>{item.role ? categoryLabels[item.category] : item.category}</p>
+                            <h3>{item.title}</h3>
+                            <span>
+                              {[item.color, item.fit].filter(Boolean).join(" · ") || "reference"}
+                            </span>
+                            <small>{item.reason}</small>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="result-basis-empty">
@@ -546,6 +704,38 @@ export default function ResultPage() {
   }, [router]);
 
   useEffect(() => {
+    if (systemTryOnCards.length === 0) {
+      setSelectedSystemTryOnIds([]);
+      setManualSystemTryOnOrderIds([]);
+      setManualTryOnOrderEnabled(false);
+      return;
+    }
+
+    const defaultSelection = buildDefaultTryOnSelection(feedback, systemTryOnCards);
+
+    setSelectedSystemTryOnIds((current) =>
+      current.length > 0 &&
+      current.every((id) => systemTryOnCards.some((card) => card.id === id))
+        ? current
+        : defaultSelection
+    );
+    setManualSystemTryOnOrderIds((current) =>
+      current.length > 0 &&
+      current.every((id) => systemTryOnCards.some((card) => card.id === id))
+        ? current
+        : defaultSelection
+    );
+  }, [feedback, systemTryOnCards]);
+
+  useEffect(() => {
+    if (!feedback) {
+      return;
+    }
+
+    setSelectedTryOnSource(defaultTryOnSource);
+  }, [defaultTryOnSource, feedback]);
+
+  useEffect(() => {
     let active = true;
 
     async function syncClosetPreviews() {
@@ -631,6 +821,56 @@ export default function ResultPage() {
     }
   }
 
+  function handleToggleSystemTryOnCard(cardId: string) {
+    setManualTryOnOrderEnabled(false);
+    setSelectedSystemTryOnIds((current) => {
+      if (current.includes(cardId)) {
+        const next = current.filter((id) => id !== cardId);
+        setManualSystemTryOnOrderIds(next);
+        return next;
+      }
+
+      const next = [...current, cardId];
+      setManualSystemTryOnOrderIds(next);
+      return next;
+    });
+  }
+
+  function handleRestoreAutoOrder() {
+    setManualTryOnOrderEnabled(false);
+    setManualSystemTryOnOrderIds(selectedSystemTryOnIds);
+  }
+
+  function handleMoveSelectedCard(cardId: string, direction: -1 | 1) {
+    setManualTryOnOrderEnabled(true);
+    setManualSystemTryOnOrderIds((current) => {
+      const working =
+        current.length > 0 ? current.filter((id) => selectedSystemTryOnIds.includes(id)) : [...selectedSystemTryOnIds];
+      const index = working.indexOf(cardId);
+
+      if (index === -1) {
+        return working;
+      }
+
+      const targetIndex = index + direction;
+
+      if (targetIndex < 0 || targetIndex >= working.length) {
+        return working;
+      }
+
+      const currentCard = systemTryOnCards.find((card) => card.id === cardId);
+      const targetCard = systemTryOnCards.find((card) => card.id === working[targetIndex]);
+
+      if (!currentCard || !targetCard || currentCard.layerOrder !== targetCard.layerOrder) {
+        return working;
+      }
+
+      const next = [...working];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return next;
+    });
+  }
+
   async function handleGenerateTryOn() {
     if (!accountUser) {
       setTryOnError("로그인 세션을 먼저 확인한 뒤 다시 시도해 주세요.");
@@ -664,6 +904,16 @@ export default function ResultPage() {
         body: JSON.stringify({
           person_image: tryOnPersonImage,
           product_images: productImages,
+          selected_items: selectedTryOnCards.map((card) => ({
+            id: card.id,
+            category: card.category,
+            role: card.role,
+            title: card.title,
+            image_url: card.imageSrc
+          })),
+          manual_order_enabled: selectedTryOnSource === "system" ? manualTryOnOrderEnabled : false,
+          ordered_item_ids:
+            selectedTryOnSource === "system" ? selectedTryOnCards.map((card) => card.id) : [],
           prompt: buildTryOnPrompt(feedback, selectedTryOnCards, selectedTryOnSource)
         })
       });
@@ -673,6 +923,7 @@ export default function ResultPage() {
             message?: string;
             status?: "mocked" | "vertex";
             credits_remaining?: number;
+            credits_charged?: number;
             subscription_active?: boolean;
           }
         | null;
@@ -697,11 +948,12 @@ export default function ResultPage() {
         source: outfitPreviewCards.some((card) => card.sourceLabel === "내 옷장 사진")
           ? "upload"
           : "outfit-board",
-        reference_id: feedback.recommended_outfit.title,
+        reference_id: selectedTryOnCards.map((card) => card.id).join(","),
         prompt: feedback.recommended_outfit.try_on_prompt,
         provider: data.status,
         preview_image: data.preview_image,
         message: data.message ?? "실착 이미지가 준비됐습니다.",
+        credits_charged: data.credits_charged,
         created_at: new Date().toISOString()
       };
       const current = readOnboardingState();
@@ -879,7 +1131,7 @@ export default function ResultPage() {
                   <span>실착 입력</span>
                   <strong>
                     {selectedTryOnSource === "system"
-                      ? "시스템 추천 조합"
+                      ? "선택한 시스템 추천 조합"
                       : feedback
                         ? compactUiText(feedback.recommended_outfit.title, 22)
                         : "추천 이미지 없음"}
@@ -917,7 +1169,7 @@ export default function ResultPage() {
                   <span>→</span>
                 </button>
                 <p className="result-try-on-credit-note">
-                  선택 아이템 {selectedTryOnCards.length}개 기준 크레딧 {tryOnCreditEstimate}회 차감
+                  선택 {selectedTryOnCards.length}개 · 예상 {tryOnPassEstimate} pass · 크레딧 {tryOnCreditEstimate}
                 </p>
                 {tryOnMessage ? <p className="result-try-on-message">{tryOnMessage}</p> : null}
                 {tryOnError ? (
@@ -1034,8 +1286,8 @@ export default function ResultPage() {
                     <strong>실착 생성 중</strong>
                     <p>생성이 끝날 때까지 다른 작업은 잠시 멈춥니다.</p>
                     <small>
-                      {selectedTryOnSource === "system" ? "시스템 추천 조합" : "내 옷장 조합"} ·
-                      조합 전체 반영 · 1 크레딧 차감
+                    {selectedTryOnSource === "system" ? "시스템 추천 조합" : "내 옷장 조합"} ·
+                      선택 조합 반영 · 최대 3개당 1 크레딧 차감
                     </small>
                   </div>
                 ) : (
@@ -1054,7 +1306,7 @@ export default function ResultPage() {
                       </button>
                     </div>
                     <p className="result-recommendation-copy">
-                      선택한 추천 아이템을 순차 합성해 최종 실착 이미지를 만듭니다. 기본은 시스템 추천 조합이고, 원하면 내 옷장 기준으로 바꿀 수 있습니다.
+                      선택한 추천 아이템만 순차 합성해 최종 실착 이미지를 만듭니다. 기본은 시스템 추천 조합이고, 원하면 내 옷장 기준으로 바꿀 수 있습니다.
                     </p>
                     <div className="result-try-on-source-picker">
                       <button
@@ -1086,11 +1338,26 @@ export default function ResultPage() {
                           : "내 옷장 조합 전체를 순차로 반영합니다."}
                       </span>
                       <small>
-                        선택 아이템 {selectedTryOnCards.length}개 기준 크레딧 {tryOnCreditEstimate}회 차감
+                        선택 {selectedTryOnCards.length}개 · 예상 {tryOnPassEstimate} pass · 크레딧 {tryOnCreditEstimate}
                       </small>
                     </div>
+                    {selectedTryOnSource === "system" ? (
+                      <div className="result-try-on-modal-summary">
+                        <strong>레이어 순서</strong>
+                        <span>자동 정렬이 기본이며, 같은 레이어 그룹 안에서만 순서를 바꿀 수 있습니다.</span>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            className="ui-button-secondary px-3 py-2"
+                            onClick={handleRestoreAutoOrder}
+                            type="button"
+                          >
+                            자동 정렬로 복원
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                     <div className="result-try-on-modal-grid">
-                      {selectedTryOnCards.map((card) => (
+                      {selectedTryOnCards.map((card, index) => (
                         <article className="result-try-on-modal-card" key={card.key}>
                           <div className="result-try-on-modal-image">
                             <SafePreviewImage
@@ -1102,6 +1369,32 @@ export default function ResultPage() {
                           </div>
                           <strong>{card.label}</strong>
                           <span>{compactUiText(card.title, 20)}</span>
+                          {selectedTryOnSource === "system" ? (
+                            <div className="flex gap-2">
+                              <button
+                                className="ui-button-secondary px-3 py-2"
+                                disabled={
+                                  index === 0 ||
+                                  selectedTryOnCards[index - 1]?.layerOrder !== card.layerOrder
+                                }
+                                onClick={() => handleMoveSelectedCard(card.id, -1)}
+                                type="button"
+                              >
+                                위로
+                              </button>
+                              <button
+                                className="ui-button-secondary px-3 py-2"
+                                disabled={
+                                  index === selectedTryOnCards.length - 1 ||
+                                  selectedTryOnCards[index + 1]?.layerOrder !== card.layerOrder
+                                }
+                                onClick={() => handleMoveSelectedCard(card.id, 1)}
+                                type="button"
+                              >
+                                아래로
+                              </button>
+                            </div>
+                          ) : null}
                         </article>
                       ))}
                     </div>
@@ -1164,7 +1457,9 @@ export default function ResultPage() {
                   />
                 </div>
                 <p className="result-try-on-message">
-                  {tryOnPreview.provider === "vertex" ? "1 크레딧 차감" : tryOnPreview.message}
+                  {tryOnPreview.provider === "vertex"
+                    ? `${tryOnPreview.credits_charged ?? 1} 크레딧 차감`
+                    : tryOnPreview.message}
                 </p>
               </div>
             </div>

@@ -35,7 +35,14 @@ export type ClosetItemDraft = {
   deleted?: boolean;
 };
 
-const categories: ClosetItemCategory[] = ["tops", "bottoms", "shoes", "outerwear"];
+const categories: ClosetItemCategory[] = [
+  "tops",
+  "bottoms",
+  "shoes",
+  "outerwear",
+  "hats",
+  "bags"
+];
 const sizeSources: ClosetSizeSource[] = [
   "manual",
   "label_ocr",

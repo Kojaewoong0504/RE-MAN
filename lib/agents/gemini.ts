@@ -193,7 +193,7 @@ function buildInstruction(
       "Day 6 이전 구매 유도 금지.",
       `설문: ${payload.survey.current_style} / ${payload.survey.motivation} / ${payload.survey.budget} / 목표=${payload.survey.style_goal || "미입력"} / 자신감=${payload.survey.confidence_level || "미입력"}`,
       payload.closet_profile
-        ? `옷장 컨텍스트: 상의=${payload.closet_profile.tops || "없음"} / 하의=${payload.closet_profile.bottoms || "없음"} / 신발=${payload.closet_profile.shoes || "없음"} / 겉옷=${payload.closet_profile.outerwear || "없음"} / 피하고 싶은 것=${payload.closet_profile.avoid || "없음"}`
+        ? `옷장 컨텍스트: 상의=${payload.closet_profile.tops || "없음"} / 하의=${payload.closet_profile.bottoms || "없음"} / 신발=${payload.closet_profile.shoes || "없음"} / 겉옷=${payload.closet_profile.outerwear || "없음"} / 모자=${payload.closet_profile.hats || "없음"} / 가방=${payload.closet_profile.bags || "없음"} / 피하고 싶은 것=${payload.closet_profile.avoid || "없음"}`
         : "옷장 컨텍스트: 없음",
       payload.closet_items?.length
         ? `옷장 아이템 id 목록: ${payload.closet_items
@@ -267,6 +267,8 @@ function buildInstruction(
 - bottoms: ${payload.closet_profile?.bottoms || "미입력"}
 - shoes: ${payload.closet_profile?.shoes || "미입력"}
 - outerwear: ${payload.closet_profile?.outerwear || "미입력"}
+- hats: ${payload.closet_profile?.hats || "미입력"}
+- bags: ${payload.closet_profile?.bags || "미입력"}
 - avoid: ${payload.closet_profile?.avoid || "미입력"}`,
     `등록된 옷장 아이템 id:
 ${

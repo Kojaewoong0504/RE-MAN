@@ -244,10 +244,79 @@ describe("feedback API route", () => {
       product: null
     });
     expect(body.system_recommendations.every((item: { image_url?: string }) =>
-      typeof item.image_url === "string" &&
-      item.image_url.startsWith("/system-catalog/") &&
-      !item.image_url.endsWith(".svg")
+      typeof item.image_url === "string" && item.image_url.startsWith("/system-catalog/")
     )).toBe(true);
+    expect(
+      body.system_recommendations
+        .filter((item: { category: string }) => ["tops", "bottoms", "shoes", "outerwear"].includes(item.category))
+        .every(
+          (item: { id: string; image_url?: string }) =>
+            typeof item.image_url === "string" &&
+            (!item.image_url.endsWith(".svg") ||
+              item.id === "sys-shoes-white-minimal-sneakers")
+        )
+    ).toBe(true);
+    expect(
+      body.system_recommendations.some((item: { category: string }) => item.category === "outerwear")
+    ).toBe(true);
+    expect(
+      body.system_recommendations.some((item: { category: string }) => item.category === "hats")
+    ).toBe(true);
+    expect(
+      body.system_recommendations.some((item: { category: string }) => item.category === "bags")
+    ).toBe(true);
+    expect(body.primary_outfit).toMatchObject({
+      title: expect.any(String),
+      reason: expect.any(String)
+    });
+    expect(body.primary_outfit.item_ids.length).toBeGreaterThanOrEqual(3);
+    expect(body.selectable_recommendations.length).toBeGreaterThan(0);
+    expect(
+      body.selectable_recommendations.some(
+        (item: { category: string; role: string }) =>
+          item.category === "tops" && item.role === "base_top"
+      )
+    ).toBe(true);
+    expect(
+      body.selectable_recommendations.some(
+        (item: { category: string; role: string }) =>
+          item.category === "bottoms" && item.role === "bottom"
+      )
+    ).toBe(true);
+    expect(
+      body.selectable_recommendations.some(
+        (item: { category: string; role: string }) =>
+          item.category === "shoes" && item.role === "shoes"
+      )
+    ).toBe(true);
+  });
+
+  it("keeps dedicated sneaker, hat, and bag asset paths in the composed route response", async () => {
+    const { POST } = await loadRouteWithCookies(
+      await buildAuthCookies({
+        ...authUser,
+        uid: "feedback-route-asset-user"
+      })
+    );
+    const response = await POST(buildRequest(validFeedbackPayload));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(
+      body.system_recommendations.find((item: { id: string }) => item.id === "sys-shoes-white-minimal-sneakers")
+    ).toMatchObject({
+      image_url: "/system-catalog/shoes/white-minimal-sneakers.svg"
+    });
+    expect(
+      body.system_recommendations.find((item: { id: string }) => item.id === "sys-hat-navy-ballcap")
+    ).toMatchObject({
+      image_url: "/system-catalog/hats/navy-ballcap.svg"
+    });
+    expect(
+      body.system_recommendations.find((item: { id: string }) => item.id === "sys-bag-black-crossbag")
+    ).toMatchObject({
+      image_url: "/system-catalog/bags/black-crossbag.svg"
+    });
   });
 
   it("builds hybrid metadata from sanitized verified source item ids for provider responses", async () => {
@@ -355,10 +424,18 @@ describe("feedback API route", () => {
     expect(body.recommendation_mix.summary).not.toBe("provider metadata");
     expect(body.system_recommendations.length).toBeGreaterThan(0);
     expect(body.system_recommendations.every((item: { image_url?: string }) =>
-      typeof item.image_url === "string" &&
-      item.image_url.startsWith("/system-catalog/") &&
-      !item.image_url.endsWith(".svg")
+      typeof item.image_url === "string" && item.image_url.startsWith("/system-catalog/")
     )).toBe(true);
+    expect(
+      body.system_recommendations
+        .filter((item: { category: string }) => ["tops", "bottoms", "shoes", "outerwear"].includes(item.category))
+        .every(
+          (item: { id: string; image_url?: string }) =>
+            typeof item.image_url === "string" &&
+            (!item.image_url.endsWith(".svg") ||
+              item.id === "sys-shoes-white-minimal-sneakers")
+        )
+    ).toBe(true);
   });
 
   it("does not charge twice when the same feedback request is replayed", async () => {

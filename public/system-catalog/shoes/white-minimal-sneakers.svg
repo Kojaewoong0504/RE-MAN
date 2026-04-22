@@ -1,0 +1,18 @@
+<svg width="960" height="1200" viewBox="0 0 960 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="1200" rx="56" fill="#F4EEDF"/>
+  <rect x="72" y="72" width="816" height="1056" rx="40" fill="#FBF7ED" stroke="#D8CCB4" stroke-width="8"/>
+  <text x="120" y="162" fill="#2E3540" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="700" letter-spacing="8">RE:MAN SHOES</text>
+  <text x="120" y="222" fill="#7A7467" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="6">WHITE MINIMAL SNEAKERS</text>
+  <g transform="translate(124 446)">
+    <path d="M68 242H494C536 242 570 208 570 166V160C570 137 554 118 532 114L444 98C428 95 414 87 402 76L318 0H144L176 105L68 145C28 160 0 196 0 239C0 241 2 242 4 242H68Z" fill="#F8F9FA" stroke="#BBC2C9" stroke-width="10"/>
+    <path d="M156 22H306L382 92H174L156 22Z" fill="#E8ECEF"/>
+    <path d="M212 116H386" stroke="#CAD1D7" stroke-width="10" stroke-linecap="round"/>
+    <path d="M214 146H422" stroke="#CAD1D7" stroke-width="10" stroke-linecap="round"/>
+    <path d="M222 176H448" stroke="#CAD1D7" stroke-width="10" stroke-linecap="round"/>
+    <path d="M100 242C100 201 133 168 174 168H454C495 168 528 201 528 242" stroke="#D3D7DB" stroke-width="10"/>
+    <rect x="86" y="216" width="390" height="18" rx="9" fill="#C7CDD3"/>
+    <path d="M430 104L494 112" stroke="#9BA5AE" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <text x="120" y="1034" fill="#2E3540" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" letter-spacing="5">추천 포인트</text>
+  <text x="120" y="1088" fill="#5A5660" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="500">무난한 조합을 가볍게 정리하는 기본 신발 레퍼런스입니다.</text>
+</svg>

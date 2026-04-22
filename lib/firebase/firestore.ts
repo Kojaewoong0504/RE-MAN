@@ -311,6 +311,8 @@ function parseClosetProfile(input: UserProfileDocument | null): ClosetProfile | 
     bottoms: typeof closet.bottoms === "string" ? closet.bottoms : "",
     shoes: typeof closet.shoes === "string" ? closet.shoes : "",
     outerwear: typeof closet.outerwear === "string" ? closet.outerwear : "",
+    hats: typeof closet.hats === "string" ? closet.hats : "",
+    bags: typeof closet.bags === "string" ? closet.bags : "",
     avoid: typeof closet.avoid === "string" ? closet.avoid : ""
   };
 
@@ -375,7 +377,7 @@ function parseRecommendedOutfit(data: Record<string, unknown>) {
     reason: recommendation.reason,
     try_on_prompt: recommendation.try_on_prompt,
     source_item_ids: sourceItemIds
-      ? (["tops", "bottoms", "shoes", "outerwear"] as const).reduce<Record<string, string>>(
+      ? (["tops", "bottoms", "shoes", "outerwear", "hats", "bags"] as const).reduce<Record<string, string>>(
           (acc, category) => {
             const itemId = sourceItemIds[category];
 
@@ -411,11 +413,15 @@ function parseRecommendationMix(data: Record<string, unknown>): RecommendationMi
   const mix = value as Record<string, unknown>;
   const missingCategories = Array.isArray(mix.missing_categories)
     ? mix.missing_categories.filter(
-        (category): category is "tops" | "bottoms" | "shoes" | "outerwear" =>
+        (
+          category
+        ): category is "tops" | "bottoms" | "shoes" | "outerwear" | "hats" | "bags" =>
           category === "tops" ||
           category === "bottoms" ||
           category === "shoes" ||
-          category === "outerwear"
+          category === "outerwear" ||
+          category === "hats" ||
+          category === "bags"
     )
     : [];
 
@@ -436,7 +442,9 @@ function parseRecommendationMix(data: Record<string, unknown>): RecommendationMi
         category === "tops" ||
         category === "bottoms" ||
         category === "shoes" ||
-        category === "outerwear"
+        category === "outerwear" ||
+        category === "hats" ||
+        category === "bags"
     ) ||
     typeof mix.summary !== "string" ||
     !mix.summary.trim()
@@ -487,7 +495,9 @@ function parseSystemRecommendations(
       (recommendation.category !== "tops" &&
         recommendation.category !== "bottoms" &&
         recommendation.category !== "shoes" &&
-        recommendation.category !== "outerwear") ||
+        recommendation.category !== "outerwear" &&
+        recommendation.category !== "hats" &&
+        recommendation.category !== "bags") ||
       !trimmedTitle ||
       !trimmedReason ||
       (recommendation.color !== undefined && typeof recommendation.color !== "string") ||

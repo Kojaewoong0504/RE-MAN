@@ -26,10 +26,17 @@ describe("hybrid recommendation mix", () => {
     expect(result.system_recommendations.map((item) => item.category)).toEqual([
       "tops",
       "bottoms",
-      "shoes"
+      "shoes",
+      "outerwear",
+      "hats",
+      "bags"
     ]);
     expect(result.system_recommendations.every((item) => item.mode === "reference")).toBe(true);
     expect(result.system_recommendations.every((item) => item.product === null)).toBe(true);
+    expect(result.primary_outfit.item_ids.length).toBeGreaterThanOrEqual(2);
+    expect(result.selectable_recommendations.some((item) => item.role === "base_top")).toBe(true);
+    expect(result.selectable_recommendations.some((item) => item.role === "bottom")).toBe(true);
+    expect(result.selectable_recommendations.some((item) => item.role === "shoes")).toBe(true);
   });
 
   it("keeps closet as the primary source when the closet has enough verified support", () => {
@@ -92,10 +99,15 @@ describe("hybrid recommendation mix", () => {
     expect(result.system_recommendations.map((item) => item.category)).toEqual([
       "tops",
       "bottoms",
-      "shoes"
+      "shoes",
+      "outerwear",
+      "hats",
+      "bags"
     ]);
     expect(result.system_recommendations.every((item) => item.mode === "reference")).toBe(true);
     expect(result.system_recommendations.every((item) => item.product === null)).toBe(true);
+    expect(result.primary_outfit.item_ids.length).toBeGreaterThanOrEqual(3);
+    expect(result.selectable_recommendations.every((item) => item.image_url)).toBe(true);
   });
 
   it("fills missing system support with a balanced outfit set instead of a single category", () => {
@@ -139,7 +151,57 @@ describe("hybrid recommendation mix", () => {
     expect(result.system_recommendations.map((item) => item.category)).toEqual([
       "bottoms",
       "tops",
+      "shoes",
+      "outerwear",
+      "hats",
+      "bags"
+    ]);
+    expect(result.selectable_recommendations.slice(0, 3).map((item) => item.category)).toEqual([
+      "bottoms",
+      "tops",
       "shoes"
+    ]);
+  });
+
+  it("includes first-phase support categories without breaking the balanced starter set", () => {
+    const result = buildHybridRecommendation({
+      survey: {
+        current_style: "후드티 + 조거팬츠",
+        motivation: "가벼운 외출",
+        budget: "기존 옷 활용"
+      },
+      closetItems: [],
+      verifiedSourceItemIds: {}
+    });
+
+    expect(result.selectable_recommendations.some((item) => item.category === "outerwear")).toBe(
+      true
+    );
+    expect(result.selectable_recommendations.some((item) => item.category === "hats")).toBe(true);
+    expect(result.selectable_recommendations.some((item) => item.category === "bags")).toBe(true);
+    expect(result.selectable_recommendations.find((item) => item.category === "hats")?.role).toBe(
+      "addon"
+    );
+  });
+
+  it("keeps support categories in system recommendations so saved results do not lose accessory options", () => {
+    const result = buildHybridRecommendation({
+      survey: {
+        current_style: "셔츠 + 슬랙스",
+        motivation: "소개팅",
+        budget: "15~30만원"
+      },
+      closetItems: [],
+      verifiedSourceItemIds: {}
+    });
+
+    expect(result.system_recommendations.map((item) => item.category)).toEqual([
+      "tops",
+      "bottoms",
+      "shoes",
+      "outerwear",
+      "hats",
+      "bags"
     ]);
   });
 
@@ -154,6 +216,36 @@ describe("hybrid recommendation mix", () => {
       expect(item.image_url).toBeTruthy();
       expect(item.image_url).not.toMatch(/reference-(top|bottom|shoes|outerwear)\.svg$/);
       expect(existsSync(`./public${item.image_url}`)).toBe(true);
+    }
+  });
+
+  it("uses dedicated assets for hat and bag support references", () => {
+    const supportReferences = SYSTEM_STYLE_LIBRARY.filter((item) =>
+      ["hats", "bags"].includes(item.category)
+    );
+
+    expect(supportReferences.map((item) => item.category)).toEqual(["hats", "bags"]);
+
+    for (const item of supportReferences) {
+      expect(item.image_url).toBeTruthy();
+      expect(item.image_url).not.toMatch(/reference-(top|bottom|shoes|outerwear)\.svg$/);
+      expect(existsSync(`./public${item.image_url}`)).toBe(true);
+    }
+  });
+
+  it("keeps exact dedicated assets for sneaker, hat, and bag references", () => {
+    const assetExpectations = {
+      "sys-shoes-white-minimal-sneakers": "/system-catalog/shoes/white-minimal-sneakers.svg",
+      "sys-hat-navy-ballcap": "/system-catalog/hats/navy-ballcap.svg",
+      "sys-bag-black-crossbag": "/system-catalog/bags/black-crossbag.svg"
+    } as const;
+
+    for (const [id, expectedPath] of Object.entries(assetExpectations)) {
+      const item = SYSTEM_STYLE_LIBRARY.find((candidate) => candidate.id === id);
+
+      expect(item, `${id} should exist in the system library`).toBeDefined();
+      expect(item?.image_url).toBe(expectedPath);
+      expect(existsSync(`./public${expectedPath}`)).toBe(true);
     }
   });
 });
