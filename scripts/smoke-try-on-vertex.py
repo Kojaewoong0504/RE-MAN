@@ -190,9 +190,14 @@ def post_json(path: str, payload: dict) -> tuple[int, dict]:
 
 def main() -> int:
     started = time.time()
+    product_images = [
+        f"data:image/png;base64,{build_product_like_png()}",
+        f"data:image/png;base64,{build_product_like_png(480, 720)}",
+        f"data:image/png;base64,{build_product_like_png(448, 672)}",
+    ]
     payload = {
         "person_image": f"data:image/png;base64,{build_person_like_png()}",
-        "product_image": f"data:image/png;base64,{build_product_like_png()}",
+        "product_images": product_images,
         "prompt": "전신 정면 사진 기준 자연스러운 실착 미리보기",
     }
     status, data = post_json("/api/try-on", payload)
@@ -220,6 +225,7 @@ def main() -> int:
         "credits_remaining",
         "credits_charged",
         "credit_reference_id",
+        "try_on_pass_count",
     ]
     missing = [field for field in required if field not in data]
 
@@ -268,7 +274,9 @@ def main() -> int:
         )
         return 1
 
-    if data.get("credits_charged") != 1:
+    expected_pass_count = len(product_images)
+
+    if data.get("credits_charged") != expected_pass_count:
         print(
             json.dumps(
                 {
@@ -278,6 +286,23 @@ def main() -> int:
                     "error": "unexpected credit charge",
                     "credits_charged": data.get("credits_charged"),
                     "credits_remaining": data.get("credits_remaining"),
+                    "expected_pass_count": expected_pass_count,
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 1
+
+    if data.get("try_on_pass_count") != expected_pass_count:
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "status": status,
+                    "duration_ms": duration_ms,
+                    "error": "unexpected try_on_pass_count",
+                    "try_on_pass_count": data.get("try_on_pass_count"),
+                    "expected_pass_count": expected_pass_count,
                 },
                 ensure_ascii=False,
             )

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  estimateTryOnPassCount,
   generateTryOnPreview,
   getTryOnRuntimeStatus,
   TryOnProviderError,
@@ -55,6 +56,8 @@ export async function POST(request: Request) {
   let userId: string | null = null;
   let creditReferenceId = crypto.randomUUID();
   const idempotencyKey = getIdempotencyKey(request);
+  const tryOnPassCount = estimateTryOnPassCount(payload);
+  const tryOnCreditCost = TRY_ON_CREDIT_COST * tryOnPassCount;
 
   try {
     const user = await getAuthenticatedSessionUser();
@@ -79,7 +82,7 @@ export async function POST(request: Request) {
     const runtimeStatus = getTryOnRuntimeStatus();
 
     if (runtimeStatus.real_generation_enabled) {
-      const reservation = await reserveCreditsAsync(user.uid, TRY_ON_CREDIT_COST, {
+      const reservation = await reserveCreditsAsync(user.uid, tryOnCreditCost, {
         reason: "try_on_generation",
         referenceId: creditReferenceId,
         idempotencyKey
@@ -98,7 +101,8 @@ export async function POST(request: Request) {
       {
         ...preview,
         credits_remaining: credits.balance,
-        credits_charged: reservedCredits ? TRY_ON_CREDIT_COST : 0,
+        credits_charged: reservedCredits ? tryOnCreditCost : 0,
+        try_on_pass_count: tryOnPassCount,
         idempotent_replay: runtimeStatus.real_generation_enabled && !reservedCredits,
         credit_reference_id: runtimeStatus.real_generation_enabled ? creditReferenceId : null
       },
@@ -119,14 +123,15 @@ export async function POST(request: Request) {
           error: "insufficient_credits",
           message: "실착 생성에 필요한 크레딧이 부족합니다. 충전 기능은 준비 중입니다.",
           credits_remaining: error.balance,
-          credits_required: error.cost
+          credits_required: error.cost,
+          try_on_pass_count: tryOnPassCount
         },
         { status: 402 }
       );
     }
 
     if (reservedCredits && userId) {
-      await refundCreditsAsync(userId, TRY_ON_CREDIT_COST, {
+      await refundCreditsAsync(userId, tryOnCreditCost, {
         reason: "try_on_failed_refund",
         referenceId: creditReferenceId,
         idempotencyKey

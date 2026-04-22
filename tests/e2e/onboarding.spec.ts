@@ -1265,7 +1265,9 @@ test("saved result uses try-on modal with system source by default and viewer mo
     "true"
   );
   await expect(
-    page.getByRole("dialog", { name: "실착 생성 설정" }).getByText("크레딧 1회 차감")
+    page
+      .getByRole("dialog", { name: "실착 생성 설정" })
+      .getByText("선택 아이템 3개 기준 크레딧 3회 차감")
   ).toBeVisible();
   const tryOnStartButton = page
     .getByRole("dialog", { name: "실착 생성 설정" })
@@ -1288,10 +1290,12 @@ test("saved result uses try-on modal with system source by default and viewer mo
   });
   expect(String(tryOnRequests[0].prompt)).toContain(recommendedOutfit.try_on_prompt);
   expect(String(tryOnRequests[0].prompt)).toContain("상의, 하의, 신발 전체 조합을 함께 반영");
-  expect(typeof tryOnRequests[0].product_image).toBe("string");
-  expect(String(tryOnRequests[0].product_image)).toMatch(/^data:image\/png;base64,/);
-  expect(String(tryOnRequests[0].product_image)).not.toBe(uploadedImage);
-  await expect(page.getByText("1 크레딧 차감")).toBeVisible();
+  expect(Array.isArray(tryOnRequests[0].product_images)).toBe(true);
+  expect((tryOnRequests[0].product_images as unknown[])).toHaveLength(3);
+  for (const productImage of tryOnRequests[0].product_images as string[]) {
+    expect(productImage).toMatch(/^data:image\/(png|jpeg|webp);base64,/);
+  }
+  await expect(page.getByText("크레딧 3회 차감")).toBeVisible();
   await expect(page.getByText("체크 2회")).toBeVisible();
   await expect(page.getByRole("heading", { name: "사이즈 체크 후보" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /사이즈 후보 보기/ })).toHaveCount(0);
@@ -1976,7 +1980,7 @@ test("try-on rejects unauthenticated requests", async ({ request }) => {
   const response = await request.post("/api/try-on", {
     data: {
       person_image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}`,
-      product_image: `data:image/png;base64,${tinyPng.buffer.toString("base64")}`,
+      product_images: [`data:image/png;base64,${tinyPng.buffer.toString("base64")}`],
       prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
     }
   });

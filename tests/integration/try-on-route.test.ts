@@ -9,7 +9,11 @@ import { resetRateLimitsForTests } from "@/lib/security/rate-limit";
 
 const validTryOnPayload = {
   person_image: "data:image/png;base64,abc123",
-  product_image: "data:image/png;base64,abc123",
+  product_images: [
+    "data:image/png;base64,abc123",
+    "data:image/png;base64,abc123",
+    "data:image/png;base64,abc123"
+  ],
   prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
 };
 
@@ -136,7 +140,7 @@ describe("try-on API route", () => {
     });
   });
 
-  it("charges one credit only after successful Vertex generation", async () => {
+  it("charges per staged pass after successful Vertex generation", async () => {
     const { issueSessionTokens } = await import("@/lib/auth/server");
     const { accessToken } = await issueSessionTokens(
       authUser,
@@ -171,17 +175,18 @@ describe("try-on API route", () => {
     expect(body).toMatchObject({
       status: "vertex",
       preview_image: "data:image/png;base64,generated-image",
-      credits_charged: 1,
-      credits_remaining: 2,
+      credits_charged: 3,
+      credits_remaining: 0,
+      try_on_pass_count: 3,
       credit_reference_id: expect.any(String)
     });
-    expect(getCreditBalance(authUser.uid).balance).toBe(2);
+    expect(getCreditBalance(authUser.uid).balance).toBe(0);
     expect(getCreditTransactions(authUser.uid)[0]).toMatchObject({
       type: "debit",
-      delta: -1,
+      delta: -3,
       reason: "try_on_generation",
       reference_id: body.credit_reference_id,
-      balance_after: 2
+      balance_after: 0
     });
   });
 
@@ -226,13 +231,15 @@ describe("try-on API route", () => {
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
     expect(firstBody).toMatchObject({
-      credits_charged: 1,
-      credits_remaining: 2,
+      credits_charged: 3,
+      credits_remaining: 0,
+      try_on_pass_count: 3,
       idempotent_replay: false
     });
     expect(secondBody).toMatchObject({
       credits_charged: 0,
-      credits_remaining: 2,
+      credits_remaining: 0,
+      try_on_pass_count: 3,
       idempotent_replay: true,
       credit_reference_id: firstBody.credit_reference_id
     });

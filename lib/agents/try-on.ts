@@ -7,7 +7,8 @@ import { importPKCS8, SignJWT } from "jose";
 
 export type TryOnRequest = {
   person_image: string;
-  product_image: string;
+  product_image?: string;
+  product_images?: string[];
   prompt: string;
   user_id?: string;
 };
@@ -65,7 +66,28 @@ export type TryOnRuntimeStatus = {
   model_id: string;
   missing_config: string[];
   auth_source: "env" | "gcloud" | "service_account" | "missing";
+  max_product_images_per_pass: number;
 };
+
+const DEFAULT_VERTEX_MAX_PRODUCT_IMAGES = 1;
+
+function isDataImageArray(value: unknown) {
+  return (
+    Array.isArray(value) &&
+    value.length >= 1 &&
+    value.every((entry) => isDataImage(entry))
+  );
+}
+
+function getVertexMaxProductImagesPerPass() {
+  const raw = Number(process.env.VERTEX_TRY_ON_MAX_PRODUCT_IMAGES ?? "");
+
+  if (!Number.isFinite(raw) || raw < 1) {
+    return DEFAULT_VERTEX_MAX_PRODUCT_IMAGES;
+  }
+
+  return Math.floor(raw);
+}
 
 const DEFAULT_VERTEX_TRY_ON_MODEL = "virtual-try-on-001";
 const GOOGLE_OAUTH_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -126,11 +148,120 @@ export function validateTryOnRequest(payload: unknown): payload is TryOnRequest 
   }
 
   const request = payload as Record<string, unknown>;
+  const hasSingleProductImage = isDataImage(request.product_image);
+  const hasProductImageArray = isDataImageArray(request.product_images);
   return (
     isDataImage(request.person_image) &&
-    isDataImage(request.product_image) &&
+    (hasSingleProductImage || hasProductImageArray) &&
     isNonEmptyString(request.prompt)
   );
+}
+
+function resolveProductImages(payload: TryOnRequest) {
+  if (Array.isArray(payload.product_images) && payload.product_images.length > 0) {
+    return payload.product_images.map((image) => parseDataImage(image));
+  }
+
+  if (payload.product_image) {
+    return [parseDataImage(payload.product_image)];
+  }
+
+  throw new TryOnProviderError("invalid_try_on_image", "missing_product_images", 400);
+}
+
+export function estimateTryOnPassCount(payload: TryOnRequest) {
+  const productImages = resolveProductImages(payload);
+  const maxProductImagesPerPass = getVertexMaxProductImagesPerPass();
+
+  return Math.max(1, Math.ceil(productImages.length / maxProductImagesPerPass));
+}
+
+function chunkProductImages<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+type VertexGeneratedImage = {
+  mimeType: string;
+  base64: string;
+};
+
+async function requestVertexTryOnStage(input: {
+  endpoint: string;
+  accessToken: string;
+  personImage: ParsedDataImage;
+  productImages: ParsedDataImage[];
+  storageUri?: string;
+}) {
+  const parameters = {
+    sampleCount: 1,
+    ...(input.storageUri ? { storageUri: input.storageUri } : {})
+  };
+
+  const response = await fetch(input.endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${input.accessToken}`,
+      "Content-Type": "application/json; charset=utf-8"
+    },
+    body: JSON.stringify({
+      instances: [
+        {
+          personImage: {
+            image: {
+              bytesBase64Encoded: input.personImage.base64
+            }
+          },
+          productImages: input.productImages.map((image) => ({
+            image: {
+              bytesBase64Encoded: image.base64
+            }
+          }))
+        }
+      ],
+      parameters
+    })
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    const excerpt = body.replace(/\s+/g, " ").slice(0, 500);
+    throw new TryOnProviderError(
+      "vertex_http_error",
+      `vertex_try_on_http_${response.status}:${excerpt || "empty_error_body"}`,
+      response.status === 401 || response.status === 403 ? 502 : 503
+    );
+  }
+
+  const data = (await response.json()) as VertexTryOnResponse;
+  const prediction = data.predictions?.[0];
+  const image = prediction?.images?.[0] ?? prediction;
+
+  if (!image?.bytesBase64Encoded) {
+    if (image?.gcsUri) {
+      throw new TryOnProviderError(
+        "vertex_output_uri_only",
+        "vertex_try_on_returned_gcs_uri_without_inline_bytes",
+        502
+      );
+    }
+
+    throw new TryOnProviderError(
+      "empty_vertex_response",
+      "empty_vertex_try_on_response",
+      502
+    );
+  }
+
+  return {
+    mimeType: image.mimeType ?? "image/png",
+    base64: image.bytesBase64Encoded
+  } satisfies VertexGeneratedImage;
 }
 
 export function resolveTryOnProvider() {
@@ -333,7 +464,8 @@ export function getTryOnRuntimeStatus(): TryOnRuntimeStatus {
     real_generation_enabled: provider === "vertex" && missingConfig.length === 0,
     model_id: getVertexModelId(),
     missing_config: missingConfig,
-    auth_source: authSource
+    auth_source: authSource,
+    max_product_images_per_pass: provider === "vertex" ? getVertexMaxProductImagesPerPass() : 1
   };
 }
 
@@ -363,74 +495,34 @@ async function getVertexConfig() {
 
 async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnResponse> {
   const config = await getVertexConfig();
-  const personImage = parseDataImage(payload.person_image);
-  const productImage = parseDataImage(payload.product_image);
+  let personImage = parseDataImage(payload.person_image);
+  const productImages = resolveProductImages(payload);
+  const maxProductImagesPerPass = getVertexMaxProductImagesPerPass();
   const endpoint = `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.modelId}:predict`;
-  const parameters = {
-    sampleCount: 1,
-    ...(config.storageUri ? { storageUri: config.storageUri } : {})
-  };
+  const stages = chunkProductImages(productImages, maxProductImagesPerPass);
+  let finalImage: VertexGeneratedImage | null = null;
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.accessToken}`,
-      "Content-Type": "application/json; charset=utf-8"
-    },
-    body: JSON.stringify({
-      instances: [
-        {
-          personImage: {
-            image: {
-              bytesBase64Encoded: personImage.base64
-            }
-          },
-          productImages: [
-            {
-              image: {
-                bytesBase64Encoded: productImage.base64
-              }
-            }
-          ]
-        }
-      ],
-      parameters
-    })
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    const excerpt = body.replace(/\s+/g, " ").slice(0, 500);
-    throw new TryOnProviderError(
-      "vertex_http_error",
-      `vertex_try_on_http_${response.status}:${excerpt || "empty_error_body"}`,
-      response.status === 401 || response.status === 403 ? 502 : 503
-    );
+  for (const stage of stages) {
+    finalImage = await requestVertexTryOnStage({
+      endpoint,
+      accessToken: config.accessToken,
+      personImage,
+      productImages: stage,
+      storageUri: config.storageUri
+    });
+    personImage = {
+      mimeType: finalImage.mimeType,
+      base64: finalImage.base64
+    };
   }
 
-  const data = (await response.json()) as VertexTryOnResponse;
-  const prediction = data.predictions?.[0];
-  const image = prediction?.images?.[0] ?? prediction;
-
-  if (!image?.bytesBase64Encoded) {
-    if (image?.gcsUri) {
-      throw new TryOnProviderError(
-        "vertex_output_uri_only",
-        "vertex_try_on_returned_gcs_uri_without_inline_bytes",
-        502
-      );
-    }
-
-    throw new TryOnProviderError(
-      "empty_vertex_response",
-      "empty_vertex_try_on_response",
-      502
-    );
+  if (!finalImage) {
+    throw new TryOnProviderError("empty_vertex_response", "empty_vertex_try_on_response", 502);
   }
 
   return {
     status: "vertex",
-    preview_image: `data:${image.mimeType ?? "image/png"};base64,${image.bytesBase64Encoded}`,
+    preview_image: `data:${finalImage.mimeType};base64,${finalImage.base64}`,
     message: "Vertex AI Virtual Try-On 실착 미리보기가 준비됐습니다."
   };
 }

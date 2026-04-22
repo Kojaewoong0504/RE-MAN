@@ -46,7 +46,6 @@ import {
 } from "@/lib/product/closet-basis";
 import { SYSTEM_STYLE_LIBRARY } from "@/lib/product/system-style-library";
 import { buildTodayActionPlan } from "@/lib/product/today-action-plan";
-import { buildOutfitBoardDataUrl } from "@/lib/try-on/outfit-board";
 
 type RecommendationFeedbackStatus = "idle" | "saving" | "saved" | "error";
 type TryOnStatus = "idle" | "generating" | "ready" | "error";
@@ -345,6 +344,7 @@ export default function ResultPage() {
     outfitPreviewCards.find((card) => card.imageSrc.startsWith("data:image/"))?.imageSrc;
   const selectedTryOnCards =
     selectedTryOnSource === "system" ? systemTryOnCards : outfitPreviewCards;
+  const tryOnCreditEstimate = selectedTryOnCards.length * TRY_ON_CREDIT_COST;
 
   function applyResolvedState(state: OnboardingState) {
     const normalizedClosetItems = normalizeClosetItems(state.closet_items);
@@ -649,7 +649,11 @@ export default function ResultPage() {
     setTryOnMessage(null);
 
     try {
-      const productImage = await buildOutfitBoardDataUrl(selectedTryOnCards);
+      const productImages = await Promise.all(
+        selectedTryOnCards.map((card) =>
+          imageUrlToDataUrl(card.imageSrc).catch(() => imageUrlToDataUrl(card.fallbackSrc))
+        )
+      );
       const response = await fetch("/api/try-on", {
         method: "POST",
         credentials: "include",
@@ -659,7 +663,7 @@ export default function ResultPage() {
         },
         body: JSON.stringify({
           person_image: tryOnPersonImage,
-          product_image: productImage,
+          product_images: productImages,
           prompt: buildTryOnPrompt(feedback, selectedTryOnCards, selectedTryOnSource)
         })
       });
@@ -844,7 +848,7 @@ export default function ResultPage() {
               </span>
             </div>
             <p className="result-recommendation-copy">
-              실착은 상의, 하의, 신발을 한 장의 조합 보드로 묶어 현재 전신 사진에 반영합니다. 기본은 시스템 추천 조합입니다.
+              실착은 선택된 추천 아이템을 순차로 반영해 한 장의 결과로 만듭니다. 기본은 시스템 추천 조합입니다.
             </p>
             <div className="result-try-on-layout">
               <div className="result-try-on-output">
@@ -912,7 +916,9 @@ export default function ResultPage() {
                   </span>
                   <span>→</span>
                 </button>
-                <p className="result-try-on-credit-note">크레딧 1회 차감</p>
+                <p className="result-try-on-credit-note">
+                  선택 아이템 {selectedTryOnCards.length}개 기준 크레딧 {tryOnCreditEstimate}회 차감
+                </p>
                 {tryOnMessage ? <p className="result-try-on-message">{tryOnMessage}</p> : null}
                 {tryOnError ? (
                   <p className="text-sm font-bold leading-6 text-red-700">{tryOnError}</p>
@@ -1048,7 +1054,7 @@ export default function ResultPage() {
                       </button>
                     </div>
                     <p className="result-recommendation-copy">
-                      상의, 하의, 신발을 한 장의 조합 보드로 묶어 실착합니다. 기본은 시스템 추천 조합이고, 원하면 내 옷장 기준으로 바꿀 수 있습니다.
+                      선택한 추천 아이템을 순차 합성해 최종 실착 이미지를 만듭니다. 기본은 시스템 추천 조합이고, 원하면 내 옷장 기준으로 바꿀 수 있습니다.
                     </p>
                     <div className="result-try-on-source-picker">
                       <button
@@ -1076,10 +1082,12 @@ export default function ResultPage() {
                       </strong>
                       <span>
                         {selectedTryOnSource === "system"
-                          ? "추천 조합 전체를 한 번에 실착 대상으로 씁니다."
-                          : "내 옷장 조합 전체를 한 번에 실착 대상으로 씁니다."}
+                          ? "추천 조합 전체를 순차로 반영합니다."
+                          : "내 옷장 조합 전체를 순차로 반영합니다."}
                       </span>
-                      <small>크레딧 1회 차감</small>
+                      <small>
+                        선택 아이템 {selectedTryOnCards.length}개 기준 크레딧 {tryOnCreditEstimate}회 차감
+                      </small>
                     </div>
                     <div className="result-try-on-modal-grid">
                       {selectedTryOnCards.map((card) => (

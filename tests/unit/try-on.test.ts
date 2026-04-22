@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  estimateTryOnPassCount,
   generateTryOnPreview,
   getTryOnRuntimeStatus,
   resolvePreferredVertexAccessToken,
@@ -34,6 +35,16 @@ describe("try-on provider contract", () => {
     ).toBe(true);
   });
 
+  it("accepts one person image, variable product images, and a prompt", () => {
+    expect(
+      validateTryOnRequest({
+        person_image: image,
+        product_images: [image, image, image],
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).toBe(true);
+  });
+
   it("rejects missing product images", () => {
     expect(
       validateTryOnRequest({
@@ -41,6 +52,16 @@ describe("try-on provider contract", () => {
         prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
       })
     ).toBe(false);
+  });
+
+  it("accepts more than three product images at the app contract layer", () => {
+    expect(
+      validateTryOnRequest({
+        person_image: image,
+        product_images: [image, image, image, image],
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).toBe(true);
   });
 
   it("rejects unsupported image MIME types", () => {
@@ -124,6 +145,30 @@ describe("try-on provider contract", () => {
     });
   });
 
+  it("reports the current Vertex pass limit in runtime status", () => {
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubEnv("VERTEX_TRY_ON_MAX_PRODUCT_IMAGES", "2");
+
+    expect(getTryOnRuntimeStatus()).toMatchObject({
+      max_product_images_per_pass: 2
+    });
+  });
+
+  it("estimates try-on pass count from the current adapter limit", () => {
+    vi.stubEnv("VERTEX_TRY_ON_MAX_PRODUCT_IMAGES", "2");
+
+    expect(
+      estimateTryOnPassCount({
+        person_image: image,
+        product_images: [image, image, image, image, image],
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).toBe(3);
+  });
+
   it("reports missing Vertex config only when Vertex provider is active", () => {
     vi.stubEnv("TRY_ON_PROVIDER", "vertex");
 
@@ -164,7 +209,7 @@ describe("try-on provider contract", () => {
     await expect(
       generateTryOnPreview({
         person_image: image,
-        product_image: image,
+        product_images: [image, image, image],
         prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
       })
     ).resolves.toMatchObject({
@@ -238,11 +283,105 @@ describe("try-on provider contract", () => {
       })
     );
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
+      instances: [
+        {
+          productImages: [
+            { image: { bytesBase64Encoded: "abc123" } }
+          ]
+        }
+      ],
       parameters: {
         sampleCount: 1,
         storageUri: "gs://bucket/try-on"
       }
     });
+  });
+
+  it("splits productImages into sequential single-item passes at the Vertex adapter", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result-stage-1"
+            }
+          ]
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result-stage-2"
+            }
+          ]
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result-stage-3"
+            }
+          ]
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result-stage-4"
+            }
+          ]
+        })
+      });
+
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      generateTryOnPreview({
+        person_image: image,
+        product_images: [image, image, image, image],
+        prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+      })
+    ).resolves.toMatchObject({
+      status: "vertex",
+      preview_image: "data:image/png;base64,result-stage-4"
+    });
+
+    const firstRequestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const secondRequestBody = JSON.parse(fetchMock.mock.calls[1][1].body);
+    const thirdRequestBody = JSON.parse(fetchMock.mock.calls[2][1].body);
+    const fourthRequestBody = JSON.parse(fetchMock.mock.calls[3][1].body);
+
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(firstRequestBody.instances[0].productImages).toHaveLength(1);
+    expect(secondRequestBody.instances[0].productImages).toHaveLength(1);
+    expect(thirdRequestBody.instances[0].productImages).toHaveLength(1);
+    expect(fourthRequestBody.instances[0].productImages).toHaveLength(1);
+    expect(secondRequestBody.instances[0].personImage.image.bytesBase64Encoded).toBe(
+      "result-stage-1"
+    );
+    expect(thirdRequestBody.instances[0].personImage.image.bytesBase64Encoded).toBe(
+      "result-stage-2"
+    );
+    expect(fourthRequestBody.instances[0].personImage.image.bytesBase64Encoded).toBe(
+      "result-stage-3"
+    );
   });
 
   it("classifies Vertex HTTP failures without losing the provider error code", async () => {
