@@ -1138,7 +1138,10 @@ test("saved result uses try-on modal with system source by default and viewer mo
           {
             step: 1,
             preview_image: uploadedImage,
-            label: "화이트 셔츠"
+            label: "화이트 셔츠",
+            retry_attempted: true,
+            auto_corrected: true,
+            correction_failed: false
           },
           {
             step: 2,
@@ -1332,6 +1335,7 @@ test("saved result uses try-on modal with system source by default and viewer mo
   await expect(tryOnViewerDialog.getByText("1단계", { exact: true })).toBeVisible();
   await expect(tryOnViewerDialog.getByText("2단계", { exact: true })).toBeVisible();
   await expect(tryOnViewerDialog.getByText("3단계", { exact: true })).toBeVisible();
+  await expect(tryOnViewerDialog.getByText("자동 보정됨")).toBeVisible();
   expect(tryOnRequests).toHaveLength(1);
   expect(tryOnRequests[0]).toMatchObject({
     person_image: uploadedImage,

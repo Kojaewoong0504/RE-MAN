@@ -721,6 +721,20 @@ a {
     @apply mt-1 block text-sm font-black leading-5 text-ink;
   }
 
+  .result-try-on-stage-badge {
+    @apply mt-2 inline-flex rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em];
+  }
+
+  .result-try-on-stage-badge-success {
+    background: rgba(0, 45, 28, 0.12);
+    color: #0b5d39;
+  }
+
+  .result-try-on-stage-badge-warning {
+    background: rgba(120, 53, 15, 0.12);
+    color: #8a4b17;
+  }
+
   .result-modal-backdrop {
     @apply fixed z-[100] flex items-end justify-center bg-black/55 p-4 backdrop-blur-sm sm:items-center;
     top: 0;

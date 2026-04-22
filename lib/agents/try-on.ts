@@ -32,6 +32,9 @@ export type TryOnResponse = {
     step: number;
     preview_image: string;
     label?: string;
+    retry_attempted?: boolean;
+    auto_corrected?: boolean;
+    correction_failed?: boolean;
   }>;
 };
 export type TryOnErrorCode =
@@ -327,6 +330,14 @@ type VertexGeneratedImage = {
   mimeType: string;
   base64: string;
 };
+
+function buildGeneratedDataUrl(image: VertexGeneratedImage) {
+  return `data:${image.mimeType};base64,${image.base64}`;
+}
+
+function isUnchangedStageResult(previousImage: ParsedDataImage, nextImage: VertexGeneratedImage) {
+  return previousImage.mimeType === nextImage.mimeType && previousImage.base64 === nextImage.base64;
+}
 
 async function requestVertexTryOnStage(input: {
   endpoint: string;
@@ -653,14 +664,43 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
         productImages: stage,
         storageUri: config.storageUri
       });
+      let retryAttempted = false;
+      let autoCorrected = false;
+      let correctionFailed = false;
+
+      if (isUnchangedStageResult(personImage, finalImage)) {
+        retryAttempted = true;
+
+        try {
+          const retriedImage = await requestVertexTryOnStage({
+            endpoint,
+            accessToken: config.accessToken,
+            personImage,
+            productImages: stage,
+            storageUri: config.storageUri
+          });
+
+          if (!isUnchangedStageResult(personImage, retriedImage)) {
+            finalImage = retriedImage;
+            autoCorrected = true;
+          } else {
+            correctionFailed = true;
+          }
+        } catch {
+          correctionFailed = true;
+        }
+      }
       actualPassCount += 1;
       const stageItemLabel =
         selectedItems.slice(index, index + stage.length).map((item) => item.title).join(" + ") ||
         undefined;
       stagePreviews.push({
         step: actualPassCount,
-        preview_image: `data:${finalImage.mimeType};base64,${finalImage.base64}`,
-        label: stageItemLabel
+        preview_image: buildGeneratedDataUrl(finalImage),
+        label: stageItemLabel,
+        retry_attempted: retryAttempted || undefined,
+        auto_corrected: retryAttempted ? autoCorrected : undefined,
+        correction_failed: retryAttempted ? correctionFailed : undefined
       });
       personImage = {
         mimeType: finalImage.mimeType,
@@ -688,7 +728,7 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
 
   return {
     status: "vertex",
-    preview_image: `data:${finalImage.mimeType};base64,${finalImage.base64}`,
+    preview_image: buildGeneratedDataUrl(finalImage),
     message: "Vertex AI Virtual Try-On 실착 미리보기가 준비됐습니다.",
     pass_count: actualPassCount,
     visibility_guidance: buildTryOnVisibilityGuidance(payload) ?? undefined,

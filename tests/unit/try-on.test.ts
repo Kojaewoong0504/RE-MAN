@@ -708,6 +708,155 @@ describe("try-on provider contract", () => {
     );
   });
 
+  it("retries a stage once when Vertex returns an unchanged image and marks the stage as auto-corrected", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "abc123"
+            }
+          ]
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "corrected-stage-1"
+            }
+          ]
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "result-stage-2"
+            }
+          ]
+        })
+      });
+
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      generateTryOnPreview({
+        person_image: image,
+        selected_items: [
+          {
+            id: "sys-top-1",
+            category: "tops",
+            role: "base_top",
+            title: "화이트 셔츠",
+            image_url: "data:image/png;base64,top111"
+          },
+          {
+            id: "sys-bottom-1",
+            category: "bottoms",
+            role: "bottom",
+            title: "검정 슬랙스",
+            image_url: "data:image/png;base64,bottom222"
+          }
+        ],
+        ordered_item_ids: ["sys-top-1", "sys-bottom-1"],
+        manual_order_enabled: false,
+        prompt: "기본 조합 전체를 함께 반영"
+      })
+    ).resolves.toMatchObject({
+      status: "vertex",
+      preview_image: "data:image/png;base64,corrected-stage-1",
+      pass_count: 1,
+      stage_previews: [
+        {
+          step: 1,
+          preview_image: "data:image/png;base64,corrected-stage-1",
+          retry_attempted: true,
+          auto_corrected: true,
+          correction_failed: false
+        }
+      ]
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("marks a stage when unchanged-image retry still fails to produce a different result", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "abc123"
+            }
+          ]
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              mimeType: "image/png",
+              bytesBase64Encoded: "abc123"
+            }
+          ]
+        })
+      });
+
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      generateTryOnPreview({
+        person_image: image,
+        selected_items: [
+          {
+            id: "sys-top-1",
+            category: "tops",
+            role: "base_top",
+            title: "화이트 셔츠",
+            image_url: "data:image/png;base64,top111"
+          }
+        ],
+        ordered_item_ids: ["sys-top-1"],
+        manual_order_enabled: false,
+        prompt: "단일 상의 실착"
+      })
+    ).resolves.toMatchObject({
+      stage_previews: [
+        {
+          step: 1,
+          preview_image: "data:image/png;base64,abc123",
+          retry_attempted: true,
+          auto_corrected: false,
+          correction_failed: true
+        }
+      ]
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("falls back to sequential single-item passes when the runtime rejects a three-item request", async () => {
     const fetchMock = vi
       .fn()

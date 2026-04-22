@@ -984,6 +984,9 @@ export default function ResultPage() {
               step: number;
               preview_image: string;
               label?: string;
+              retry_attempted?: boolean;
+              auto_corrected?: boolean;
+              correction_failed?: boolean;
             }>;
           }
         | null;
@@ -1546,6 +1549,17 @@ export default function ResultPage() {
                           </div>
                           <span>{stage.step}단계</span>
                           <strong>{stage.label ?? "중간 결과"}</strong>
+                          {stage.retry_attempted ? (
+                            <small
+                              className={`result-try-on-stage-badge ${
+                                stage.auto_corrected
+                                  ? "result-try-on-stage-badge-success"
+                                  : "result-try-on-stage-badge-warning"
+                              }`}
+                            >
+                              {stage.auto_corrected ? "자동 보정됨" : "보정 실패"}
+                            </small>
+                          ) : null}
                         </article>
                       ))}
                     </div>

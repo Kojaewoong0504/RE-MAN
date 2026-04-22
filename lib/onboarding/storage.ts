@@ -104,6 +104,9 @@ export type TryOnPreviewCacheEntry = {
     step: number;
     preview_image: string;
     label?: string;
+    retry_attempted?: boolean;
+    auto_corrected?: boolean;
+    correction_failed?: boolean;
   }>;
   credits_charged?: number;
   created_at: string;
