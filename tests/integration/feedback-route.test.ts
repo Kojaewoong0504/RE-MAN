@@ -149,6 +149,67 @@ describe("feedback API route", () => {
     });
   });
 
+  it("returns body-aware safety basis and avoid notes in the final response", async () => {
+    const { POST } = await loadRouteWithCookies(
+      await buildAuthCookies({
+        ...authUser,
+        uid: "feedback-body-aware-user"
+      })
+    );
+
+    const response = await POST(
+      buildRequest({
+        ...validFeedbackPayload,
+        body_profile: {
+          overall_frame: "large",
+          belly_visibility: "high",
+          leg_length_impression: "shorter",
+          fit_risk_tags: [
+            "cropped_top_risk",
+            "skinny_bottom_risk",
+            "strong_contrast_split_risk"
+          ]
+        },
+        closet_items: [
+          {
+            id: "top-1",
+            category: "tops",
+            name: "검정 레귤러 티셔츠",
+            fit: "레귤러",
+            wear_state: "잘 맞음"
+          },
+          {
+            id: "bottom-1",
+            category: "bottoms",
+            name: "차콜 팬츠",
+            fit: "테이퍼드",
+            wear_state: "잘 맞음"
+          },
+          {
+            id: "shoes-1",
+            category: "shoes",
+            name: "검정 운동화",
+            wear_state: "잘 맞음"
+          }
+        ]
+      })
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.recommended_outfit.safety_basis).toEqual([
+      "상체를 과하게 키우지 않음",
+      "하체 라인이 안정적으로 보임",
+      "지금 옷장에서 바로 재현 가능"
+    ]);
+    expect(body.recommended_outfit.avoid_notes).toEqual([
+      "짧은 상의는 제외",
+      "붙는 하의는 제외",
+      "강한 상하 대비는 제외"
+    ]);
+  });
+
   it("removes provider source item ids that are not valid closet matches", async () => {
     vi.doMock("@/lib/agents/mock-feedback", () => ({
       buildMockOnboardingFeedback: () => ({

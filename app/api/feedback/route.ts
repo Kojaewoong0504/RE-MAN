@@ -128,6 +128,7 @@ export async function POST(request: Request) {
     );
     const hybrid = buildHybridRecommendation({
       survey: payload.survey,
+      bodyProfile: payload.body_profile,
       closetItems: payload.closet_items ?? [],
       closetStrategy: payload.closet_strategy,
       verifiedSourceItemIds: verifiedSourceItemIds ?? {}
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
     const verifiedFeedback = {
       ...feedback,
       recommended_outfit: {
-        ...feedback.recommended_outfit,
+        ...hybrid.recommended_outfit,
         source_item_ids: verifiedSourceItemIds
       },
       recommendation_mix: hybrid.recommendation_mix,

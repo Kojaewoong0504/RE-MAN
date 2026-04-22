@@ -378,6 +378,48 @@ function validatePreferenceProfile(value: unknown): value is PreferenceProfile {
   return hasValidStrings && hasValidReaction;
 }
 
+function validateBodyProfile(value: unknown): value is BodyProfile {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const profile = value as Record<string, unknown>;
+  const isSignalLevel = (item: unknown) =>
+    item === undefined || item === "low" || item === "medium" || item === "high";
+  const isLegImpression = (item: unknown) =>
+    item === undefined || item === "shorter" || item === "balanced" || item === "longer";
+  const isShoulderShape = (item: unknown) =>
+    item === undefined || item === "rounded" || item === "narrow" || item === "balanced";
+  const isNeckImpression = (item: unknown) =>
+    item === undefined || item === "short" || item === "balanced" || item === "long";
+  const isFrame = (item: unknown) =>
+    item === undefined || item === "large" || item === "medium" || item === "compact";
+
+  return (
+    isSignalLevel(profile.upper_body_presence) &&
+    isSignalLevel(profile.lower_body_balance) &&
+    isSignalLevel(profile.belly_visibility) &&
+    isLegImpression(profile.leg_length_impression) &&
+    isShoulderShape(profile.shoulder_shape) &&
+    isNeckImpression(profile.neck_impression) &&
+    isFrame(profile.overall_frame) &&
+    (profile.fit_risk_tags === undefined ||
+      (Array.isArray(profile.fit_risk_tags) &&
+        profile.fit_risk_tags.every(
+          (item) =>
+            item === "tight_top_risk" ||
+            item === "cropped_top_risk" ||
+            item === "strong_contrast_split_risk" ||
+            item === "skinny_bottom_risk" ||
+            item === "heavy_neckline_risk"
+        )))
+  );
+}
+
 export function validateAgentRequest(payload: unknown): payload is AgentRequest {
   if (!payload || typeof payload !== "object") {
     return false;
@@ -439,6 +481,10 @@ export function validateAgentRequest(payload: unknown): payload is AgentRequest 
     return false;
   }
 
+  if (!validateBodyProfile(request.body_profile)) {
+    return false;
+  }
+
   return true;
 }
 
@@ -476,6 +522,10 @@ function validateOutfitRecommendation(value: unknown): value is OutfitRecommenda
     isNonEmptyString(recommendation.title) &&
     validateImprovements(recommendation.items) &&
     isNonEmptyString(recommendation.reason) &&
+    (recommendation.safety_basis === undefined ||
+      validateImprovements(recommendation.safety_basis)) &&
+    (recommendation.avoid_notes === undefined ||
+      validateImprovements(recommendation.avoid_notes)) &&
     isNonEmptyString(recommendation.try_on_prompt) &&
     hasValidSourceItemIds
   );
@@ -707,6 +757,12 @@ export function normalizeOnboardingResponse(
       title: compactResponseText(response.recommended_outfit.title, RESPONSE_LIMITS.outfitTitle),
       items: normalizeTriple(response.recommended_outfit.items, RESPONSE_LIMITS.improvement),
       reason: compactResponseText(response.recommended_outfit.reason, RESPONSE_LIMITS.outfitReason),
+      safety_basis: response.recommended_outfit.safety_basis
+        ? normalizeTriple(response.recommended_outfit.safety_basis, RESPONSE_LIMITS.improvement)
+        : undefined,
+      avoid_notes: response.recommended_outfit.avoid_notes
+        ? normalizeTriple(response.recommended_outfit.avoid_notes, RESPONSE_LIMITS.improvement)
+        : undefined,
       try_on_prompt: compactResponseText(
         response.recommended_outfit.try_on_prompt,
         RESPONSE_LIMITS.tryOnPrompt
