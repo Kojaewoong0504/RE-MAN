@@ -980,6 +980,8 @@ export default function ResultPage() {
             subscription_active?: boolean;
             try_on_pass_count?: number;
             visibility_guidance?: string | null;
+            review_required?: boolean;
+            review_reason?: string | null;
             stage_previews?: Array<{
               step: number;
               preview_image: string;
@@ -1017,6 +1019,8 @@ export default function ResultPage() {
         preview_image: data.preview_image,
         message: data.message ?? "실착 이미지가 준비됐습니다.",
         visibility_guidance: data.visibility_guidance ?? undefined,
+        review_required: data.review_required ?? undefined,
+        review_reason: data.review_reason ?? undefined,
         pass_count: data.try_on_pass_count,
         requested_items: buildStoredRequestedItems(selectedTryOnCards),
         stage_previews: data.stage_previews ?? [],
@@ -1528,6 +1532,12 @@ export default function ResultPage() {
                     ? `${tryOnPreview.credits_charged ?? 1} 크레딧 차감`
                     : tryOnPreview.message}
                 </p>
+                {tryOnPreview.review_required ? (
+                  <div className="result-try-on-review-note">
+                    <strong>검토 필요</strong>
+                    <span>{tryOnPreview.review_reason ?? "부분 반영 가능성이 높은 조합입니다."}</span>
+                  </div>
+                ) : null}
                 {tryOnPreview.visibility_guidance ? (
                   <p className="result-try-on-visibility-note">{tryOnPreview.visibility_guidance}</p>
                 ) : null}

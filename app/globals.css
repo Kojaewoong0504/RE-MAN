@@ -642,6 +642,22 @@ a {
     @apply text-sm font-bold leading-6 text-muted;
   }
 
+  .result-try-on-review-note {
+    @apply rounded-2xl border px-4 py-3;
+    border-color: rgba(138, 75, 23, 0.2);
+    background: rgba(138, 75, 23, 0.08);
+  }
+
+  .result-try-on-review-note strong {
+    @apply block text-xs font-black uppercase tracking-[0.14em];
+    color: #8a4b17;
+  }
+
+  .result-try-on-review-note span {
+    @apply mt-2 block text-sm font-bold leading-6;
+    color: var(--color-ink);
+  }
+
   .result-try-on-visibility-note {
     @apply rounded-2xl border px-4 py-3 text-sm font-bold leading-6;
     border-color: rgba(5, 17, 37, 0.12);

@@ -90,6 +90,8 @@ export type TryOnPreviewCacheEntry = {
   preview_image: string;
   message: string;
   visibility_guidance?: string;
+  review_required?: boolean;
+  review_reason?: string;
   pass_count?: number;
   requested_items?: Array<{
     id: string;

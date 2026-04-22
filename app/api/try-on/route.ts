@@ -105,6 +105,8 @@ export async function POST(request: Request) {
         credits_charged: reservedCredits ? tryOnCreditCost : 0,
         try_on_pass_count: preview.pass_count ?? tryOnPassCount,
         visibility_guidance: preview.visibility_guidance ?? null,
+        review_required: preview.review_required ?? false,
+        review_reason: preview.review_reason ?? null,
         stage_previews: preview.stage_previews ?? [],
         idempotent_replay: runtimeStatus.real_generation_enabled && !reservedCredits,
         credit_reference_id: runtimeStatus.real_generation_enabled ? creditReferenceId : null

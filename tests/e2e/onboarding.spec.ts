@@ -1134,6 +1134,8 @@ test("saved result uses try-on modal with system source by default and viewer mo
         message: "실착 생성 완료",
         credits_remaining: 2,
         credits_charged: 1,
+        review_required: true,
+        review_reason: "레이어드 상의 / 신발 포함 조합",
         stage_previews: [
           {
             step: 1,
@@ -1332,6 +1334,8 @@ test("saved result uses try-on modal with system source by default and viewer mo
   const tryOnViewerDialog = page.getByRole("dialog", { name: "실착 결과 보기" });
   await expect(tryOnViewerDialog.getByRole("img", { name: "실착 결과 전체 보기" })).toBeVisible();
   await expect(tryOnViewerDialog.getByText("합성 단계")).toBeVisible();
+  await expect(tryOnViewerDialog.getByText("검토 필요")).toBeVisible();
+  await expect(tryOnViewerDialog.getByText("레이어드 상의 / 신발 포함 조합")).toBeVisible();
   await expect(tryOnViewerDialog.getByText("1단계", { exact: true })).toBeVisible();
   await expect(tryOnViewerDialog.getByText("2단계", { exact: true })).toBeVisible();
   await expect(tryOnViewerDialog.getByText("3단계", { exact: true })).toBeVisible();

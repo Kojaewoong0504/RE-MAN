@@ -28,6 +28,8 @@ export type TryOnResponse = {
   message: string;
   pass_count?: number;
   visibility_guidance?: string;
+  review_required?: boolean;
+  review_reason?: string;
   stage_previews?: Array<{
     step: number;
     preview_image: string;
@@ -88,6 +90,11 @@ export type TryOnRuntimeStatus = {
   missing_config: string[];
   auth_source: "env" | "gcloud" | "service_account" | "missing";
   max_product_images_per_pass: number;
+};
+
+export type TryOnReviewSignal = {
+  review_required: boolean;
+  review_reason?: string;
 };
 
 const DEFAULT_VERTEX_MAX_PRODUCT_IMAGES = 3;
@@ -272,6 +279,10 @@ function countUpperLayerItems(selectedItems: TryOnSelectedItem[]) {
   }).length;
 }
 
+function joinUniqueReasons(reasons: string[]) {
+  return [...new Set(reasons)].join(" / ");
+}
+
 function shouldForceSequentialLayeredPasses(payload: TryOnRequest) {
   const selectedItems = resolveSelectedItemsForProvider(payload);
 
@@ -317,6 +328,50 @@ export function buildTryOnVisibilityGuidance(payload: TryOnRequest) {
   }
 
   return GENERIC_TRY_ON_VISIBILITY_GUIDANCE;
+}
+
+export function buildTryOnReviewSignal(payload: TryOnRequest): TryOnReviewSignal {
+  const selectedItems = resolveSelectedItemsForProvider(payload);
+
+  if (selectedItems.length === 0) {
+    return {
+      review_required: false
+    };
+  }
+
+  const reasons: string[] = [];
+  const upperLayerCount = countUpperLayerItems(selectedItems);
+  const hasShoes = selectedItems.some((item) => item.category === "shoes");
+  const hasAccessories = selectedItems.some(
+    (item) => item.category === "hats" || item.category === "bags"
+  );
+
+  if (upperLayerCount >= 2) {
+    reasons.push("레이어드 상의");
+  }
+
+  if (selectedItems.length >= 3) {
+    reasons.push("3개 이상 조합");
+  }
+
+  if (hasShoes && selectedItems.length >= 3) {
+    reasons.push("신발 포함 조합");
+  }
+
+  if (hasAccessories) {
+    reasons.push("액세서리 포함 조합");
+  }
+
+  if (reasons.length === 0) {
+    return {
+      review_required: false
+    };
+  }
+
+  return {
+    review_required: true,
+    review_reason: joinUniqueReasons(reasons)
+  };
 }
 
 function isInvalidProductImageCountError(error: TryOnProviderError) {
@@ -732,6 +787,7 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
     message: "Vertex AI Virtual Try-On 실착 미리보기가 준비됐습니다.",
     pass_count: actualPassCount,
     visibility_guidance: buildTryOnVisibilityGuidance(payload) ?? undefined,
+    ...buildTryOnReviewSignal(payload),
     stage_previews: stagePreviews
   };
 }
@@ -748,6 +804,7 @@ export async function generateTryOnPreview(payload: TryOnRequest): Promise<TryOn
       "로컬 mock try-on입니다. 실제 실착 생성은 Vertex AI Virtual Try-On provider 구현 후 활성화합니다.",
     pass_count: 0,
     visibility_guidance: buildTryOnVisibilityGuidance(payload) ?? undefined,
+    ...buildTryOnReviewSignal(payload),
     stage_previews: [
       {
         step: 1,

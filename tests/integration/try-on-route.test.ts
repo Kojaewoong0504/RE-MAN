@@ -331,6 +331,10 @@ describe("try-on API route", () => {
 
     expect(response.status).toBe(200);
     expect(body.visibility_guidance).toContain("상의 레이어가 2개 이상");
+    expect(body).toMatchObject({
+      review_required: true,
+      review_reason: expect.stringContaining("레이어드 상의")
+    });
   });
 
   it("reports layered outfits as staged single-item passes while keeping one-credit billing for up to three items", async () => {

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  buildTryOnReviewSignal,
   buildTryOnVisibilityGuidance,
   estimateTryOnCreditCost,
   estimateTryOnPassCount,
@@ -273,6 +274,41 @@ describe("try-on provider contract", () => {
         prompt: "기본 조합 전체를 함께 반영"
       })
     ).toContain("여러 아이템을 한 번에 합성");
+  });
+
+  it("flags layered outfits as review-required high-risk combinations", () => {
+    expect(
+      buildTryOnReviewSignal({
+        person_image: image,
+        selected_items: [
+          {
+            id: "sys-base-top-1",
+            category: "tops",
+            role: "base_top",
+            title: "화이트 셔츠",
+            image_url: image
+          },
+          {
+            id: "sys-outer-1",
+            category: "outerwear",
+            role: "outerwear",
+            title: "블랙 블레이저",
+            image_url: image
+          },
+          {
+            id: "sys-shoes-1",
+            category: "shoes",
+            role: "shoes",
+            title: "검정 로퍼",
+            image_url: image
+          }
+        ],
+        prompt: "레이어드 조합 전체를 함께 반영"
+      })
+    ).toMatchObject({
+      review_required: true,
+      review_reason: expect.stringContaining("레이어드 상의")
+    });
   });
 
   it("reports missing Vertex config only when Vertex provider is active", () => {
