@@ -210,6 +210,92 @@ describe("feedback API route", () => {
     ]);
   });
 
+  it("uses provider body profile when request payload has none", async () => {
+    vi.doMock("@/lib/agents/mock-feedback", () => ({
+      buildMockOnboardingFeedback: () => ({
+        diagnosis: "상체 볼륨이 먼저 보입니다.",
+        improvements: ["핏 정리", "색 대비 완화", "신발 톤 정리"],
+        body_profile: {
+          overall_frame: "large",
+          belly_visibility: "high",
+          leg_length_impression: "shorter",
+          fit_risk_tags: ["cropped_top_risk", "strong_contrast_split_risk"]
+        },
+        recommended_outfit: {
+          title: "체형 보정 기본 조합",
+          items: ["검정 티셔츠", "차콜 팬츠", "검정 신발"],
+          reason: "안정적인 비율이 먼저 보이게 합니다.",
+          try_on_prompt: "전신 정면 기준 자연스러운 기본 조합",
+          source_item_ids: {
+            tops: "top-1",
+            bottoms: "bottom-1",
+            shoes: "shoes-1"
+          }
+        },
+        recommendation_mix: {
+          primary_source: "closet",
+          closet_confidence: "high",
+          system_support_needed: false,
+          missing_categories: [],
+          summary: "옷장 기준 추천입니다."
+        },
+        system_recommendations: [],
+        today_action: "오늘 바로 입어보기",
+        day1_mission: "오늘 비교 시작"
+      })
+    }));
+
+    const { POST } = await loadRouteWithCookies(
+      await buildAuthCookies({
+        ...authUser,
+        uid: "feedback-provider-body-profile-user"
+      })
+    );
+
+    const response = await POST(
+      buildRequest({
+        ...validFeedbackPayload,
+        closet_items: [
+          {
+            id: "top-1",
+            category: "tops",
+            name: "검정 티셔츠",
+            fit: "레귤러",
+            wear_state: "잘 맞음"
+          },
+          {
+            id: "bottom-1",
+            category: "bottoms",
+            name: "차콜 팬츠",
+            fit: "테이퍼드",
+            wear_state: "잘 맞음"
+          },
+          {
+            id: "shoes-1",
+            category: "shoes",
+            name: "검정 신발",
+            wear_state: "잘 맞음"
+          }
+        ]
+      })
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.body_profile).toMatchObject({
+      overall_frame: "large",
+      belly_visibility: "high",
+      leg_length_impression: "shorter",
+      fit_risk_tags: ["cropped_top_risk", "strong_contrast_split_risk"]
+    });
+    expect(body.recommended_outfit.avoid_notes).toEqual([
+      "짧은 상의는 제외",
+      "강한 상하 대비는 제외",
+      "과한 포인트는 제외"
+    ]);
+  });
+
   it("removes provider source item ids that are not valid closet matches", async () => {
     vi.doMock("@/lib/agents/mock-feedback", () => ({
       buildMockOnboardingFeedback: () => ({
@@ -497,6 +583,177 @@ describe("feedback API route", () => {
               item.id === "sys-shoes-white-minimal-sneakers")
         )
     ).toBe(true);
+  });
+
+  it("returns provider-derived body profile when request body profile is absent", async () => {
+    process.env.AI_PROVIDER = "gemini";
+    vi.doMock("@/lib/agents/gemini", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/agents/gemini")>(
+        "@/lib/agents/gemini"
+      );
+
+      return {
+        ...actual,
+        generateOnboardingFeedback: () => ({
+          diagnosis: "진단",
+          improvements: ["핏", "색", "신발"],
+          body_profile: {
+            upper_body_presence: "high",
+            belly_visibility: "high",
+            leg_length_impression: "shorter",
+            overall_frame: "large",
+            fit_risk_tags: ["cropped_top_risk", "skinny_bottom_risk"]
+          },
+          recommended_outfit: {
+            title: "체형 반영 조합",
+            items: ["검정 티셔츠", "차콜 팬츠", "검정 운동화"],
+            reason: "provider 응답",
+            try_on_prompt: "provider prompt",
+            source_item_ids: {
+              tops: "body-top",
+              bottoms: "body-bottom",
+              shoes: "body-shoes"
+            }
+          },
+          recommendation_mix: {
+            primary_source: "closet",
+            closet_confidence: "high",
+            system_support_needed: false,
+            missing_categories: [],
+            summary: "provider metadata"
+          },
+          system_recommendations: [],
+          today_action: "액션",
+          day1_mission: "미션"
+        })
+      };
+    });
+
+    const { POST } = await loadRouteWithCookies(
+      await buildAuthCookies({
+        ...authUser,
+        uid: "feedback-provider-body-profile-user"
+      })
+    );
+    const response = await POST(
+      buildRequest({
+        ...validFeedbackPayload,
+        closet_items: [
+          {
+            id: "body-top",
+            category: "tops",
+            name: "검정 티셔츠",
+            fit: "레귤러"
+          },
+          {
+            id: "body-bottom",
+            category: "bottoms",
+            name: "차콜 팬츠",
+            fit: "테이퍼드"
+          },
+          {
+            id: "body-shoes",
+            category: "shoes",
+            name: "검정 운동화"
+          }
+        ]
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.body_profile).toEqual({
+      upper_body_presence: "high",
+      belly_visibility: "high",
+      leg_length_impression: "shorter",
+      overall_frame: "large",
+      fit_risk_tags: ["cropped_top_risk", "skinny_bottom_risk"]
+    });
+    expect(body.recommended_outfit.avoid_notes).toEqual([
+      "짧은 상의는 제외",
+      "붙는 하의는 제외",
+      "과한 포인트는 제외"
+    ]);
+  });
+
+  it("records provider diagnostics when onboarding response validation fails", async () => {
+    process.env.AI_PROVIDER = "gemini";
+    const recordProviderRuntimeFailure = vi.fn();
+
+    vi.doMock("@/lib/harness/runtime-failures", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/harness/runtime-failures")>(
+        "@/lib/harness/runtime-failures"
+      );
+
+      return {
+        ...actual,
+        recordProviderRuntimeFailure
+      };
+    });
+
+    vi.doMock("@/lib/agents/gemini", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/agents/gemini")>(
+        "@/lib/agents/gemini"
+      );
+
+      return {
+        ...actual,
+        generateOnboardingFeedback: () => {
+          throw new actual.InvalidOnboardingResponseError({
+            diagnostics: [
+              {
+                field: "recommendation_mix",
+                reason: "invalid_enum",
+                details: ['missing_categories=["casual_tops"]']
+              }
+            ],
+            rawKeys: ["diagnosis", "recommendation_mix", "today_action"],
+            stabilizedKeys: [
+              "diagnosis",
+              "recommendation_mix",
+              "system_recommendations",
+              "today_action"
+            ]
+          });
+        }
+      };
+    });
+
+    const { POST } = await loadRouteWithCookies(
+      await buildAuthCookies({
+        ...authUser,
+        uid: "feedback-provider-runtime-user"
+      })
+    );
+    const response = await POST(buildRequest(validFeedbackPayload));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body).toMatchObject({
+      error: "feedback_failed",
+      fallback_message: expect.any(String)
+    });
+    expect(recordProviderRuntimeFailure).toHaveBeenCalledWith({
+      route: "feedback",
+      provider: "gemini",
+      failureType: "invalid_onboarding_response",
+      error: expect.any(Error),
+      userId: "feedback-provider-runtime-user",
+      diagnostics: [
+        {
+          field: "recommendation_mix",
+          reason: "invalid_enum",
+          details: ['missing_categories=["casual_tops"]']
+        }
+      ],
+      rawKeys: ["diagnosis", "recommendation_mix", "today_action"],
+      stabilizedKeys: [
+        "diagnosis",
+        "recommendation_mix",
+        "system_recommendations",
+        "today_action"
+      ]
+    });
   });
 
   it("does not charge twice when the same feedback request is replayed", async () => {

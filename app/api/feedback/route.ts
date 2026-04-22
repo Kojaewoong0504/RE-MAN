@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import {
   FALLBACK_MESSAGE,
+  type BodyProfile,
   sanitizeSourceItemIdsForCloset,
   validateAgentRequest
 } from "@/lib/agents/contracts";
 import {
   generateOnboardingFeedback,
+  isInvalidOnboardingResponseError,
   resolveAiProvider
 } from "@/lib/agents/gemini";
+import { normalizeBodyProfile } from "@/lib/agents/body-profile";
 import {
   isStorageFailureError,
+  recordProviderRuntimeFailure,
   recordStorageRuntimeFailure
 } from "@/lib/harness/runtime-failures";
 import { buildMockOnboardingFeedback } from "@/lib/agents/mock-feedback";
@@ -126,15 +130,18 @@ export async function POST(request: Request) {
       feedback.recommended_outfit.source_item_ids,
       payload.closet_items
     );
+    const effectiveBodyProfile: BodyProfile | undefined =
+      normalizeBodyProfile(feedback.body_profile) ?? normalizeBodyProfile(payload.body_profile);
     const hybrid = buildHybridRecommendation({
       survey: payload.survey,
-      bodyProfile: payload.body_profile,
+      bodyProfile: effectiveBodyProfile,
       closetItems: payload.closet_items ?? [],
       closetStrategy: payload.closet_strategy,
       verifiedSourceItemIds: verifiedSourceItemIds ?? {}
     });
     const verifiedFeedback = {
       ...feedback,
+      body_profile: effectiveBodyProfile,
       recommended_outfit: {
         ...hybrid.recommended_outfit,
         source_item_ids: verifiedSourceItemIds
@@ -193,6 +200,19 @@ export async function POST(request: Request) {
         route: "feedback",
         error,
         userId: user.uid
+      });
+    }
+
+    if (isInvalidOnboardingResponseError(error)) {
+      await recordProviderRuntimeFailure({
+        route: "feedback",
+        provider: error.provider,
+        failureType: "invalid_onboarding_response",
+        error,
+        userId: user.uid,
+        diagnostics: error.diagnostics,
+        rawKeys: error.rawKeys,
+        stabilizedKeys: error.stabilizedKeys
       });
     }
 

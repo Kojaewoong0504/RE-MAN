@@ -268,6 +268,7 @@ export default function AnalyzingPage() {
       }
 
       const nextState = patchOnboardingState({
+        body_profile: data.body_profile,
         feedback: data,
         daily_feedbacks: {},
         fallback_message: undefined

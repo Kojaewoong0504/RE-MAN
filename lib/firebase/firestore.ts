@@ -2,6 +2,7 @@
 
 import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
 import type {
+  BodyProfile,
   ClosetProfile,
   DailyAgentResponse,
   DeepDiveModule,
@@ -113,6 +114,7 @@ export async function saveOnboardingFeedbackToFirestore(
     createdAt: serverTimestamp(),
     diagnosis: feedback.diagnosis,
     improvements: feedback.improvements,
+    body_profile: feedback.body_profile ?? state.body_profile ?? null,
     recommended_outfit: feedback.recommended_outfit,
     recommendation_mix: feedback.recommendation_mix,
     system_recommendations: feedback.system_recommendations,
@@ -370,11 +372,33 @@ function parseRecommendedOutfit(data: Record<string, unknown>) {
     !Array.isArray(recommendation.source_item_ids)
       ? (recommendation.source_item_ids as Record<string, unknown>)
       : null;
+  const safetyBasis =
+    Array.isArray(recommendation.safety_basis) &&
+    recommendation.safety_basis.length === 3 &&
+    recommendation.safety_basis.every((item) => typeof item === "string")
+      ? ([
+          recommendation.safety_basis[0],
+          recommendation.safety_basis[1],
+          recommendation.safety_basis[2]
+        ] as [string, string, string])
+      : undefined;
+  const avoidNotes =
+    Array.isArray(recommendation.avoid_notes) &&
+    recommendation.avoid_notes.length === 3 &&
+    recommendation.avoid_notes.every((item) => typeof item === "string")
+      ? ([
+          recommendation.avoid_notes[0],
+          recommendation.avoid_notes[1],
+          recommendation.avoid_notes[2]
+        ] as [string, string, string])
+      : undefined;
 
   return {
     title: recommendation.title,
     items: [items[0], items[1], items[2]] as [string, string, string],
     reason: recommendation.reason,
+    safety_basis: safetyBasis,
+    avoid_notes: avoidNotes,
     try_on_prompt: recommendation.try_on_prompt,
     source_item_ids: sourceItemIds
       ? (["tops", "bottoms", "shoes", "outerwear", "hats", "bags"] as const).reduce<Record<string, string>>(
@@ -391,6 +415,82 @@ function parseRecommendedOutfit(data: Record<string, unknown>) {
         )
       : undefined
   };
+}
+
+function parseBodyProfile(data: Record<string, unknown>): BodyProfile | undefined {
+  if (!Object.prototype.hasOwnProperty.call(data, "body_profile")) {
+    return undefined;
+  }
+
+  const value = data.body_profile;
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const profile = value as Record<string, unknown>;
+  const fitRiskTags = Array.isArray(profile.fit_risk_tags)
+    ? profile.fit_risk_tags.filter(
+        (item): item is NonNullable<BodyProfile["fit_risk_tags"]>[number] =>
+          item === "tight_top_risk" ||
+          item === "cropped_top_risk" ||
+          item === "strong_contrast_split_risk" ||
+          item === "skinny_bottom_risk" ||
+          item === "heavy_neckline_risk"
+      )
+    : undefined;
+
+  const bodyProfile: BodyProfile = {
+    upper_body_presence:
+      profile.upper_body_presence === "low" ||
+      profile.upper_body_presence === "medium" ||
+      profile.upper_body_presence === "high"
+        ? profile.upper_body_presence
+        : undefined,
+    lower_body_balance:
+      profile.lower_body_balance === "low" ||
+      profile.lower_body_balance === "medium" ||
+      profile.lower_body_balance === "high"
+        ? profile.lower_body_balance
+        : undefined,
+    belly_visibility:
+      profile.belly_visibility === "low" ||
+      profile.belly_visibility === "medium" ||
+      profile.belly_visibility === "high"
+        ? profile.belly_visibility
+        : undefined,
+    leg_length_impression:
+      profile.leg_length_impression === "shorter" ||
+      profile.leg_length_impression === "balanced" ||
+      profile.leg_length_impression === "longer"
+        ? profile.leg_length_impression
+        : undefined,
+    shoulder_shape:
+      profile.shoulder_shape === "rounded" ||
+      profile.shoulder_shape === "narrow" ||
+      profile.shoulder_shape === "balanced"
+        ? profile.shoulder_shape
+        : undefined,
+    neck_impression:
+      profile.neck_impression === "short" ||
+      profile.neck_impression === "balanced" ||
+      profile.neck_impression === "long"
+        ? profile.neck_impression
+        : undefined,
+    overall_frame:
+      profile.overall_frame === "large" ||
+      profile.overall_frame === "medium" ||
+      profile.overall_frame === "compact"
+        ? profile.overall_frame
+        : undefined,
+    fit_risk_tags: fitRiskTags?.length ? fitRiskTags : undefined
+  };
+
+  return Object.values(bodyProfile).some((item) =>
+    Array.isArray(item) ? item.length > 0 : item !== undefined
+  )
+    ? bodyProfile
+    : undefined;
 }
 
 function parseRecommendationMix(data: Record<string, unknown>): RecommendationMix | null {
@@ -561,6 +661,7 @@ function parseFeedbackDoc(day: number, data: Record<string, unknown>) {
 
   if (day === 1) {
     const day1_mission = typeof data.day1_mission === "string" ? data.day1_mission : "";
+    const body_profile = parseBodyProfile(data);
     const recommended_outfit = parseRecommendedOutfit(data);
     const recommendation_mix = parseRecommendationMix(data);
     const system_recommendations = parseSystemRecommendations(data);
@@ -578,6 +679,7 @@ function parseFeedbackDoc(day: number, data: Record<string, unknown>) {
       day,
       feedback: {
         ...common,
+        body_profile,
         recommended_outfit,
         recommendation_mix,
         system_recommendations,

@@ -14,6 +14,7 @@
     "visual:app": "python3 scripts/with-next-artifact-lock.py visual-app -- node scripts/visual-app-smoke.mjs",
     "visual:deep-dive": "python3 scripts/with-next-artifact-lock.py visual-deep-dive -- node scripts/visual-deep-dive-smoke.mjs",
     "smoke:feedback:gemini": "python3 scripts/smoke-feedback-gemini.py",
+    "smoke:feedback:body-aware": "python3 scripts/smoke-feedback-body-aware.py",
     "smoke:feedback:browser": "node scripts/smoke-feedback-browser-gemini.mjs",
     "smoke:closet:gemini": "python3 scripts/smoke-closet-gemini.py",
     "smoke:try-on:vertex": "python3 scripts/smoke-try-on-vertex.py",

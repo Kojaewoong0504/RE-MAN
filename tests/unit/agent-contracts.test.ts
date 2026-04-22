@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  diagnoseOnboardingResponseIssues,
   normalizeDeepDiveResponse,
   normalizeOnboardingResponse,
   sanitizeSourceItemIdsForCloset,
@@ -97,10 +98,18 @@ describe("agent response contracts", () => {
     const normalized = normalizeOnboardingResponse({
       diagnosis: longText,
       improvements: [longText, longText, longText],
+      body_profile: {
+        upper_body_presence: "high",
+        belly_visibility: "high",
+        leg_length_impression: "shorter",
+        fit_risk_tags: ["tight_top_risk", "cropped_top_risk", "strong_contrast_split_risk"]
+      },
       recommended_outfit: {
         title: "너무 긴 추천 조합 이름이 계속 이어져서 카드 제목 영역을 망가뜨리는 경우",
         items: [longText, longText, longText],
         reason: longText,
+        safety_basis: [longText, longText, longText],
+        avoid_notes: [longText, longText, longText],
         try_on_prompt: longText,
         source_item_ids: {
           tops: "top-1",
@@ -190,6 +199,18 @@ describe("agent response contracts", () => {
     expect(normalized.improvements.every((item) => item.length <= 72)).toBe(true);
     expect(normalized.recommended_outfit.title.length).toBeLessThanOrEqual(32);
     expect(normalized.recommended_outfit.source_item_ids?.tops).toBe("top-1");
+    expect(normalized.body_profile?.upper_body_presence).toBe("high");
+    expect(normalized.body_profile?.fit_risk_tags).toEqual([
+      "tight_top_risk",
+      "cropped_top_risk",
+      "strong_contrast_split_risk"
+    ]);
+    expect(normalized.recommended_outfit.safety_basis?.every((item) => item.length <= 72)).toBe(
+      true
+    );
+    expect(normalized.recommended_outfit.avoid_notes?.every((item) => item.length <= 72)).toBe(
+      true
+    );
     expect(normalized.recommendation_mix.primary_source).toBe("closet");
     expect(normalized.recommendation_mix.summary.length).toBeLessThanOrEqual(110);
     expect(normalized.system_recommendations[0].mode).toBe("reference");
@@ -211,10 +232,17 @@ describe("agent response contracts", () => {
       validateOnboardingResponse({
         diagnosis: "진단",
         improvements: ["핏", "색", "신발"],
+      body_profile: {
+        overall_frame: "large",
+        belly_visibility: "high",
+        fit_risk_tags: ["cropped_top_risk"]
+      },
       recommended_outfit: {
         title: "기본 조합",
         items: ["상의", "하의", "신발"],
         reason: "지금 가진 옷 기준입니다.",
+        safety_basis: ["상체 정리", "하체 정리", "즉시 재현 가능"],
+        avoid_notes: ["짧은 상의는 제외", "붙는 하의는 제외", "강한 상하 대비는 제외"],
         try_on_prompt: "전신 정면 사진 기준 자연스러운 실착"
       },
       recommendation_mix: {
@@ -229,6 +257,42 @@ describe("agent response contracts", () => {
       day1_mission: "오늘 바로 확인"
     })
     ).toBe(true);
+  });
+
+  it("accepts nullable source item ids and strips them during normalization", () => {
+    const raw = {
+      diagnosis: "진단",
+      improvements: ["핏", "색", "신발"],
+      recommended_outfit: {
+        title: "기본 조합",
+        items: ["상의", "하의", "신발"],
+        reason: "지금 가진 옷 기준입니다.",
+        try_on_prompt: "전신 정면 사진 기준 자연스러운 실착",
+        source_item_ids: {
+          tops: null,
+          bottoms: "bottom-1",
+          shoes: undefined
+        }
+      },
+      recommendation_mix: {
+        primary_source: "system",
+        closet_confidence: "low",
+        system_support_needed: false,
+        missing_categories: [],
+        summary: "시스템 추천 우선"
+      },
+      system_recommendations: [],
+      today_action: "옷장 확인",
+      day1_mission: "오늘 바로 확인"
+    };
+
+    expect(validateOnboardingResponse(raw)).toBe(true);
+    expect(
+      normalizeOnboardingResponse(raw as unknown as Parameters<typeof normalizeOnboardingResponse>[0])
+        .recommended_outfit.source_item_ids
+    ).toEqual({
+      bottoms: "bottom-1"
+    });
   });
 
   it("keeps only source item ids that exist in the same closet category", () => {
@@ -287,5 +351,49 @@ describe("agent response contracts", () => {
     expect(normalized.focus_points.every((item) => item.length <= 72)).toBe(true);
     expect(normalized.recommendation.length).toBeLessThanOrEqual(110);
     expect(normalized.action.length).toBeLessThanOrEqual(72);
+  });
+
+  it("diagnoses provider drift fields for invalid onboarding responses", () => {
+    expect(
+      diagnoseOnboardingResponseIssues({
+        diagnosis: "진단",
+        improvements: ["핏", "색", "신발"],
+        body_profile: {
+          upper_body_presence: "extreme"
+        },
+        recommended_outfit: {
+          title: "조합",
+          items: ["상의", "하의", "신발"],
+          reason: "설명",
+          try_on_prompt: "프롬프트"
+        },
+        recommendation_mix: {
+          primary_source: "closet",
+          closet_confidence: "medium",
+          system_support_needed: true,
+          missing_categories: ["casual_tops", "outerwear"],
+          summary: "요약"
+        },
+        system_recommendations: [],
+        today_action: "바로 해보기",
+        day1_mission: "오늘 시작",
+        tomorrow_preview: "불필요한 필드"
+      })
+    ).toEqual([
+      {
+        field: "body_profile",
+        reason: "invalid_enum",
+        details: ["upper_body_presence=extreme"]
+      },
+      {
+        field: "recommendation_mix",
+        reason: "invalid_enum",
+        details: ['missing_categories=["casual_tops"]']
+      },
+      {
+        field: "tomorrow_preview",
+        reason: "unexpected_field"
+      }
+    ]);
   });
 });

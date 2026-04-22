@@ -68,6 +68,14 @@ export function buildMockOnboardingFeedback(
       "상의에 얇은 겉옷이나 셔츠 하나만 추가해도 단조로운 느낌이 줄어요.",
       "신발 톤을 상의나 하의와 맞추면 코디가 덜 흩어져 보여요."
     ],
+    body_profile: payload.body_profile ?? {
+      upper_body_presence: "medium",
+      lower_body_balance: "medium",
+      belly_visibility: "medium",
+      leg_length_impression: "balanced",
+      overall_frame: "medium",
+      fit_risk_tags: ["strong_contrast_split_risk"]
+    },
     recommended_outfit: {
       title: "지금 가진 옷으로 만드는 깔끔한 기본 조합",
       items: [
@@ -77,6 +85,16 @@ export function buildMockOnboardingFeedback(
       ],
       reason:
         `${goal}에는 새로 사기보다 지금 가진 옷 중 실루엣이 가장 단정한 조합을 먼저 고르는 편이 변화가 바로 보입니다.${closetReason}${preferenceReason}`,
+      safety_basis: [
+        "실루엣이 과하게 부풀지 않음",
+        "하체 라인이 단정하게 이어짐",
+        "지금 옷장에서 바로 재현 가능"
+      ],
+      avoid_notes: [
+        "짧은 상의는 제외",
+        "지나치게 붙는 하의는 제외",
+        "강한 상하 대비는 제외"
+      ],
       try_on_prompt:
         "전신 정면 사진을 기준으로 무지 상의, 일자핏 바지, 톤이 맞는 신발을 자연스럽게 착용한 미리보기",
       source_item_ids: getFirstClosetItemIdByCategory(payload)

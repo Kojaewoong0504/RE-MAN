@@ -120,6 +120,16 @@ export type SystemRecommendation = {
   layer_order_default?: number;
 };
 
+export type OnboardingResponseIssue = {
+  field: string;
+  reason:
+    | "missing_or_invalid"
+    | "invalid_enum"
+    | "invalid_array_shape"
+    | "unexpected_field";
+  details?: string[];
+};
+
 export type PrimaryOutfit = {
   title: string;
   item_ids: string[];
@@ -172,6 +182,7 @@ export type OutfitRecommendation = {
 export type OnboardingAgentResponse = {
   diagnosis: string;
   improvements: [string, string, string];
+  body_profile?: BodyProfile;
   recommended_outfit: OutfitRecommendation;
   recommendation_mix: RecommendationMix;
   system_recommendations: SystemRecommendation[];
@@ -515,7 +526,7 @@ function validateOutfitRecommendation(value: unknown): value is OutfitRecommenda
             key === "outerwear" ||
             key === "hats" ||
             key === "bags") &&
-          typeof itemId === "string"
+          (itemId === null || itemId === undefined || typeof itemId === "string")
       ));
 
   return (
@@ -688,6 +699,7 @@ export function validateOnboardingResponse(
   return (
     isNonEmptyString(response.diagnosis) &&
     validateImprovements(response.improvements) &&
+    validateBodyProfile(response.body_profile) &&
     validateOutfitRecommendation(response.recommended_outfit) &&
     validateRecommendationMix(response.recommendation_mix) &&
     Array.isArray(response.system_recommendations) &&
@@ -700,6 +712,250 @@ export function validateOnboardingResponse(
     isNonEmptyString(response.day1_mission) &&
     response.tomorrow_preview === undefined
   );
+}
+
+export function diagnoseOnboardingResponseIssues(payload: unknown): OnboardingResponseIssue[] {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return [
+      {
+        field: "$",
+        reason: "missing_or_invalid"
+      }
+    ];
+  }
+
+  const response = payload as Record<string, unknown>;
+  const issues: OnboardingResponseIssue[] = [];
+
+  if (!isNonEmptyString(response.diagnosis)) {
+    issues.push({ field: "diagnosis", reason: "missing_or_invalid" });
+  }
+
+  if (!validateImprovements(response.improvements)) {
+    issues.push({ field: "improvements", reason: "invalid_array_shape" });
+  }
+
+  if (!validateBodyProfile(response.body_profile)) {
+    const profile =
+      response.body_profile && typeof response.body_profile === "object"
+        ? (response.body_profile as Record<string, unknown>)
+        : null;
+    const details = profile
+      ? [
+          !(
+            profile.upper_body_presence === undefined ||
+            profile.upper_body_presence === "low" ||
+            profile.upper_body_presence === "medium" ||
+            profile.upper_body_presence === "high"
+          )
+            ? `upper_body_presence=${String(profile.upper_body_presence)}`
+            : null,
+          !(
+            profile.lower_body_balance === undefined ||
+            profile.lower_body_balance === "low" ||
+            profile.lower_body_balance === "medium" ||
+            profile.lower_body_balance === "high"
+          )
+            ? `lower_body_balance=${String(profile.lower_body_balance)}`
+            : null,
+          !(
+            profile.belly_visibility === undefined ||
+            profile.belly_visibility === "low" ||
+            profile.belly_visibility === "medium" ||
+            profile.belly_visibility === "high"
+          )
+            ? `belly_visibility=${String(profile.belly_visibility)}`
+            : null,
+          !(
+            profile.leg_length_impression === undefined ||
+            profile.leg_length_impression === "shorter" ||
+            profile.leg_length_impression === "balanced" ||
+            profile.leg_length_impression === "longer"
+          )
+            ? `leg_length_impression=${String(profile.leg_length_impression)}`
+            : null,
+          !(
+            profile.shoulder_shape === undefined ||
+            profile.shoulder_shape === "rounded" ||
+            profile.shoulder_shape === "narrow" ||
+            profile.shoulder_shape === "balanced"
+          )
+            ? `shoulder_shape=${String(profile.shoulder_shape)}`
+            : null,
+          !(
+            profile.neck_impression === undefined ||
+            profile.neck_impression === "short" ||
+            profile.neck_impression === "balanced" ||
+            profile.neck_impression === "long"
+          )
+            ? `neck_impression=${String(profile.neck_impression)}`
+            : null,
+          !(
+            profile.overall_frame === undefined ||
+            profile.overall_frame === "large" ||
+            profile.overall_frame === "medium" ||
+            profile.overall_frame === "compact"
+          )
+            ? `overall_frame=${String(profile.overall_frame)}`
+            : null,
+          profile.fit_risk_tags !== undefined &&
+          (!Array.isArray(profile.fit_risk_tags) ||
+            profile.fit_risk_tags.some(
+              (item) =>
+                item !== "tight_top_risk" &&
+                item !== "cropped_top_risk" &&
+                item !== "strong_contrast_split_risk" &&
+                item !== "skinny_bottom_risk" &&
+                item !== "heavy_neckline_risk"
+            ))
+            ? `fit_risk_tags=${JSON.stringify(profile.fit_risk_tags)}`
+            : null
+        ].filter((item): item is string => Boolean(item))
+      : undefined;
+
+    issues.push({
+      field: "body_profile",
+      reason: details?.length ? "invalid_enum" : "missing_or_invalid",
+      details
+    });
+  }
+
+  if (!validateOutfitRecommendation(response.recommended_outfit)) {
+    const outfit =
+      response.recommended_outfit && typeof response.recommended_outfit === "object"
+        ? (response.recommended_outfit as Record<string, unknown>)
+        : null;
+    const details = outfit
+      ? [
+          !isNonEmptyString(outfit.title) ? "title" : null,
+          !validateImprovements(outfit.items) ? "items" : null,
+          !isNonEmptyString(outfit.reason) ? "reason" : null,
+          outfit.safety_basis !== undefined && !validateImprovements(outfit.safety_basis)
+            ? "safety_basis"
+            : null,
+          outfit.avoid_notes !== undefined && !validateImprovements(outfit.avoid_notes)
+            ? "avoid_notes"
+            : null,
+          !isNonEmptyString(outfit.try_on_prompt) ? "try_on_prompt" : null,
+          outfit.source_item_ids !== undefined &&
+          !(
+            typeof outfit.source_item_ids === "object" &&
+            outfit.source_item_ids !== null &&
+            Object.entries(outfit.source_item_ids).every(
+              ([key, itemId]) =>
+                isValidClosetCategory(key) &&
+                (itemId === null || itemId === undefined || typeof itemId === "string")
+            )
+          )
+            ? `source_item_ids=${JSON.stringify(outfit.source_item_ids)}`
+            : null
+        ].filter((item): item is string => Boolean(item))
+      : undefined;
+
+    issues.push({
+      field: "recommended_outfit",
+      reason: details?.some((detail) => detail.startsWith("source_item_ids="))
+        ? "invalid_enum"
+        : "missing_or_invalid",
+      details
+    });
+  }
+
+  if (!validateRecommendationMix(response.recommendation_mix)) {
+    const mix =
+      response.recommendation_mix && typeof response.recommendation_mix === "object"
+        ? (response.recommendation_mix as Record<string, unknown>)
+        : null;
+    const invalidMissingCategories =
+      mix && Array.isArray(mix.missing_categories)
+        ? mix.missing_categories.filter((category) => !isValidClosetCategory(category))
+        : [];
+    const details = mix
+      ? [
+          !(
+            mix.primary_source === "closet" || mix.primary_source === "system"
+          )
+            ? `primary_source=${String(mix.primary_source)}`
+            : null,
+          !(
+            mix.closet_confidence === "high" ||
+            mix.closet_confidence === "medium" ||
+            mix.closet_confidence === "low"
+          )
+            ? `closet_confidence=${String(mix.closet_confidence)}`
+            : null,
+          typeof mix.system_support_needed !== "boolean"
+            ? `system_support_needed=${String(mix.system_support_needed)}`
+            : null,
+          !Array.isArray(mix.missing_categories)
+            ? "missing_categories"
+            : invalidMissingCategories.length
+              ? `missing_categories=${JSON.stringify(invalidMissingCategories)}`
+              : null,
+          !isNonEmptyString(mix.summary) ? "summary" : null
+        ].filter((item): item is string => Boolean(item))
+      : undefined;
+
+    issues.push({
+      field: "recommendation_mix",
+      reason: invalidMissingCategories.length ? "invalid_enum" : "missing_or_invalid",
+      details
+    });
+  }
+
+  if (
+    !Array.isArray(response.system_recommendations) ||
+    response.system_recommendations.some((item) => !validateSystemRecommendation(item))
+  ) {
+    const details = Array.isArray(response.system_recommendations)
+      ? response.system_recommendations
+          .map((item, index) => (validateSystemRecommendation(item) ? null : `index=${index}`))
+          .filter((item): item is string => Boolean(item))
+      : undefined;
+
+    issues.push({
+      field: "system_recommendations",
+      reason: Array.isArray(response.system_recommendations)
+        ? "missing_or_invalid"
+        : "invalid_array_shape",
+      details
+    });
+  }
+
+  if (
+    response.primary_outfit !== undefined &&
+    !validatePrimaryOutfit(response.primary_outfit)
+  ) {
+    issues.push({
+      field: "primary_outfit",
+      reason: "missing_or_invalid"
+    });
+  }
+
+  if (
+    response.selectable_recommendations !== undefined &&
+    (!Array.isArray(response.selectable_recommendations) ||
+      response.selectable_recommendations.some((item) => !validateSystemRecommendation(item)))
+  ) {
+    issues.push({
+      field: "selectable_recommendations",
+      reason: "invalid_array_shape"
+    });
+  }
+
+  if (!isNonEmptyString(response.today_action)) {
+    issues.push({ field: "today_action", reason: "missing_or_invalid" });
+  }
+
+  if (!isNonEmptyString(response.day1_mission)) {
+    issues.push({ field: "day1_mission", reason: "missing_or_invalid" });
+  }
+
+  if (response.tomorrow_preview !== undefined) {
+    issues.push({ field: "tomorrow_preview", reason: "unexpected_field" });
+  }
+
+  return issues;
 }
 
 export function validateDailyResponse(payload: unknown): payload is DailyAgentResponse {
@@ -753,6 +1009,7 @@ export function normalizeOnboardingResponse(
   return {
     diagnosis: compactResponseText(response.diagnosis, RESPONSE_LIMITS.diagnosis),
     improvements: normalizeTriple(response.improvements, RESPONSE_LIMITS.improvement),
+    body_profile: response.body_profile,
     recommended_outfit: {
       title: compactResponseText(response.recommended_outfit.title, RESPONSE_LIMITS.outfitTitle),
       items: normalizeTriple(response.recommended_outfit.items, RESPONSE_LIMITS.improvement),

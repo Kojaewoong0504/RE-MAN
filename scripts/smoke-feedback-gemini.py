@@ -169,6 +169,54 @@ def validate_source_item_ids(data: dict, expected: dict[str, str]) -> list[str]:
     return errors
 
 
+def validate_body_aware_fields(data: dict) -> list[str]:
+    errors: list[str] = []
+
+    body_profile = data.get("body_profile")
+    if not isinstance(body_profile, dict):
+        return ["body_profile is missing or not an object"]
+
+    qualitative_fields = [
+        "upper_body_presence",
+        "lower_body_balance",
+        "belly_visibility",
+        "leg_length_impression",
+        "shoulder_shape",
+        "neck_impression",
+        "overall_frame",
+    ]
+    has_any_signal = any(
+        isinstance(body_profile.get(field), str) and body_profile.get(field, "").strip()
+        for field in qualitative_fields
+    )
+
+    if not has_any_signal:
+        errors.append("body_profile does not contain any qualitative signal")
+
+    fit_risk_tags = body_profile.get("fit_risk_tags")
+    if fit_risk_tags is not None and not (
+        isinstance(fit_risk_tags, list)
+        and all(isinstance(item, str) and item.strip() for item in fit_risk_tags)
+    ):
+        errors.append("body_profile.fit_risk_tags is not a valid string array")
+
+    recommended_outfit = data.get("recommended_outfit")
+    if not isinstance(recommended_outfit, dict):
+        errors.append("recommended_outfit is missing or not an object")
+        return errors
+
+    for field in ["safety_basis", "avoid_notes"]:
+        value = recommended_outfit.get(field)
+        if not (
+            isinstance(value, list)
+            and len(value) == 3
+            and all(isinstance(item, str) and item.strip() for item in value)
+        ):
+            errors.append(f"recommended_outfit.{field} must be a 3-item string array")
+
+    return errors
+
+
 def main() -> int:
     started = time.time()
     payload = {
@@ -283,6 +331,25 @@ def main() -> int:
         )
         return 1
 
+    body_aware_errors = validate_body_aware_fields(data)
+    if body_aware_errors:
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "status": status,
+                    "duration_ms": duration_ms,
+                    "error": "invalid body-aware fields",
+                    "details": body_aware_errors,
+                    "body_profile": data.get("body_profile"),
+                    "recommended_outfit": data.get("recommended_outfit"),
+                    "hint": "Gemini must return body_profile plus recommended_outfit.safety_basis and avoid_notes.",
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 1
+
     if data.get("credits_charged") != 1:
         print(
             json.dumps(
@@ -305,7 +372,10 @@ def main() -> int:
                 "ok": True,
                 "status": status,
                 "duration_ms": duration_ms,
+                "body_profile": data.get("body_profile"),
                 "recommended_outfit": data["recommended_outfit"].get("title"),
+                "safety_basis": data["recommended_outfit"].get("safety_basis"),
+                "avoid_notes": data["recommended_outfit"].get("avoid_notes"),
                 "source_item_ids": data["recommended_outfit"].get("source_item_ids"),
                 "credits_charged": data.get("credits_charged"),
                 "credits_remaining": data.get("credits_remaining"),

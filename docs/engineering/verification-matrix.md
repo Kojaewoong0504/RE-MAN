@@ -24,6 +24,7 @@
 | `npm run check:deploy:vercel` | Vercel production env를 pull한 뒤 strict readiness 검증 | Vercel production readiness 통과 |
 | `npm run test:e2e` | mock provider 기반 브라우저 사용자 흐름 검증 | mock E2E 통과 |
 | `npm run smoke:feedback:gemini` | 실제 Gemini API 응답 계약 검증 | 실제 Gemini API 계약 통과 |
+| `npm run smoke:feedback:body-aware` | 실제 Gemini가 체형 단서를 읽고 body-aware 신호를 충분히 반환하는지 검증 | 실제 Gemini body-aware 신호 검증 통과 |
 | `npm run smoke:feedback:browser` | 브라우저 업로드 흐름과 실제 Gemini 경계 검증 | 브라우저 업로드와 실제 Gemini 경계 통과 |
 | `npm run smoke:closet:gemini` | 옷장 AI 초안 API가 실제 Gemini provider와 크레딧 차감을 통과 | 실제 옷장 AI+크레딧 smoke 통과 |
 | `npm run smoke:try-on:vertex` | 실제 Vertex 실착 생성 API와 크레딧 차감 검증 | 실제 Vertex 실착 생성+크레딧 smoke 통과 |

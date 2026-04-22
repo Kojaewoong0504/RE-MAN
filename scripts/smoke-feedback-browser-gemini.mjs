@@ -8,10 +8,55 @@ import { deflateSync } from "node:zlib";
 
 const baseUrl = process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:3001";
 const timeoutMs = Number(process.env.SMOKE_TIMEOUT_MS ?? "90000");
-const jwtSecret = process.env.AUTH_JWT_SECRET ?? "development-auth-secret-change-me";
 const imagePath =
   process.env.SMOKE_IMAGE_PATH ??
   path.resolve("output/playwright/browser-smoke-style-photo.png");
+
+function loadEnvValue(name, fallback = "") {
+  if (process.env[name]) {
+    return process.env[name];
+  }
+
+  for (const envFile of [".env.vercel.local", ".env.local"]) {
+    const envPath = path.resolve(envFile);
+
+    if (!fs.existsSync(envPath)) {
+      continue;
+    }
+
+    const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) {
+        continue;
+      }
+
+      const [key, ...rest] = trimmed.split("=");
+      if (key.trim() !== name) {
+        continue;
+      }
+
+      let value = rest.join("=").trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+
+      return value;
+    }
+  }
+
+  return fallback;
+}
+
+const jwtSecret = loadEnvValue(
+  "AUTH_JWT_SECRET",
+  "development-auth-secret-change-me"
+);
 
 function pngChunk(kind, data) {
   const length = Buffer.alloc(4);
@@ -121,40 +166,50 @@ async function addSessionCookie(context) {
 }
 
 async function addClosetItem(page, item) {
+  const openClosetButton = page.getByRole("button", { name: "옷장 추가" });
+  if (await openClosetButton.isVisible().catch(() => false)) {
+    await openClosetButton.click();
+  }
+
   await page.getByRole("button", { name: "옷 추가", exact: true }).click();
-  await page.locator("#closet-photo-upload").setInputFiles(imagePath);
-  await page.getByLabel("종류").selectOption(item.category);
-  await page.getByLabel("아이템 이름").fill(item.name);
+  await page.getByRole("button", { name: "한 벌 직접 등록" }).click();
+  const dialog = page.getByRole("dialog", { name: "옷 추가" });
+  await dialog.locator("#closet-photo-upload").setInputFiles(imagePath);
+  await dialog.getByLabel("종류").selectOption(item.category);
+  await dialog.getByRole("button", { name: "선택 정보 펼치기" }).click();
+  await dialog.getByLabel("아이템 이름").fill(item.name);
 
   if (item.color) {
-    await page.getByLabel("색").fill(item.color);
+    await dialog.getByLabel("색").fill(item.color);
   }
 
   if (item.fit) {
-    await page.getByLabel("핏").fill(item.fit);
+    await dialog.getByLabel("핏").fill(item.fit);
   }
 
   if (item.size) {
-    await page.getByLabel("사이즈").fill(item.size);
+    await dialog.getByLabel("사이즈").fill(item.size);
   }
 
   if (item.wearState) {
-    await page.getByLabel("착용감").selectOption(item.wearState);
+    await dialog.getByLabel("착용감").selectOption(item.wearState);
   }
 
   if (item.wearFrequency) {
-    await page.getByLabel("빈도").selectOption(item.wearFrequency);
+    await dialog.getByLabel("빈도").selectOption(item.wearFrequency);
   }
 
   if (item.season) {
-    await page.getByLabel("계절").selectOption(item.season);
+    await dialog.getByLabel("계절").selectOption(item.season);
   }
 
   if (item.condition) {
-    await page.getByLabel("상태").selectOption(item.condition);
+    await dialog.getByLabel("상태").selectOption(item.condition);
   }
 
-  await page.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
+  await dialog.getByRole("button", { name: /사진을 옷장에 추가/ }).click();
+  await dialog.waitFor({ state: "hidden", timeout: 10000 });
+  await page.getByText(item.name, { exact: false }).first().waitFor({ timeout: 10000 });
 }
 
 async function main() {
@@ -202,13 +257,22 @@ async function main() {
       size: "270"
     });
 
+    const analyzeButton = page.getByRole("button", { name: "AI 분석 시작하기" });
+    await analyzeButton.waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForFunction(() => {
+      const button = Array.from(document.querySelectorAll("button")).find(
+        (element) => element.textContent?.trim() === "AI 분석 시작하기"
+      );
+      return Boolean(button && !button.hasAttribute("disabled"));
+    }, { timeout: 10000 });
+
     const feedbackResponse = page.waitForResponse(
       (response) =>
         response.url().includes("/api/feedback") &&
         response.request().method() === "POST",
       { timeout: timeoutMs }
     );
-    await page.getByRole("button", { name: "AI 분석 시작하기" }).click();
+    await analyzeButton.click();
 
     const response = await feedbackResponse;
     const data = await response.json().catch(async () => ({
@@ -236,6 +300,81 @@ async function main() {
       timeout: 10000
     });
 
+    const bodyProfile = data?.body_profile;
+    const safetyBasis = data?.recommended_outfit?.safety_basis;
+    const avoidNotes = data?.recommended_outfit?.avoid_notes;
+    const hasAnyBodySignal =
+      bodyProfile &&
+      typeof bodyProfile === "object" &&
+      [
+        "upper_body_presence",
+        "lower_body_balance",
+        "belly_visibility",
+        "leg_length_impression",
+        "shoulder_shape",
+        "neck_impression",
+        "overall_frame"
+      ].some((field) => typeof bodyProfile[field] === "string" && bodyProfile[field].trim());
+
+    if (!hasAnyBodySignal) {
+      console.log(
+        JSON.stringify(
+          {
+            ok: false,
+            status: response.status(),
+            duration_ms: durationMs,
+            error: "body_profile missing from browser Gemini flow",
+            body_profile: bodyProfile
+          },
+          null,
+          2
+        )
+      );
+      return 1;
+    }
+
+    if (
+      !Array.isArray(safetyBasis) ||
+      safetyBasis.length !== 3 ||
+      !safetyBasis.every((item) => typeof item === "string" && item.trim())
+    ) {
+      console.log(
+        JSON.stringify(
+          {
+            ok: false,
+            status: response.status(),
+            duration_ms: durationMs,
+            error: "recommended_outfit.safety_basis missing or malformed",
+            safety_basis: safetyBasis
+          },
+          null,
+          2
+        )
+      );
+      return 1;
+    }
+
+    if (
+      !Array.isArray(avoidNotes) ||
+      avoidNotes.length !== 3 ||
+      !avoidNotes.every((item) => typeof item === "string" && item.trim())
+    ) {
+      console.log(
+        JSON.stringify(
+          {
+            ok: false,
+            status: response.status(),
+            duration_ms: durationMs,
+            error: "recommended_outfit.avoid_notes missing or malformed",
+            avoid_notes: avoidNotes
+          },
+          null,
+          2
+        )
+      );
+      return 1;
+    }
+
     console.log(
       JSON.stringify(
         {
@@ -243,7 +382,10 @@ async function main() {
           status: response.status(),
           duration_ms: durationMs,
           result_url: page.url(),
-          recommended_outfit: data.recommended_outfit?.title ?? null
+          body_profile: bodyProfile,
+          recommended_outfit: data.recommended_outfit?.title ?? null,
+          safety_basis: safetyBasis,
+          avoid_notes: avoidNotes
         },
         null,
         2

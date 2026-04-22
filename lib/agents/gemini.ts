@@ -1,11 +1,15 @@
 import type {
+  AgentClosetItemCategory,
   AgentRequest,
   DailyAgentResponse,
   DeepDiveRequest,
   DeepDiveResponse,
+  OnboardingResponseIssue,
   OnboardingAgentResponse
 } from "@/lib/agents/contracts";
+import { enrichBodyProfileFromFeedbackText } from "@/lib/agents/body-profile";
 import {
+  diagnoseOnboardingResponseIssues,
   normalizeDailyResponse,
   normalizeDeepDiveResponse,
   normalizeOnboardingResponse,
@@ -17,10 +21,18 @@ import {
 const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const DEFAULT_PRODUCTION_REQUEST_TIMEOUT_MS = 8000;
-const DEFAULT_LOCAL_REQUEST_TIMEOUT_MS = 30000;
+const DEFAULT_LOCAL_REQUEST_TIMEOUT_MS = 45000;
 const DEFAULT_PRODUCTION_MAX_RETRIES = 2;
 const DEFAULT_LOCAL_MAX_RETRIES = 0;
 const RETRY_DELAY_MS = 2000;
+const VALID_CLOSET_CATEGORIES: AgentClosetItemCategory[] = [
+  "tops",
+  "bottoms",
+  "shoes",
+  "outerwear",
+  "hats",
+  "bags"
+];
 
 type AgentKind = "onboarding" | "daily" | "fit" | "color" | "occasion" | "closet";
 type InstructionMode = "default" | "smoke";
@@ -49,6 +61,32 @@ type GeminiResponse = {
   }>;
 };
 
+export class InvalidOnboardingResponseError extends Error {
+  provider: "gemini";
+  diagnostics: OnboardingResponseIssue[];
+  rawKeys: string[];
+  stabilizedKeys: string[];
+
+  constructor(input: {
+    diagnostics: OnboardingResponseIssue[];
+    rawKeys: string[];
+    stabilizedKeys: string[];
+  }) {
+    super("invalid_onboarding_response");
+    this.name = "InvalidOnboardingResponseError";
+    this.provider = "gemini";
+    this.diagnostics = input.diagnostics;
+    this.rawKeys = input.rawKeys;
+    this.stabilizedKeys = input.stabilizedKeys;
+  }
+}
+
+export function isInvalidOnboardingResponseError(
+  error: unknown
+): error is InvalidOnboardingResponseError {
+  return error instanceof InvalidOnboardingResponseError;
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -62,22 +100,25 @@ function getNumberEnv(name: string, fallback: number) {
   return Number.isFinite(value) && value >= 0 ? value : fallback;
 }
 
+export function getGeminiRuntimeDefaultsForEnv(nodeEnv: string | undefined) {
+  return {
+    timeoutMs:
+      nodeEnv === "production"
+        ? DEFAULT_PRODUCTION_REQUEST_TIMEOUT_MS
+        : DEFAULT_LOCAL_REQUEST_TIMEOUT_MS,
+    maxRetries:
+      nodeEnv === "production" ? DEFAULT_PRODUCTION_MAX_RETRIES : DEFAULT_LOCAL_MAX_RETRIES
+  };
+}
+
 function getDefaultRequestTimeoutMs() {
-  return getNumberEnv(
-    "GEMINI_REQUEST_TIMEOUT_MS",
-    process.env.NODE_ENV === "production"
-      ? DEFAULT_PRODUCTION_REQUEST_TIMEOUT_MS
-      : DEFAULT_LOCAL_REQUEST_TIMEOUT_MS
-  );
+  const defaults = getGeminiRuntimeDefaultsForEnv(process.env.NODE_ENV);
+  return getNumberEnv("GEMINI_REQUEST_TIMEOUT_MS", defaults.timeoutMs);
 }
 
 function getDefaultMaxRetries() {
-  return getNumberEnv(
-    "GEMINI_MAX_RETRIES",
-    process.env.NODE_ENV === "production"
-      ? DEFAULT_PRODUCTION_MAX_RETRIES
-      : DEFAULT_LOCAL_MAX_RETRIES
-  );
+  const defaults = getGeminiRuntimeDefaultsForEnv(process.env.NODE_ENV);
+  return getNumberEnv("GEMINI_MAX_RETRIES", defaults.maxRetries);
 }
 
 export function resolveAiProvider() {
@@ -101,10 +142,22 @@ function getJsonShape(agent: AgentKind) {
     return `{
   "diagnosis": "현재 스타일 진단 1~2줄",
   "improvements": ["개선 포인트 1", "개선 포인트 2", "개선 포인트 3"],
+  "body_profile": {
+    "upper_body_presence": "medium",
+    "lower_body_balance": "medium",
+    "belly_visibility": "medium",
+    "leg_length_impression": "balanced",
+    "shoulder_shape": "balanced",
+    "neck_impression": "balanced",
+    "overall_frame": "medium",
+    "fit_risk_tags": ["strong_contrast_split_risk"]
+  },
   "recommended_outfit": {
     "title": "추천 조합 이름",
     "items": ["상의/겉옷", "하의", "신발"],
     "reason": "왜 이 조합이 현재 옷장과 사진에 맞는지 1~2줄",
+    "safety_basis": ["안전 근거 1", "안전 근거 2", "안전 근거 3"],
+    "avoid_notes": ["피할 포인트 1", "피할 포인트 2", "피할 포인트 3"],
     "try_on_prompt": "실착 이미지 생성을 위한 간결한 프롬프트 1줄",
     "source_item_ids": {"tops": "선택한 상의 id", "bottoms": "선택한 하의 id", "shoes": "선택한 신발 id"}
   },
@@ -188,6 +241,9 @@ function buildInstruction(
       "쉽고 솔직하게 말하되 공격적으로 말하지 마세요.",
       "브랜드/가격 평가 금지.",
       "반드시 JSON만 반환하세요.",
+      "body_profile은 비워두지 말고 반드시 추정하세요.",
+      "체형 단서가 분명하면 모두 medium/balanced로 뭉개지 말고 high/shorter/large 같은 더 구체적인 값을 선택하세요.",
+      "상체가 먼저 보이면 upper_body_presence=high, 상하 대비가 강하면 strong_contrast_split_risk, 목이 답답해 보이면 heavy_neckline_risk를 우선 검토하세요.",
       "improvements는 정확히 3개여야 합니다.",
       "today_action은 지금 가진 옷으로 가능한 행동만 제안하세요.",
       "Day 6 이전 구매 유도 금지.",
@@ -237,6 +293,9 @@ function buildInstruction(
     "절대 판단하지 마세요.",
     '금지 표현: "왜 이렇게 입었어요", "이건 좀 아닌 것 같아요".',
     "브랜드나 가격으로 사용자를 평가하지 마세요.",
+    "body_profile이 있다면 체형을 비난하지 말고 추천 안전장치로만 사용하세요.",
+    "body_profile이 없다면 사진을 보고 실루엣 기준으로 upper_body_presence, lower_body_balance, belly_visibility, leg_length_impression, shoulder_shape, neck_impression, overall_frame, fit_risk_tags를 추정해 짧게 반환하세요.",
+    "체형 신호가 보이면 전부 medium/balanced로 눙치지 말고, 실제로 눈에 띄는 쪽을 선택하세요. 예: 상체가 먼저 보이면 upper_body_presence=high, 대비가 강하면 strong_contrast_split_risk, 목이 짧아 보이거나 답답하면 heavy_neckline_risk.",
     "improvements는 반드시 3개여야 합니다.",
     "모든 문장은 모바일 화면에서 바로 읽히도록 짧게 쓰세요. diagnosis/reason은 1문장, 각 action은 1문장만 허용합니다.",
     "today_action은 지금 가진 옷과 아이템으로 바로 할 수 있는 행동만 제안하세요.",
@@ -436,20 +495,86 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries: number) {
   throw new Error("retry_exhausted");
 }
 
+export function stabilizeOnboardingResponseForProvider(response: Record<string, unknown>) {
+  const recommendedOutfit =
+    response.recommended_outfit && typeof response.recommended_outfit === "object"
+      ? (response.recommended_outfit as Record<string, unknown>)
+      : null;
+  const recommendationMix =
+    response.recommendation_mix && typeof response.recommendation_mix === "object"
+      ? (response.recommendation_mix as Record<string, unknown>)
+      : null;
+  const sanitizedMissingCategories = Array.isArray(recommendationMix?.missing_categories)
+    ? recommendationMix.missing_categories.filter(
+        (category): category is AgentClosetItemCategory =>
+          typeof category === "string" &&
+          VALID_CLOSET_CATEGORIES.includes(category as AgentClosetItemCategory)
+      )
+    : recommendationMix?.missing_categories;
+
+  return {
+    ...response,
+    recommendation_mix: recommendationMix
+      ? {
+          ...recommendationMix,
+          missing_categories: sanitizedMissingCategories,
+          primary_source:
+            recommendationMix.primary_source === "system_only"
+              ? "system"
+              : recommendationMix.primary_source
+        }
+      : recommendationMix,
+    body_profile: enrichBodyProfileFromFeedbackText(response.body_profile as OnboardingAgentResponse["body_profile"], {
+      diagnosis: typeof response.diagnosis === "string" ? response.diagnosis : undefined,
+      outfitReason:
+        recommendedOutfit && typeof recommendedOutfit.reason === "string"
+          ? recommendedOutfit.reason
+          : undefined
+    })
+  };
+}
+
 export async function generateOnboardingFeedback(
   payload: AgentRequest,
   options: GeminiCallOptions = {}
 ) {
-  const response = await withRetry(
+  const rawResponse = await withRetry(
     () => callGeminiApi("onboarding", payload, options),
     options.maxRetries ?? getDefaultMaxRetries()
   );
+  const response = stabilizeOnboardingResponseForProvider(rawResponse);
 
   if (!validateOnboardingResponse(response)) {
-    throw new Error("invalid_onboarding_response");
+    throw new InvalidOnboardingResponseError({
+      diagnostics: diagnoseOnboardingResponseIssues(response),
+      rawKeys: Object.keys(rawResponse).sort(),
+      stabilizedKeys: Object.keys(response).sort()
+    });
   }
 
   return normalizeOnboardingResponse(response as OnboardingAgentResponse);
+}
+
+export async function debugGenerateOnboardingFeedback(
+  payload: AgentRequest,
+  options: GeminiCallOptions = {}
+) {
+  const rawResponse = await withRetry(
+    () => callGeminiApi("onboarding", payload, options),
+    options.maxRetries ?? getDefaultMaxRetries()
+  );
+  const response = stabilizeOnboardingResponseForProvider(rawResponse);
+
+  const valid = validateOnboardingResponse(response);
+
+  return {
+    raw: rawResponse,
+    stabilized: response,
+    valid,
+    normalized: valid
+      ? normalizeOnboardingResponse(response as OnboardingAgentResponse)
+      : null
+  };
 }
 
 export async function generateDailyFeedback(

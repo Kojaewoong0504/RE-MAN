@@ -112,6 +112,103 @@ describe("hybrid recommendation mix", () => {
     expect(result.selectable_recommendations.every((item) => item.image_url)).toBe(true);
   });
 
+  it("keeps closet primary but composes safer outfit text when body profile flags contrast and neckline risks", () => {
+    const result = buildHybridRecommendation({
+      survey: {
+        current_style: "밝은 티셔츠 + 검정 바지",
+        motivation: "소개팅",
+        budget: "기존 옷 활용"
+      },
+      bodyProfile: {
+        neck_impression: "short",
+        leg_length_impression: "shorter",
+        overall_frame: "large",
+        fit_risk_tags: ["heavy_neckline_risk", "strong_contrast_split_risk"]
+      },
+      closetItems: [
+        {
+          id: "top-1",
+          category: "tops",
+          name: "블랙 터틀넥",
+          fit: "레귤러",
+          wear_state: "잘 맞음",
+          color: "블랙"
+        },
+        {
+          id: "top-2",
+          category: "tops",
+          name: "차콜 레귤러 니트",
+          fit: "레귤러",
+          wear_state: "잘 맞음",
+          color: "차콜"
+        },
+        {
+          id: "bottom-1",
+          category: "bottoms",
+          name: "차콜 슬랙스",
+          fit: "테이퍼드",
+          wear_state: "잘 맞음",
+          color: "차콜"
+        },
+        {
+          id: "shoes-1",
+          category: "shoes",
+          name: "검정 로퍼",
+          wear_state: "잘 맞음",
+          color: "블랙"
+        }
+      ],
+      closetStrategy: {
+        core_item_ids: ["top-2", "bottom-1", "shoes-1"],
+        caution_item_ids: ["top-1"],
+        optional_item_ids: [],
+        items: [
+          {
+            id: "top-2",
+            category: "tops",
+            role: "core",
+            reason: "목선이 덜 답답하고 자주 입음"
+          },
+          {
+            id: "bottom-1",
+            category: "bottoms",
+            role: "core",
+            reason: "실루엣이 안정적임"
+          },
+          {
+            id: "shoes-1",
+            category: "shoes",
+            role: "core",
+            reason: "톤 연결이 자연스러움"
+          },
+          {
+            id: "top-1",
+            category: "tops",
+            role: "use_with_care",
+            reason: "목선이 답답해 보일 수 있음"
+          }
+        ]
+      },
+      verifiedSourceItemIds: {
+        tops: "top-2",
+        bottoms: "bottom-1",
+        shoes: "shoes-1"
+      }
+    });
+
+    expect(result.recommendation_mix.primary_source).toBe("closet");
+    expect(result.recommended_outfit.items).toEqual([
+      "차콜 레귤러 니트",
+      "차콜 슬랙스",
+      "검정 로퍼"
+    ]);
+    expect(result.recommended_outfit.safety_basis).toEqual([
+      "목선이 답답해 보이지 않음",
+      "상하 밝기 차이가 과하지 않음",
+      "다리 비율이 더 안정적으로 이어짐"
+    ]);
+  });
+
   it("fills missing system support with a balanced outfit set instead of a single category", () => {
     const result = buildHybridRecommendation({
       survey: {

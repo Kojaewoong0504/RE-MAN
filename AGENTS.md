@@ -176,6 +176,7 @@
 - MVP 핵심 경로와 완료 보고 기준은 `docs/product/mvp-critical-path.md`와 `docs/engineering/verification-matrix.md`를 따른다.
 - `npm run test:e2e` 통과는 `mock E2E 통과`로만 보고한다.
 - `npm run smoke:feedback:gemini` 통과는 `실제 Gemini API 계약 통과`로 보고한다.
+- `npm run smoke:feedback:body-aware` 통과는 `실제 Gemini body-aware 신호 검증 통과`로 보고한다.
 - `npm run smoke:feedback:browser` 통과는 `브라우저 업로드와 실제 Gemini 경계 통과`로 보고한다.
 - `npm run smoke:closet:gemini` 통과는 `실제 옷장 AI+크레딧 smoke 통과`로 보고한다.
 - `npm run smoke:try-on:vertex` 통과는 `실제 Vertex 실착 생성+크레딧 smoke 통과`로 보고한다.

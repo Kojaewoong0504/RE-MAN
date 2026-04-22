@@ -204,4 +204,74 @@ describe("firebase firestore feedback parsing", () => {
       }
     ]);
   });
+
+  it("restores body profile and safe recommendation metadata from Firestore day 1 feedback", async () => {
+    getDocsMock.mockImplementationOnce(async (ref: { segments: string[] }) => {
+      const path = ref.segments.join("/");
+
+      if (path === "users/user-1/feedbacks") {
+        return createQuerySnapshot([
+          {
+            id: "1",
+            data: {
+              day: 1,
+              diagnosis: "현재 스타일 진단",
+              improvements: ["핏", "색", "신발"],
+              body_profile: {
+                overall_frame: "large",
+                belly_visibility: "high",
+                leg_length_impression: "shorter",
+                fit_risk_tags: ["cropped_top_risk", "strong_contrast_split_risk"]
+              },
+              recommended_outfit: {
+                title: "안전한 기본 조합",
+                items: ["검정 티셔츠", "차콜 팬츠", "검정 신발"],
+                reason: "안정적인 비율이 먼저 보이게 합니다.",
+                safety_basis: ["상체 정리", "하체 정리", "즉시 재현 가능"],
+                avoid_notes: ["짧은 상의는 제외", "강한 상하 대비는 제외", "과한 포인트는 제외"],
+                try_on_prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
+              },
+              recommendation_mix: {
+                primary_source: "closet",
+                closet_confidence: "high",
+                system_support_needed: false,
+                missing_categories: [],
+                summary: "옷장 기준 추천"
+              },
+              system_recommendations: [],
+              today_action: "옷장을 정리해보세요.",
+              day1_mission: "오늘 조합을 다시 입어보세요."
+            }
+          }
+        ]);
+      }
+
+      if (path === "users/user-1/deepDives") {
+        return createQuerySnapshot([]);
+      }
+
+      return createQuerySnapshot([]);
+    });
+
+    const { readStyleProgramStateFromFirestore } = await import("@/lib/firebase/firestore");
+
+    const state = await readStyleProgramStateFromFirestore("user-1");
+
+    expect(state?.feedback?.body_profile).toEqual({
+      overall_frame: "large",
+      belly_visibility: "high",
+      leg_length_impression: "shorter",
+      fit_risk_tags: ["cropped_top_risk", "strong_contrast_split_risk"]
+    });
+    expect(state?.feedback?.recommended_outfit.safety_basis).toEqual([
+      "상체 정리",
+      "하체 정리",
+      "즉시 재현 가능"
+    ]);
+    expect(state?.feedback?.recommended_outfit.avoid_notes).toEqual([
+      "짧은 상의는 제외",
+      "강한 상하 대비는 제외",
+      "과한 포인트는 제외"
+    ]);
+  });
 });

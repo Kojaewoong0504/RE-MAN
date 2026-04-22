@@ -16,6 +16,7 @@ async function safeRead(name: string) {
 export async function GET() {
   return NextResponse.json({
     incidents: await safeRead("runtime-incidents.json"),
-    learned_failures: await safeRead("runtime-learned-failures.json")
+    learned_failures: await safeRead("runtime-learned-failures.json"),
+    promotion_candidates: await safeRead("runtime-promotion-candidates.json")
   });
 }
