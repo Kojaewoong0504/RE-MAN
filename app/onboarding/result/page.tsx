@@ -82,6 +82,7 @@ type TryOnBoardCard = {
 };
 
 type StoredTryOnRequestedItem = NonNullable<TryOnPreviewCacheEntry["requested_items"]>[number];
+type StoredTryOnStagePreview = NonNullable<TryOnPreviewCacheEntry["stage_previews"]>[number];
 
 const categoryOrder: AgentClosetItemCategory[] = ["tops", "bottoms", "shoes"];
 const categoryLabels: Record<AgentClosetItemCategory, string> = {
@@ -430,6 +431,19 @@ function getPreviewRequestedItems(preview: TryOnPreviewCacheEntry | null, cards:
   }));
 }
 
+function getPreviewStageItems(preview: TryOnPreviewCacheEntry | null): Array<
+  StoredTryOnStagePreview & { key: string }
+> {
+  if (!preview?.stage_previews?.length) {
+    return [];
+  }
+
+  return preview.stage_previews.map((stage) => ({
+    ...stage,
+    key: `stage-${stage.step}`
+  }));
+}
+
 export default function ResultPage() {
   const router = useRouter();
   const [isHydrating, setIsHydrating] = useState(true);
@@ -510,6 +524,7 @@ export default function ResultPage() {
   const tryOnCreditEstimate = estimateTryOnCredits(selectedTryOnCards.length);
   const tryOnPassEstimate = estimateTryOnPasses(selectedTryOnCards.length);
   const previewRequestedItems = getPreviewRequestedItems(tryOnPreview, selectedTryOnCards);
+  const previewStageItems = getPreviewStageItems(tryOnPreview);
 
   function applyResolvedState(state: OnboardingState) {
     const normalizedClosetItems = normalizeClosetItems(state.closet_items);
@@ -965,6 +980,11 @@ export default function ResultPage() {
             subscription_active?: boolean;
             try_on_pass_count?: number;
             visibility_guidance?: string | null;
+            stage_previews?: Array<{
+              step: number;
+              preview_image: string;
+              label?: string;
+            }>;
           }
         | null;
 
@@ -996,6 +1016,7 @@ export default function ResultPage() {
         visibility_guidance: data.visibility_guidance ?? undefined,
         pass_count: data.try_on_pass_count,
         requested_items: buildStoredRequestedItems(selectedTryOnCards),
+        stage_previews: data.stage_previews ?? [],
         credits_charged: data.credits_charged,
         created_at: new Date().toISOString()
       };
@@ -1506,6 +1527,29 @@ export default function ResultPage() {
                 </p>
                 {tryOnPreview.visibility_guidance ? (
                   <p className="result-try-on-visibility-note">{tryOnPreview.visibility_guidance}</p>
+                ) : null}
+                {previewStageItems.length > 0 ? (
+                  <div className="result-try-on-stage-board">
+                    <strong>합성 단계</strong>
+                    <div className="result-try-on-stage-grid">
+                      {previewStageItems.map((stage) => (
+                        <article className="result-try-on-stage-card" key={stage.key}>
+                          <div className="result-try-on-stage-image">
+                            <Image
+                              alt={`실착 합성 ${stage.step}단계`}
+                              className="h-full w-full object-cover"
+                              fill
+                              sizes="(max-width: 768px) 33vw, 120px"
+                              src={stage.preview_image}
+                              unoptimized
+                            />
+                          </div>
+                          <span>{stage.step}단계</span>
+                          <strong>{stage.label ?? "중간 결과"}</strong>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
                 ) : null}
                 {previewRequestedItems.length > 0 ? (
                   <div className="result-try-on-requested-board">

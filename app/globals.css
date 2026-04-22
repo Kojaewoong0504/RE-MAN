@@ -687,6 +687,40 @@ a {
     @apply mt-1 block text-sm font-black leading-5 text-ink;
   }
 
+  .result-try-on-stage-board {
+    @apply grid gap-3 rounded-2xl border p-4;
+    border-color: var(--color-line);
+    background: var(--color-surface);
+  }
+
+  .result-try-on-stage-board > strong {
+    @apply text-sm font-black uppercase tracking-[0.14em];
+    color: var(--color-ink);
+  }
+
+  .result-try-on-stage-grid {
+    @apply grid grid-cols-3 gap-3;
+  }
+
+  .result-try-on-stage-card {
+    @apply rounded-2xl border p-2;
+    border-color: var(--color-line);
+    background: var(--color-surface-raised);
+  }
+
+  .result-try-on-stage-image {
+    @apply relative mb-2 h-24 overflow-hidden rounded-xl;
+    background: var(--color-surface);
+  }
+
+  .result-try-on-stage-card span {
+    @apply block text-[10px] font-black uppercase tracking-[0.16em] text-muted;
+  }
+
+  .result-try-on-stage-card strong {
+    @apply mt-1 block text-sm font-black leading-5 text-ink;
+  }
+
   .result-modal-backdrop {
     @apply fixed z-[100] flex items-end justify-center bg-black/55 p-4 backdrop-blur-sm sm:items-center;
     top: 0;

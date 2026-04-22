@@ -100,6 +100,11 @@ export type TryOnPreviewCacheEntry = {
     fallback_src: string;
     source_label: string;
   }>;
+  stage_previews?: Array<{
+    step: number;
+    preview_image: string;
+    label?: string;
+  }>;
   credits_charged?: number;
   created_at: string;
 };

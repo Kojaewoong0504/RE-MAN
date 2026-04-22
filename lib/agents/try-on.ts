@@ -28,6 +28,11 @@ export type TryOnResponse = {
   message: string;
   pass_count?: number;
   visibility_guidance?: string;
+  stage_previews?: Array<{
+    step: number;
+    preview_image: string;
+    label?: string;
+  }>;
 };
 export type TryOnErrorCode =
   | "missing_vertex_config"
@@ -629,11 +634,13 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
   const config = await getVertexConfig();
   let personImage = parseDataImage(payload.person_image);
   const productImages = resolveProductImages(payload);
+  const selectedItems = resolveSelectedItemsForProvider(payload);
   let maxProductImagesPerPass = resolveExecutionMaxProductImagesPerPass(payload);
   const endpoint = `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.modelId}:predict`;
   let finalImage: VertexGeneratedImage | null = null;
   let actualPassCount = 0;
   let index = 0;
+  const stagePreviews: NonNullable<TryOnResponse["stage_previews"]> = [];
 
   while (index < productImages.length) {
     const stage = productImages.slice(index, index + maxProductImagesPerPass);
@@ -647,6 +654,14 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
         storageUri: config.storageUri
       });
       actualPassCount += 1;
+      const stageItemLabel =
+        selectedItems.slice(index, index + stage.length).map((item) => item.title).join(" + ") ||
+        undefined;
+      stagePreviews.push({
+        step: actualPassCount,
+        preview_image: `data:${finalImage.mimeType};base64,${finalImage.base64}`,
+        label: stageItemLabel
+      });
       personImage = {
         mimeType: finalImage.mimeType,
         base64: finalImage.base64
@@ -676,7 +691,8 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
     preview_image: `data:${finalImage.mimeType};base64,${finalImage.base64}`,
     message: "Vertex AI Virtual Try-On 실착 미리보기가 준비됐습니다.",
     pass_count: actualPassCount,
-    visibility_guidance: buildTryOnVisibilityGuidance(payload) ?? undefined
+    visibility_guidance: buildTryOnVisibilityGuidance(payload) ?? undefined,
+    stage_previews: stagePreviews
   };
 }
 
@@ -691,6 +707,13 @@ export async function generateTryOnPreview(payload: TryOnRequest): Promise<TryOn
     message:
       "로컬 mock try-on입니다. 실제 실착 생성은 Vertex AI Virtual Try-On provider 구현 후 활성화합니다.",
     pass_count: 0,
-    visibility_guidance: buildTryOnVisibilityGuidance(payload) ?? undefined
+    visibility_guidance: buildTryOnVisibilityGuidance(payload) ?? undefined,
+    stage_previews: [
+      {
+        step: 1,
+        preview_image: payload.person_image,
+        label: "mock preview"
+      }
+    ]
   };
 }

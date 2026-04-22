@@ -423,7 +423,12 @@ describe("try-on API route", () => {
     expect(body).toMatchObject({
       credits_charged: 1,
       credits_remaining: 2,
-      try_on_pass_count: 3
+      try_on_pass_count: 3,
+      stage_previews: [
+        { step: 1, preview_image: "data:image/png;base64,generated-image-1" },
+        { step: 2, preview_image: "data:image/png;base64,generated-image-2" },
+        { step: 3, preview_image: "data:image/png;base64,generated-image-3" }
+      ]
     });
   });
 

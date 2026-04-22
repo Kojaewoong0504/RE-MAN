@@ -1134,6 +1134,23 @@ test("saved result uses try-on modal with system source by default and viewer mo
         message: "실착 생성 완료",
         credits_remaining: 2,
         credits_charged: 1,
+        stage_previews: [
+          {
+            step: 1,
+            preview_image: uploadedImage,
+            label: "화이트 셔츠"
+          },
+          {
+            step: 2,
+            preview_image: uploadedImage,
+            label: "블랙 블레이저"
+          },
+          {
+            step: 3,
+            preview_image: uploadedImage,
+            label: "검정 슬랙스"
+          }
+        ],
         idempotent_replay: false,
         credit_reference_id: "try-on-credit-1"
       })
@@ -1309,7 +1326,12 @@ test("saved result uses try-on modal with system source by default and viewer mo
   releaseTryOn();
   await expect(page.getByRole("dialog", { name: "실착 결과 보기" })).toBeVisible();
   await expect(page.getByText("체크 2회")).toBeVisible();
-  await expect(page.getByRole("img", { name: "실착 결과 전체 보기" })).toBeVisible();
+  const tryOnViewerDialog = page.getByRole("dialog", { name: "실착 결과 보기" });
+  await expect(tryOnViewerDialog.getByRole("img", { name: "실착 결과 전체 보기" })).toBeVisible();
+  await expect(tryOnViewerDialog.getByText("합성 단계")).toBeVisible();
+  await expect(tryOnViewerDialog.getByText("1단계", { exact: true })).toBeVisible();
+  await expect(tryOnViewerDialog.getByText("2단계", { exact: true })).toBeVisible();
+  await expect(tryOnViewerDialog.getByText("3단계", { exact: true })).toBeVisible();
   expect(tryOnRequests).toHaveLength(1);
   expect(tryOnRequests[0]).toMatchObject({
     person_image: uploadedImage,

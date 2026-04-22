@@ -674,7 +674,12 @@ describe("try-on provider contract", () => {
     ).resolves.toMatchObject({
       status: "vertex",
       preview_image: "data:image/png;base64,result-stage-3",
-      pass_count: 3
+      pass_count: 3,
+      stage_previews: [
+        { step: 1, preview_image: "data:image/png;base64,result-stage-1" },
+        { step: 2, preview_image: "data:image/png;base64,result-stage-2" },
+        { step: 3, preview_image: "data:image/png;base64,result-stage-3" }
+      ]
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
