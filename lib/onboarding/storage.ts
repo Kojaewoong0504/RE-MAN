@@ -89,6 +89,17 @@ export type TryOnPreviewCacheEntry = {
   provider: "mocked" | "vertex";
   preview_image: string;
   message: string;
+  visibility_guidance?: string;
+  pass_count?: number;
+  requested_items?: Array<{
+    id: string;
+    category: ClosetItemCategory;
+    label: string;
+    title: string;
+    image_src: string;
+    fallback_src: string;
+    source_label: string;
+  }>;
   credits_charged?: number;
   created_at: string;
 };

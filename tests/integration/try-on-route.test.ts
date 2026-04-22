@@ -259,8 +259,78 @@ describe("try-on API route", () => {
     expect(body).toMatchObject({
       status: "vertex",
       credits_charged: 1,
-      credits_remaining: 2
+      credits_remaining: 2,
+      visibility_guidance: "여러 아이템을 한 번에 합성하면 일부 항목이 약하게 보일 수 있습니다. 결과 아래 요청 조합 보드로 함께 확인하고 필요하면 조합을 나눠 다시 생성해 주세요."
     });
+  });
+
+  it("returns layered visibility guidance when stacked upper-body items are requested", async () => {
+    const user = {
+      ...authUser,
+      uid: "try-on-layered-guidance-user"
+    };
+    const { issueSessionTokens } = await import("@/lib/auth/server");
+    const { accessToken } = await issueSessionTokens(
+      user,
+      "try-on-route-family-layered",
+      "try-on-route-token-layered"
+    );
+    const cookies = new Map([[SESSION_COOKIE_NAMES.access, accessToken]]);
+
+    vi.stubEnv("TRY_ON_PROVIDER", "vertex");
+    vi.stubEnv("VERTEX_PROJECT_ID", "project-1");
+    vi.stubEnv("VERTEX_LOCATION", "us-central1");
+    vi.stubEnv("VERTEX_ACCESS_TOKEN", "access-token");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          predictions: [
+            {
+              bytesBase64Encoded: "generated-image"
+            }
+          ]
+        })
+      })
+    );
+
+    const { POST } = await loadRouteWithCookies(cookies);
+    const response = await POST(
+      buildRequest({
+        person_image: "data:image/png;base64,abc123",
+        selected_items: [
+          {
+            id: "sys-base-top-1",
+            category: "tops",
+            role: "base_top",
+            title: "화이트 셔츠",
+            image_url: "data:image/png;base64,abc123"
+          },
+          {
+            id: "sys-outer-1",
+            category: "outerwear",
+            role: "outerwear",
+            title: "블랙 블레이저",
+            image_url: "data:image/png;base64,abc123"
+          },
+          {
+            id: "sys-bottom-1",
+            category: "bottoms",
+            role: "bottom",
+            title: "검정 슬랙스",
+            image_url: "data:image/png;base64,abc123"
+          }
+        ],
+        ordered_item_ids: ["sys-base-top-1", "sys-outer-1", "sys-bottom-1"],
+        manual_order_enabled: false,
+        prompt: "레이어드 조합 전체를 함께 반영"
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.visibility_guidance).toContain("상의 레이어가 2개 이상");
   });
 
   it("does not charge twice when a successful Vertex request is replayed", async () => {

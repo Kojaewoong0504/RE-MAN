@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  buildTryOnVisibilityGuidance,
   estimateTryOnCreditCost,
   estimateTryOnPassCount,
   generateTryOnPreview,
@@ -215,6 +216,63 @@ describe("try-on provider contract", () => {
         prompt: "전신 정면 사진 기준 자연스러운 실착 미리보기"
       })
     ).toBe(2);
+  });
+
+  it("returns layered visibility guidance when upper-body layers are stacked", () => {
+    expect(
+      buildTryOnVisibilityGuidance({
+        person_image: image,
+        selected_items: [
+          {
+            id: "sys-base-top-1",
+            category: "tops",
+            role: "base_top",
+            title: "화이트 셔츠",
+            image_url: image
+          },
+          {
+            id: "sys-outer-1",
+            category: "outerwear",
+            role: "outerwear",
+            title: "블랙 블레이저",
+            image_url: image
+          },
+          {
+            id: "sys-bottom-1",
+            category: "bottoms",
+            role: "bottom",
+            title: "검정 슬랙스",
+            image_url: image
+          }
+        ],
+        prompt: "레이어드 조합 전체를 함께 반영"
+      })
+    ).toContain("상의 레이어가 2개 이상");
+  });
+
+  it("returns generic visibility guidance for multi-item non-layered outfits", () => {
+    expect(
+      buildTryOnVisibilityGuidance({
+        person_image: image,
+        selected_items: [
+          {
+            id: "sys-top-1",
+            category: "tops",
+            role: "base_top",
+            title: "화이트 티셔츠",
+            image_url: image
+          },
+          {
+            id: "sys-bottom-1",
+            category: "bottoms",
+            role: "bottom",
+            title: "검정 슬랙스",
+            image_url: image
+          }
+        ],
+        prompt: "기본 조합 전체를 함께 반영"
+      })
+    ).toContain("여러 아이템을 한 번에 합성");
   });
 
   it("reports missing Vertex config only when Vertex provider is active", () => {

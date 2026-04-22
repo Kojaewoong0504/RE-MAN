@@ -81,6 +81,8 @@ type TryOnBoardCard = {
   layerOrder: number;
 };
 
+type StoredTryOnRequestedItem = NonNullable<TryOnPreviewCacheEntry["requested_items"]>[number];
+
 const categoryOrder: AgentClosetItemCategory[] = ["tops", "bottoms", "shoes"];
 const categoryLabels: Record<AgentClosetItemCategory, string> = {
   tops: "상의",
@@ -396,6 +398,38 @@ function estimateTryOnPasses(cardCount: number) {
   return Math.max(1, Math.ceil(cardCount / TRY_ON_DIRECT_PASS_ITEM_LIMIT));
 }
 
+function buildStoredRequestedItems(cards: TryOnBoardCard[]): StoredTryOnRequestedItem[] {
+  return cards.map((card) => ({
+    id: card.id,
+    category: card.category,
+    label: card.label,
+    title: card.title,
+    image_src: card.imageSrc,
+    fallback_src: card.fallbackSrc,
+    source_label: card.sourceLabel
+  }));
+}
+
+function getPreviewRequestedItems(preview: TryOnPreviewCacheEntry | null, cards: TryOnBoardCard[]) {
+  if (preview?.requested_items?.length) {
+    return preview.requested_items.map((item) => ({
+      ...item,
+      key: `preview-requested-${item.id}`
+    }));
+  }
+
+  return cards.map((card) => ({
+    id: card.id,
+    category: card.category,
+    label: card.label,
+    title: card.title,
+    image_src: card.imageSrc,
+    fallback_src: card.fallbackSrc,
+    source_label: card.sourceLabel,
+    key: `live-requested-${card.id}`
+  }));
+}
+
 export default function ResultPage() {
   const router = useRouter();
   const [isHydrating, setIsHydrating] = useState(true);
@@ -475,6 +509,7 @@ export default function ResultPage() {
         } satisfies TryOnBoardCard));
   const tryOnCreditEstimate = estimateTryOnCredits(selectedTryOnCards.length);
   const tryOnPassEstimate = estimateTryOnPasses(selectedTryOnCards.length);
+  const previewRequestedItems = getPreviewRequestedItems(tryOnPreview, selectedTryOnCards);
 
   function applyResolvedState(state: OnboardingState) {
     const normalizedClosetItems = normalizeClosetItems(state.closet_items);
@@ -573,7 +608,10 @@ export default function ResultPage() {
                     <span>선택 실착 후보</span>
                     <strong>원하는 아이템만 골라 조합합니다</strong>
                   </div>
-                  <div className="result-item-strip" aria-label="선택된 시스템 추천 아이템">
+                  <div
+                    className="result-item-strip result-item-strip-surface"
+                    aria-label="선택된 시스템 추천 아이템"
+                  >
                     {selectedSystemTryOnIds.length > 0 ? (
                       sortSelectedTryOnCards(
                         systemTryOnCards,
@@ -925,6 +963,8 @@ export default function ResultPage() {
             credits_remaining?: number;
             credits_charged?: number;
             subscription_active?: boolean;
+            try_on_pass_count?: number;
+            visibility_guidance?: string | null;
           }
         | null;
 
@@ -953,6 +993,9 @@ export default function ResultPage() {
         provider: data.status,
         preview_image: data.preview_image,
         message: data.message ?? "실착 이미지가 준비됐습니다.",
+        visibility_guidance: data.visibility_guidance ?? undefined,
+        pass_count: data.try_on_pass_count,
+        requested_items: buildStoredRequestedItems(selectedTryOnCards),
         credits_charged: data.credits_charged,
         created_at: new Date().toISOString()
       };
@@ -1461,6 +1504,30 @@ export default function ResultPage() {
                     ? `${tryOnPreview.credits_charged ?? 1} 크레딧 차감`
                     : tryOnPreview.message}
                 </p>
+                {tryOnPreview.visibility_guidance ? (
+                  <p className="result-try-on-visibility-note">{tryOnPreview.visibility_guidance}</p>
+                ) : null}
+                {previewRequestedItems.length > 0 ? (
+                  <div className="result-try-on-requested-board">
+                    <strong>요청 조합</strong>
+                    <div className="result-try-on-requested-grid">
+                      {previewRequestedItems.map((item) => (
+                        <article className="result-try-on-requested-card" key={item.key}>
+                          <div className="result-try-on-requested-image">
+                            <SafePreviewImage
+                              alt={`실착 요청 ${item.label}`}
+                              className="h-full w-full object-cover"
+                              fallbackSrc={item.fallback_src}
+                              src={item.image_src}
+                            />
+                          </div>
+                          <span>{item.label}</span>
+                          <strong>{compactUiText(item.title, 16)}</strong>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : null}

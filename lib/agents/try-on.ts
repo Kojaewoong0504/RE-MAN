@@ -27,6 +27,7 @@ export type TryOnResponse = {
   preview_image: string;
   message: string;
   pass_count?: number;
+  visibility_guidance?: string;
 };
 export type TryOnErrorCode =
   | "missing_vertex_config"
@@ -83,6 +84,10 @@ export type TryOnRuntimeStatus = {
 
 const DEFAULT_VERTEX_MAX_PRODUCT_IMAGES = 3;
 const TRY_ON_BILLING_ITEM_UNIT = 3;
+const GENERIC_TRY_ON_VISIBILITY_GUIDANCE =
+  "여러 아이템을 한 번에 합성하면 일부 항목이 약하게 보일 수 있습니다. 결과 아래 요청 조합 보드로 함께 확인하고 필요하면 조합을 나눠 다시 생성해 주세요.";
+const LAYERED_TRY_ON_VISIBILITY_GUIDANCE =
+  "상의 레이어가 2개 이상이면 안쪽 옷은 생성본에서 약하게 보일 수 있습니다. 결과 아래 요청 조합 보드로 함께 확인하고 필요하면 상의 조합을 나눠 다시 생성해 주세요.";
 
 function isDataImageArray(value: unknown) {
   return (
@@ -257,6 +262,31 @@ export function estimateTryOnCreditCost(payload: TryOnRequest) {
   const productImages = resolveProductImages(payload);
 
   return Math.max(1, Math.ceil(productImages.length / TRY_ON_BILLING_ITEM_UNIT));
+}
+
+export function buildTryOnVisibilityGuidance(payload: TryOnRequest) {
+  const selectedItems = resolveSelectedItemsForProvider(payload);
+
+  if (selectedItems.length < 2) {
+    return null;
+  }
+
+  const upperLayerCount = selectedItems.filter((item) => {
+    const normalizedRole = item.role?.trim();
+    return (
+      item.category === "tops" ||
+      item.category === "outerwear" ||
+      normalizedRole === "base_top" ||
+      normalizedRole === "mid_top" ||
+      normalizedRole === "outerwear"
+    );
+  }).length;
+
+  if (upperLayerCount >= 2) {
+    return LAYERED_TRY_ON_VISIBILITY_GUIDANCE;
+  }
+
+  return GENERIC_TRY_ON_VISIBILITY_GUIDANCE;
 }
 
 function isInvalidProductImageCountError(error: TryOnProviderError) {
@@ -623,7 +653,8 @@ async function generateVertexTryOnPreview(payload: TryOnRequest): Promise<TryOnR
     status: "vertex",
     preview_image: `data:${finalImage.mimeType};base64,${finalImage.base64}`,
     message: "Vertex AI Virtual Try-On 실착 미리보기가 준비됐습니다.",
-    pass_count: actualPassCount
+    pass_count: actualPassCount,
+    visibility_guidance: buildTryOnVisibilityGuidance(payload) ?? undefined
   };
 }
 
@@ -637,6 +668,7 @@ export async function generateTryOnPreview(payload: TryOnRequest): Promise<TryOn
     preview_image: payload.person_image,
     message:
       "로컬 mock try-on입니다. 실제 실착 생성은 Vertex AI Virtual Try-On provider 구현 후 활성화합니다.",
-    pass_count: 0
+    pass_count: 0,
+    visibility_guidance: buildTryOnVisibilityGuidance(payload) ?? undefined
   };
 }

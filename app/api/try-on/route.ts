@@ -104,6 +104,7 @@ export async function POST(request: Request) {
         credits_remaining: credits.balance,
         credits_charged: reservedCredits ? tryOnCreditCost : 0,
         try_on_pass_count: preview.pass_count ?? tryOnPassCount,
+        visibility_guidance: preview.visibility_guidance ?? null,
         idempotent_replay: runtimeStatus.real_generation_enabled && !reservedCredits,
         credit_reference_id: runtimeStatus.real_generation_enabled ? creditReferenceId : null
       },
