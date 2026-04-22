@@ -34,6 +34,8 @@ describe("hybrid recommendation mix", () => {
     expect(result.system_recommendations.every((item) => item.mode === "reference")).toBe(true);
     expect(result.system_recommendations.every((item) => item.product === null)).toBe(true);
     expect(result.primary_outfit.item_ids.length).toBeGreaterThanOrEqual(2);
+    expect(result.recommended_outfit.safety_basis).toBeDefined();
+    expect(result.recommended_outfit.avoid_notes).toBeDefined();
     expect(result.selectable_recommendations.some((item) => item.role === "base_top")).toBe(true);
     expect(result.selectable_recommendations.some((item) => item.role === "bottom")).toBe(true);
     expect(result.selectable_recommendations.some((item) => item.role === "shoes")).toBe(true);

@@ -1,19 +1,23 @@
 import type {
   AgentClosetItem,
   AgentClosetItemCategory,
+  BodyProfile,
   ClosetStrategy,
+  OutfitRecommendation,
   PrimaryOutfit,
   RecommendationMix,
   SelectableRecommendation,
   SurveyInput,
   SystemRecommendation
 } from "@/lib/agents/contracts";
+import { buildBodyAwareRecommendation } from "@/lib/product/body-aware-recommendation";
 import { SYSTEM_STYLE_LIBRARY } from "@/lib/product/system-style-library";
 
 type SourceItemIdMap = Partial<Record<AgentClosetItemCategory, string>>;
 
 export type BuildHybridRecommendationInput = {
   survey: SurveyInput;
+  bodyProfile?: BodyProfile;
   closetItems: AgentClosetItem[];
   closetStrategy?: ClosetStrategy;
   verifiedSourceItemIds: SourceItemIdMap;
@@ -210,6 +214,7 @@ function buildPrimaryOutfit(
 export function buildHybridRecommendation(
   input: BuildHybridRecommendationInput
 ): {
+  recommended_outfit: OutfitRecommendation;
   recommendation_mix: RecommendationMix;
   system_recommendations: SystemRecommendation[];
   primary_outfit: PrimaryOutfit;
@@ -227,8 +232,14 @@ export function buildHybridRecommendation(
   const systemRecommendations = buildSystemRecommendations(missingCategories);
   const selectableRecommendations = buildSelectableRecommendations(missingCategories);
   const primaryOutfit = buildPrimaryOutfit(selectableRecommendations);
+  const safeRecommendation = buildBodyAwareRecommendation({
+    survey: input.survey,
+    bodyProfile: input.bodyProfile,
+    closetItems: input.closetItems
+  });
 
   return {
+    recommended_outfit: safeRecommendation.recommended_outfit,
     recommendation_mix: {
       primary_source: primarySource,
       closet_confidence: closetConfidence,
